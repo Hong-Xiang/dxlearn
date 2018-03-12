@@ -6,6 +6,22 @@ __pycache__/
 # C extensions
 *.so
 
+src/python/dxl/learn/analysis/
+src/python/dxl/learn/configs/
+src/python/dxl/learn/dataset/
+src/python/dxl/learn/distribute/
+src/python/dxl/learn/model/
+src/python/dxl/learn/net/
+src/python/dxl/learn/run/
+src/python/dxl/learn/scalar/
+src/python/dxl/learn/scripts/
+src/python/dxl/learn/session/
+src/python/dxl/learn/train/
+src/python/dxl/learn/utils/
+src/python/dxl/learn/zoo/
+src/python/dxl/learn/config.py
+src/python/dxl/learn/graph.py
+
 # Distribution / packaging
 .Python
 env/
