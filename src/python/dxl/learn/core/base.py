@@ -1,17 +1,24 @@
+from dxl.fs import Path
+from typing import Tuple
+import numpy as np
 
-class Host:
-    """
-    Object saving host information.
-    """
-    def __init__(self, cluster:str, index:int=0):
-        """
-        Parameters:
 
-        - `cluster`: A string of host type, like 'master', 'worker', 'ps', etc.
-        - `index`: Index of correspoding node given specific cluster.
-        """
-        self.cluster = cluster
-        self.index = index
-    
-    def __eq__(self, h: 'Host'):
-        return self.cluster == h.cluster and self.index == h.index
+
+
+
+
+
+class H5Data:
+    @classmethod
+    def split_file_data_path(full_path: Path) -> Tuple[Path, Path]:
+        pass
+
+    def __init__(self, file_path: Path, data_path: Path=None):
+        file_path = Path(file_path)
+        if data_path is None:
+            file_path, data_path = self.split_file_data_path(file_path)
+        self.file_path = file_path
+        self.data_path = data_path
+
+    def load(self, path: Path) -> np.ndarray:
+        pass
