@@ -1,25 +1,31 @@
-from .distribute import Host
-from typing import TypeVar
-import numpy as np
-import tensorflow as tf
-from dxl.fs import Path
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 
+import numpy as np
+import tensorflow as tf
 
-TensorData = TypeVar('TensorData', np.ndarray, tf.Tensor, Path)
+from dxl.fs import Path
 
-
-class GraphInfo:
-    def __init__(self, name=None, scope=None, is_save=None):
-        self.name = name
-        self.scope = scope
-        self.is_save = is_save
+from .distribute import Host
+from .graph_info import DistributeGraphInfo, GraphInfo
 
 
 class DataInfo:
     def __init__(self, info):
-        self.info = info
+        self.info = cls._unify_data_info(info)
+
+    @classmethod
+    def _unify_data_info(cls, data_info: DataInfo):
+        if isinstance(data_info, DataInfo):
+            return data_info.info
+        return data_info
+
+
+class VariableInfo(DataInfo):
+    def __init__(self, info, shape, dtype):
+        super().__init__(info)
+        self.shape = shape
+        self.dtype = dtype
 
 
 class Tensor:
@@ -28,37 +34,13 @@ class Tensor:
     Providing unified interface to `numpy.ndarray`, `tensorflow.Tensor`, hdf5 file on filesystem, etc.
     """
 
-    def __init__(self, data: tf.Tensor, data_info: DataInfo, host: Host, graph_info: GraphInfo):
-        self.data = data
-        self.data_info = self._unify_data_info(data_info)
-        self.host = host
-        self.graph_info = self._unify_graph_info(graph_info)
+    def __init__(self, data: tf.Tensor, data_info: DataInfo, graph_info: GraphInfo):
+        self.data_info = data_info
+        self.graph_info = graph_info
+        self.data = self.process_data(data)
 
-    def _unify_data_info(self, data_info: DataInfo):
-        if isinstance(data_info, dict):
-            return DataInfo(data_info)
-        return data_info
-
-    def _unify_graph_info(self, graph_info: GraphInfo):
-        if isinstance(graph_info, dict):
-            return GraphInfo(**graph_info)
-        return graph_info
-
-    @contextmanager
-    def device_scope(self, host=None):
-        if host is None:
-            host = self.host
-        with tf.device(host.device_prefix()):
-            yield
-
-    @contextmanager
-    def variable_scope(self, scope=None):
-        if scope is None:
-            with tf.variable_scope(self.graph_info.scope, default_name="") as scope:
-                yield scope
-        else:
-            with tf.variable_scope(scope) as scope:
-                yield scope
+    def process_data(self, data):
+        return data
 
     @property
     def shape(self):
@@ -68,67 +50,48 @@ class Tensor:
     def dtype(self):
         return self.data.dtype
 
-    def run(self):
+    def run(self, session=None):
+        if session is not None:
+            return session.run(self.data)
         from .session import ThisSession
         return ThisSession.run(self.data)
 
-    def run_on(self, session):
-        pass
-
-    def copy_to(self, host: Host, graph_info: GraphInfo=None) -> 'Tensor':
-        if host == self.host:
+    def copy_to(self, host: Host) -> 'Tensor':
+        if host == self.graph_info.host:
             raise ValueError("Can not copy to original host.")
-        if graph_info is None or graph_info.name is None:
-            name = self.graph_info.name
-        else:
-            name = graph_info.name
-        if graph_info is None:
-            scope = None
-        else:
-            scope = graph_info.scope
-        with self.device_scope(host):
-            with self.variable_scope(scope) as scope:
-                data = tf.get_variable(name, shape=self.data.shape,
-                                       dtype=self.data.dtype,
-                                       collections=[tf.GraphKeys.LOCAL_VARIABLES])
-                data = tf.assign(data, self.data)
-                return Tensor(data, self.data_info, host,
-                              GraphInfo(name,
-                                        scope,
-                                        self.graph_info.is_save))
+        with self.graph_info.variable_scope(host=host) as scope:
+            data = tf.get_variable(name=self.graph_info.name,
+                                   shape=self.data.shape,
+                                   dtype=self.data.dtype,
+                                   collections=[tf.GraphKeys.LOCAL_VARIABLES])
+            return Tensor(tf.assign(data, self.data),
+                          self.data_info,
+                          DistributeGraphInfo(self.graph_info.name, scope,
+                                              self.graph_info.reuse, host))
 
     @classmethod
-    def from_(cls, t: 'Tensor', name='convert'):
-        with self.device_scope():
-            with self.variable_scope():
-                with tf.get_variable_scope(name) as scope:
-                    data = tf.identity(self.data, name=self.graph_info.name)
-                    return cls(data=data, data_info=self.data_info, host=self.host,
-                               graph_info=GraphInfo(self.graph_info.name,
-                                                    scope,
-                                                    self.graph_info.is_save))
+    def from_(cls, t: 'Tensor'):
+        with t.graph_info.variable_scope() as scope:
+            data = tf.identity(t.data, name=t.graph_info.name)
+            return cls(data=data, data_info=t.data_info, graph_info=t.graph_info)
 
 
 class TensorNumpyNDArray(Tensor):
-    def __init__(self, data: np.ndarray, data_info: DataInfo, host: Host, graph_info: GraphInfo):
-        with self.device_scope(host):
+    def process_data(self, data):
+        with self.graph_info.variable_scope():
             data = tf.constant(np.array(data),
-                               name=self._unify_graph_info(graph_info).name)
-            super().__init__(data, data_info, host, graph_info)
+                               name=self.graph_info.name)
+        return data
 
 
 class TensorVariable(Tensor):
-    def __init__(self, shape, dtype, data_info: DataInfo, host: Host, graph_info: GraphInfo):
-        with self.device_scope(host):
-            graph_info = self._unify_graph_info(graph_info)
-            with self.variable_scope(graph_info.scope or ''):
-                data = tf.get_variable(graph_info.name, dtype=dtype, shape=shape,
-                                       initializer=tf.initializers.zeros)
-                super().__init__(data, data_info, host, graph_info)
+    def __init__(self, data_info: DataInfo, graph_info: GraphInfo):
+        super().__init__(None, data_info, graph_info)
 
-
-class BroadcastTensor:
-    """
-    An Tensor collection of broadcasted tensor.
-    """
-    pass
+    def process_data(self, data):
+        with self.graph_info.variable_scope():
+            data = tf.get_variable(self.graph_info.name,
+                                   dtype=self.data_info.dtype,
+                                   shape=self.data_info.shape,
+                                   initializer=tf.initializers.zeros)
+        return data
