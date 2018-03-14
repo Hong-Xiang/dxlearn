@@ -103,7 +103,7 @@ class Graph(ConfigurableWithName):
     def subgraph(self, key):
         return self.subgraphs.get(key)
 
-    def get_or_create_subgraph(self, key, subgraph_maker: Callable[[Graph], Graph]):
+    def get_or_create_subgraph(self, key, subgraph_maker: Callable[['Graph'], 'Graph']):
         """
         Get or create subgraph. Useful when defining graph which is intend to be reused.
 
@@ -120,7 +120,7 @@ class Graph(ConfigurableWithName):
             self.subgraph[key] = subgraph
         return subgraph
 
-    def get_or_create_tensor(self, key, tensor_maker: Callable[[Graph], Graph]):
+    def get_or_create_tensor(self, key, tensor_maker: Callable[['Graph'], Tensor]):
         """
         """
         tensor = self.tensor(key)

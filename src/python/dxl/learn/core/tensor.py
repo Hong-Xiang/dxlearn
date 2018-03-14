@@ -12,10 +12,10 @@ from .graph_info import DistributeGraphInfo, GraphInfo
 
 class DataInfo:
     def __init__(self, info):
-        self.info = cls._unify_data_info(info)
+        self.info = self._unify_data_info(info)
 
     @classmethod
-    def _unify_data_info(cls, data_info: DataInfo):
+    def _unify_data_info(cls, data_info: 'DataInfo'):
         if isinstance(data_info, DataInfo):
             return data_info.info
         return data_info
@@ -59,7 +59,7 @@ class Tensor:
     def copy_to(self, host: Host) -> 'Tensor':
         if host == self.graph_info.host:
             raise ValueError("Can not copy to original host.")
-        with self.graph_info.variable_scope(host=host) as scope:
+        with self.graph_info.variable_scope(reuse=True, host=host) as scope:
             data = tf.get_variable(name=self.graph_info.name,
                                    shape=self.data.shape,
                                    dtype=self.data.dtype,
@@ -85,7 +85,7 @@ class TensorNumpyNDArray(Tensor):
 
 
 class TensorVariable(Tensor):
-    def __init__(self, data_info: DataInfo, graph_info: GraphInfo):
+    def __init__(self, data_info: VariableInfo, graph_info: GraphInfo):
         super().__init__(None, data_info, graph_info)
 
     def process_data(self, data):
