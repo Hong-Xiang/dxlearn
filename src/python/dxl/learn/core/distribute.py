@@ -17,12 +17,20 @@ class Host:
         - `port`: port, optional, if None, __eq__ will return True to host with any port.
         """
         self.job = job
-        self.task = task
+        self.task = int(task)
         self.ip = ip
         self.port = port
 
+    @property
+    def job_name(self):
+        return self.job
+
+    @property
+    def task_index(self):
+        return self.task
+
     def device_prefix(self):
-        return "/job:{}/task:{}".formatm(self.job, self.task)
+        return "/job:{}/task:{}".format(self.job, self.task)
 
     def __eq__(self, h: 'Host'):
         if self.job != h.job or self.task != h.task:
@@ -32,6 +40,28 @@ class Host:
         if self.port is not None and h.port is not None and self.port != h.port:
             return False
         return True
+
+
+class Master:
+    _master_host = None
+
+    @classmethod
+    def set_master(cls, job_name: str=None, task_index: int=None):
+        if job_name is None:
+            job_name = 'master'
+        if task_index is None:
+            task_index = 0
+        if cls._master_host is not None:
+            raise TypeError("Chief is already set.")
+        cls._master_host = Host(job_name, task_index)
+
+    @classmethod
+    def master_host(cls):
+        return cls._master_host
+
+    @classmethod
+    def is_master(cls, host: Host):
+        return host == cls.master_host()
 
 
 class ThisHost:
@@ -50,6 +80,10 @@ class ThisHost:
     def is_me(cls, host: Host):
         return cls.host() == host
 
+    @classmethod
+    def is_master(cls):
+        return Master.is_master(cls.host())
+
 
 class Server:
     _server = None
@@ -62,16 +96,18 @@ class Server:
             raise TypeError("No cluster specification.")
         if ThisHost.host() is None:
             raise TypeError("No ThisHost specification")
-        cls._server = tf.train.Server(Cluster.cluster,
-                                      ThisHost.host.job,
-                                      ThisHost.host.task,
-                                      config=config)
+        job = ThisHost.host().job
+        task_index = ThisHost.host().task
+        cluster = Cluster.cluster()
+        cls._server = tf.train.Server(cluster,
+                                      job_name=job,
+                                      task_index=task_index,)
         return cls._server
 
     @classmethod
     def server(cls):
         return cls._server
-    
+
     @classmethod
     def join(cls):
         if cls._server is None:
@@ -140,7 +176,10 @@ class Cluster:
         return None
 
 
-def make_this_host(cluster_config, job, task, server_config):
+def make_distribute_host(cluster_config, job, task, server_config=None, master_job=None, master_task_index=None):
     Cluster.set_cluster(cluster_config)
     ThisHost.set_host(job, task)
     Server.set_server(server_config)
+    if master_job is not None:
+        Master.set_master(master_job, master_task_index)
+    return ThisHost.host()

@@ -20,7 +20,7 @@ class Configurable(metaclass=ABCMeta):
         """
         Returns config by key. If no config is found, return None when `is_required` is not True.
         """
-        value = self.find_config(key)
+        value = self._find_config(key)
         if is_required and value is None:
             raise KeyError("Key {} not found.".format(key))
         return value
@@ -32,18 +32,13 @@ class Configurable(metaclass=ABCMeta):
 
 class ConfigurableWithName(Configurable):
     def __init__(self, name):
+        super().__init__()
         self.name = name
-
-    def _find_config(self, key):
-        raise NotImplementedError
 
 
 class ConfigurableWithClass(Configurable):
     def __init__(self, cls):
         self.cls = cls
-
-    def _find_config(self, key):
-        raise NotImplementedError
 
 
 class ConfigurableJoint(Configurable):

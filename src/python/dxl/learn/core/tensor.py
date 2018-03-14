@@ -32,14 +32,24 @@ class Tensor:
         self.data_info = data_info
         self.host = host
         self.graph_info = graph_info
+    
+    @property
+    def shape(self):
+        pass
+    
+
+    def run(self):
+        from .session import ThisSession
+        return ThisSession.run(self.data)
 
     def run_on(self, session):
         pass
 
     def copy_to(self, host: Host) -> 'Tensor':
         with tf.device(host.device_prefix()):
-            with tf.get_variable_scope(self.scope) as scope:
-                data = tf.get_variable(name, )(self.data, name=self.name)
+            with tf.get_variable_scope(self.scope):
+                new_name = "{}_{}_{}".format(name, host.job_name, host.task_index)
+                data = tf.get_variable(name, shape=self.shape, )
 
 
 class BroadcastTensor:
