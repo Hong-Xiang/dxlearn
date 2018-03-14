@@ -24,5 +24,6 @@ class TestCluster(unittest.TestCase):
                       "ps1.example.com:2222"]}
         Cluster.set_cluster(cfg)
         self.assertIn(Host('ps', 0, 'ps0.example.com', 2222), Cluster.hosts())
-        
-
+        Cluster._cluster = None
+        Cluster._hosts = None
+        Cluster._cluster_spec = None

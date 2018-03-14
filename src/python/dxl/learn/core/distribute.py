@@ -46,12 +46,16 @@ class ThisHost:
     def host(cls):
         return cls._host
 
+    @classmethod
+    def is_me(cls, host: Host):
+        return cls.host() == host
+
 
 class Server:
     _server = None
 
     @classmethod
-    def set_server(cls, config):
+    def set_server(cls, config=None):
         if cls._server is not None:
             raise TypeError("Server is already constructed.")
         if Cluster.cluster() is None:
@@ -67,12 +71,17 @@ class Server:
     @classmethod
     def server(cls):
         return cls._server
+    
+    @classmethod
+    def join(cls):
+        if cls._server is None:
+            raise TypeError("Server is not constructed yet.")
+        return cls._server.join()
 
 
 class Cluster:
     _cluster_spec = None
     _cluster = None
-    _server = None
     _hosts = None
 
     @classmethod
@@ -129,3 +138,9 @@ class Cluster:
             if h == Host(job, task):
                 return h
         return None
+
+
+def make_this_host(cluster_config, job, task, server_config):
+    Cluster.set_cluster(cluster_config)
+    ThisHost.set_host(job, task)
+    Server.set_server(server_config)
