@@ -13,6 +13,9 @@ class GraphInfo:
     def name(self):
         return self._name
 
+    def set_name(self, name):
+        self._name = name
+
     @contextmanager
     def variable_scope(self, scope=None, reuse=None):
         if scope is None:
@@ -24,16 +27,24 @@ class GraphInfo:
                 yield scope
 
     @classmethod
-    def from_(cls, graph_info: 'GraphInfo', name=None, variable_scope=None, reuse=None, func=None):
+    def from_dict(cls, dct):
+        return cls(**dct)
+
+    @classmethod
+    def from_graph_info(cls, graph_info: 'GraphInfo', name=None, variable_scope=None, reuse=None):
+        return cls.from_dict(graph_info.update_to_dict(name, variable_scope, reuse))
+
+    def update_to_dict(self, name=None, variable_scope=None, reuse=None):
         if name is None:
-            name = graph_info.name
+            name = self.name
         if variable_scope is None:
-            variable_scope = graph_info.scope
+            variable_scope = self.scope
         if reuse is None:
-            reuse = graph_info.reuse
-        if func is None:
-            def func(n, v, r): return cls(n, v, r)
-        return func(name, variable_scope, reuse)
+            reuse = self.reuse
+        return {'name': name, 'variable_scope': variable_scope, 'reuse': reuse}
+
+    def update(self, name=None, variable_scope=None, reuse=None) -> 'GraphInfo':
+        return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
 
 
 class DistributeGraphInfo(GraphInfo):
@@ -58,10 +69,15 @@ class DistributeGraphInfo(GraphInfo):
                 yield scope
 
     @classmethod
-    def from_(cls, graph_info: 'DistributeGraphInfo', name=None, variable_scope=None, reuse=None, host=None, func=None):
-        from functools import partial
+    def from_graph_info(cls, distribute_graph_info: 'DistributeGraphInfo', name=None, variable_scope=None, reuse=None, host=None):
+        return cls.from_dict(distribute_graph_info.update_to_dict(name, variable_scope, reuse, host))
+
+    def update_to_dict(self, name=None, variable_scope=None, reuse=None, host=None):
+        result = super().update_to_dict(name, variable_scope, reuse)
         if host is None:
-            host = graph_info.host
-        if func is None:
-            func = partial(cls, host=host)
-        return super().from_(graph_info, name, variable_scope, reuse, func)
+            host = self.host
+        result.update({'host': host})
+        return result
+
+    def update(self, name=None, variable_scope=None, reuse=None, host=None) -> 'GraphInfo':
+        return self.from_dict(self.update_to_dict(name, variable_scope, reuse, host))

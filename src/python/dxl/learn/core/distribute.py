@@ -99,9 +99,13 @@ class Server:
         job = ThisHost.host().job
         task_index = ThisHost.host().task
         cluster = Cluster.cluster()
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
         cls._server = tf.train.Server(cluster,
                                       job_name=job,
-                                      task_index=task_index,)
+                                      task_index=task_index,
+                                      config=config)
         return cls._server
 
     @classmethod

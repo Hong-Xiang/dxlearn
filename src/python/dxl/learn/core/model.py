@@ -19,7 +19,7 @@ class Model(Graph):
     def __init__(self, name: Path, inputs: Dict[str, Tensor]=None,
                  submodels: Dict[str, 'Model']=None,
                  graph_info: GraphInfo=None):
-        super().__init__(name, tensors=inputs, subgraphs=submodels, host=host)
+        super().__init__(name, tensors=inputs, subgraphs=submodels, graph_info=graph_info)
         self.inputs = {}
         self.outputs = {}
         self.construct(inputs, True)
@@ -29,17 +29,19 @@ class Model(Graph):
         Returns:
             A dict of tensors.
         """
-        self.construct(inputs, False)
+        return self.construct(inputs, False)
 
     def construct(self, inputs, is_create):
+        if inputs is None:
+            inputs = {}
         inputs = self.pre_kernel(inputs, is_create)
         with self.graph_info.variable_scope():
             inputs = self.pre_kernel_in_scope(inputs, is_create)
             results = self.kernel(inputs)
             results = self.post_kernel_in_scope(results, is_create)
-        self.post_kernel(results, is_create)
+        return self.post_kernel(results, is_create)
 
-    def kernel(self, inputs=None):
+    def kernel(self, inputs):
         return {}
 
     def pre_kernel(self, inputs, is_create):
@@ -56,6 +58,8 @@ class Model(Graph):
 
     def post_kernel(self, results, is_create):
         if is_create:
+            if results is None:
+                results = {}
             if isinstance(results, Tensor):
                 results = {self.KEYS.TENSOR.MAIN: results}
             for k, v in results.items():

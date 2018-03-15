@@ -6,6 +6,7 @@ from .graph_info import GraphInfo
 from dxl.fs import Path
 
 
+
 class Graph(ConfigurableWithName):
     """
     Graph is a collection of Tensors and their opeartions.
@@ -143,3 +144,16 @@ class Graph(ConfigurableWithName):
             if k in valid_inputs:
                 feed_dict.update(self.tensor(k), inputs[k])
         return ThisSession.run(feed_dict=feed_dict)
+
+    @classmethod
+    def tensorflow_tensor(cls, t):
+        import tensorflow as tf
+        if isinstance(t, tf.Tensor):
+            return t
+        if isinstance(t, Tensor):
+            return t.data
+        else:
+            raise TypeError(
+                "Can not convert {} to tensorflow_tensor.".format(type(t)))
+    
+

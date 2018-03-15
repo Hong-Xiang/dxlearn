@@ -37,7 +37,10 @@ class Tensor:
     def __init__(self, data: tf.Tensor, data_info: DataInfo, graph_info: GraphInfo):
         self.data_info = data_info
         self.graph_info = graph_info
-        self.data = self.process_data(data)
+        self.data: tf.Tensor = self.process_data(data)
+        if self.graph_info.name is None:
+            self.graph_info.set_name(self.data.name)
+        self._nb_copied = 0
 
     def process_data(self, data):
         return data
@@ -59,14 +62,16 @@ class Tensor:
     def copy_to(self, host: Host) -> 'Tensor':
         if host == self.graph_info.host:
             raise ValueError("Can not copy to original host.")
-        with self.graph_info.variable_scope(reuse=True, host=host) as scope:
-            data = tf.get_variable(name=self.graph_info.name,
+        self._nb_copied += 1
+        name = self.graph_info.name + '_copy_{}'.format(self._nb_copied)
+        with self.graph_info.variable_scope(host=host) as scope:
+            data = tf.get_variable(name=name,
                                    shape=self.data.shape,
                                    dtype=self.data.dtype,
                                    collections=[tf.GraphKeys.LOCAL_VARIABLES])
             return Tensor(tf.assign(data, self.data),
                           self.data_info,
-                          DistributeGraphInfo(self.graph_info.name, scope,
+                          DistributeGraphInfo(name, scope,
                                               self.graph_info.reuse, host))
 
     @classmethod
@@ -95,3 +100,15 @@ class TensorVariable(Tensor):
                                    shape=self.data_info.shape,
                                    initializer=tf.initializers.zeros)
         return data
+
+
+class TensorRaw(Tensor):
+    def __add__(self, t: Tensor):
+        if isinstance(t, Tensor):
+            data = t.data
+        elif isinstance(t, tf.Tensor):
+            data = t
+        else:
+            raise TypeError("Required Tensor or tf.Tensor to add.")
+        result = self.data + data
+        return Tensor(result, self.data_info, self.graph_info.from_dict(self.graph_info.update_to_dict(name=result.name)))
