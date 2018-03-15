@@ -18,6 +18,5 @@ class Summation(Model):
             else:
                 for v in inputs:
                     tf_tensors.append(self.tensorflow_tensor(v))
-            list(map(print, tf_tensors))
             result = tf.add_n(tf_tensors)
             return Tensor(result, None, self.graph_info.update(name=result.name))

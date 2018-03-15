@@ -4,6 +4,7 @@ from .distribute import Host
 from .graph_info import GraphInfo, DistributeGraphInfo
 from typing import Dict
 from dxl.fs import Path
+import tensorflow as tf
 
 
 class Model(Graph):
@@ -15,6 +16,9 @@ class Model(Graph):
 
     Model provide `__call__` method, which make reuse of Model much more easier.
     """
+    class KEYS(Graph.KEYS):
+        class TENSOR(Graph.KEYS.TENSOR):
+            INPUT = 'input'
 
     def __init__(self, name: Path, inputs: Dict[str, Tensor]=None,
                  submodels: Dict[str, 'Model']=None,
@@ -48,6 +52,13 @@ class Model(Graph):
         if is_create:
             for k, v in inputs.items():
                 self.inputs[k] = v
+        if isinstance(inputs, (Tensor, tf.Tensor)):
+            inputs = {self.KEYS.TENSOR.INPUT: inputs}
+        if inputs is not None:
+            if isinstance(inputs, dict):
+                for k in self.inputs:
+                    if not k in inputs:
+                        inputs[k] = self.inputs[k]
         return inputs
 
     def pre_kernel_in_scope(self, inputs, is_create):
@@ -60,8 +71,13 @@ class Model(Graph):
         if is_create:
             if results is None:
                 results = {}
-            if isinstance(results, Tensor):
-                results = {self.KEYS.TENSOR.MAIN: results}
+        if results is None:
+            return results
+        if isinstance(results, (Tensor, tf.Tensor)):
+            results = {self.KEYS.TENSOR.MAIN: results}
+        if is_create:
             for k, v in results.items():
                 self.outputs[k] = v
+        if len(results) == 1 and self.KEYS.TENSOR.MAIN in results:
+            return results[self.KEYS.TENSOR.MAIN]
         return results

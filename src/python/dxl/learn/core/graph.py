@@ -69,7 +69,10 @@ class Graph(ConfigurableWithName):
         self.tensors: Dict[str, Tensor] = tensors
         self.graph_info = graph_info
         if self.graph_info.scope is None:
-            self.graph_info.scope = self.name.n
+            self.graph_info.scope = self.name
+        if self.graph_info.name is None:
+            self.graph_info.name = name
+        
 
     def __hash__(self):
         return hash(self.name)
