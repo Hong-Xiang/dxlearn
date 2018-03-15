@@ -59,26 +59,31 @@ class Tensor:
         from .session import ThisSession
         return ThisSession.run(self.data)
 
-    def copy_to(self, host: Host) -> 'Tensor':
+    def copy_to(self, host: Host, is_return_variable=False) -> 'Tensor':
         if host == self.graph_info.host:
             raise ValueError("Can not copy to original host.")
         self._nb_copied += 1
         name = self.graph_info.name + '_copy_{}'.format(self._nb_copied)
         with self.graph_info.variable_scope(host=host) as scope:
-            data = tf.get_variable(name=name,
-                                   shape=self.data.shape,
-                                   dtype=self.data.dtype,
-                                   collections=[tf.GraphKeys.LOCAL_VARIABLES])
-            return Tensor(tf.assign(data, self.data),
-                          self.data_info,
-                          DistributeGraphInfo(name, scope,
-                                              self.graph_info.reuse, host))
+            if self.data_info is None:
+                info = None
+            else:
+                info = self.data_info.info
+            vi = VariableInfo(info,
+                              self.data.shape, self.data.dtype)
+            variable = TensorVariable(vi,
+                                      self.graph_info.update(name=name, host=host, variable_scope=scope))
+            assigned = variable.assign(self)
+            if is_return_variable:
+                return assigned, variable
+            return assigned
 
     @classmethod
     def from_(cls, t: 'Tensor'):
-        with t.graph_info.variable_scope() as scope:
-            data = tf.identity(t.data, name=t.graph_info.name)
-            return cls(data=data, data_info=t.data_info, graph_info=t.graph_info)
+        # with t.graph_info.variable_scope() as scope:
+        #     data = tf.identity(t.data, name=t.graph_info.name)
+        #     return cls(data=data, data_info=t.data_info, graph_info=t.graph_info.update(name=None))
+        return cls(data=t.data, data_info=t.data_info, graph_info=t.graph_info)
 
 
 class TensorNumpyNDArray(Tensor):
@@ -100,6 +105,11 @@ class TensorVariable(Tensor):
                                    shape=self.data_info.shape,
                                    initializer=tf.initializers.zeros)
         return data
+
+    def assign(self, t: Tensor):
+        with self.graph_info.variable_scope() as scope:
+            data = self.data.assign(t.data)
+            return Tensor(data, DataInfo(self.data_info.info), self.graph_info.update(name=None))
 
 
 class TensorRaw(Tensor):
