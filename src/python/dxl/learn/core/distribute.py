@@ -190,16 +190,21 @@ def make_distribute_host(cluster_config, job, task, server_config=None, master_j
 
 
 class Barrier:
-    def __init__(self, name, worker_hosts, tensors):
+    def __init__(self, name, worker_hosts, tensors=()):
         self.name = name
         self.worker_hosts = worker_hosts
         self.tensors = tensors
-        self.data = self.construct()
+        self.op = self.construct()
 
     def construct(self):
         queue = tf.FIFOQueue(len(self.worker_hosts), tf.bool, [],
                              name=self.name, shared_name=self.name)
-        if ThisHost.host() in worker_hosts:
-            return queue.enqueue(False)
+        if ThisHost.host() in self.worker_hosts:
+            with tf.control_dependencies(self.tensors):
+                return queue.enqueue(False)
         else:
             return queue.dequeue_many(len(self.worker_hosts))
+
+    def run(self):
+        from .session import ThisSession
+        ThisSession.run(self.op)

@@ -2,8 +2,9 @@ import click
 import tensorflow as tf
 from dxl.learn.core import Host, ThisHost, Master, make_distribute_host, Server, ThisSession
 from dxl.learn.core import make_distribute_session, DistributeGraphInfo, VariableInfo
-from dxl.learn.core import TensorNumpyNDArray, Tensor, TensorVariable
+from dxl.learn.core import TensorNumpyNDArray, Tensor, TensorVariable, Barrier
 from dxl.learn.model.on_collections import Summation
+from dxl.learn.tensor.test import TensorTest
 
 import time
 
@@ -14,10 +15,84 @@ class Tests(Enum):
     Basic = 0
     Summation = 1
     Sync = 2
+    AddOne = 3
+    Sync2 = 4
 
 
 def ptensor(t, name=None):
     print("DEBUG, name: {}, t.data: {}, t.run(): {}.".format(name, t.data, t.run()))
+
+
+def main_add_one(job, task):
+    cfg = {"worker": ["localhost:2222",
+                      "localhost:2223"]}
+    make_distribute_host(cfg, job, task, None, 'worker', 0)
+    master_host = Master.master_host()
+    this_host = ThisHost.host()
+    host1 = Host(job, 1)
+    hmi = DistributeGraphInfo(None, None, None, master_host)
+    with tf.variable_scope('scope_test'):
+        t0 = TensorNumpyNDArray([1.0], None,
+                                hmi.update(name='v0'))
+        t1 = TensorTest.from_(t0)
+        t2 = t1.add_one()
+    make_distribute_session()
+    if task == 0:
+        ptensor(t0)
+        ptensor(t1)
+        ptensor(t2)
+        Server.join()
+    if task == 1:
+        ptensor(t0)
+        ptensor(t1)
+        ptensor(t2)
+
+
+def main_sync_2(job, task):
+    cfg = {"master": ["localhost:2221"],
+           "worker": ["localhost:2222",
+                      "localhost:2223"]}
+    make_distribute_host(cfg, job, task, None, 'master', 0)
+    master_host = Master.master_host()
+    this_host = ThisHost.host()
+    hosts = [Host('worker', i) for i in range(2)]
+    hmi = DistributeGraphInfo(None, None, None, master_host)
+    tm = TensorNumpyNDArray([0.0], None,
+                            DistributeGraphInfo.from_graph_info(hmi, name='tm'))
+    t_local_var = []
+    t_local_copied = []
+    for h in hosts:
+        ta, tv = tm.copy_to(h, True)
+        t_local_copied.append(ta)
+        t_local_var.append(tv)
+    t_local_plus = [TensorTest.from_(t) for t in t_local_copied]
+    for i in range(1):
+        t_local_plus = [t.add_one() for t in t_local_plus]
+    t_write_back = []
+    for i in range(len(hosts)):
+        t_write_back.append(t_local_var[i].assign(t_local_plus[i]))
+    t_global_pluses = [t.copy_to(master_host) for t in t_local_var]
+    sm = Summation(name='summation', graph_info=hmi.update(name='summatin'))
+    t_res = sm(t_global_pluses)
+    br = Barrier('barrier', hosts)
+    # ops = tf.FIFOQueue(2, tf.bool, shapes=[],
+                    #    name='barrier', shared_name='barrier')
+    # join = ops.dequeue_many(2)
+    # signal = ops.enqueue(False)
+    make_distribute_session()
+    if ThisHost.host() == master_host:
+        # ThisSession.run(join)
+        # ThisSession.run(br)
+        br.run()
+        ptensor(t_res)
+    else:
+        time.sleep(5)
+        ptensor(t_local_plus[task])
+        ptensor(t_write_back[task])
+        # ThisSession.run(signal)
+        # ThisSession.run(br)
+        br.run()
+    Server.join()
 
 
 def main_sync(job, task):
@@ -35,8 +110,9 @@ def main_sync(job, task):
             time.sleep(1)
         return 0
     # hmi = DistributeGraphInfo(None, None, None, master_host)
-    # tm = TensorNumpyNDArray([1.0], None,
-    #                         DistributeGraphInfo.from_graph_info(hmi, name='t0'))
+    tm = TensorNumpyNDArray([1.0], None,
+                            DistributeGraphInfo.from_graph_info(hmi, name='t0'))
+    tcs = []
     # t0c = tm.copy_to(host0)
     # t1c = tm.copy_to(host1)
     # m_sum = Summation(name='summation', graph_info=DistributeGraphInfo(
@@ -129,13 +205,17 @@ def main_basic(job, task):
 @click.option('--job', '-j', help='Job')
 @click.option('--task', '-t', help='task', type=int, default=0)
 def cli(job, task):
-    test = Tests.Sync
+    test = Tests.Sync2
     if test == Tests.Basic:
         main_basic(job, task)
     if test == Tests.Summation:
         main_summation(job, task)
     if test == Tests.Sync:
         main_sync(job, task)
+    if test == Tests.Sync2:
+        main_sync_2(job, task)
+    if test == Tests.AddOne:
+        main_add_one(job, task)
 
 
 if __name__ == "__main__":
