@@ -1,6 +1,7 @@
 from .distribute import Host
 import tensorflow as tf
 from contextlib import contextmanager
+from dxl.fs import Path
 
 
 class GraphInfo:
@@ -11,6 +12,8 @@ class GraphInfo:
 
     @property
     def name(self):
+        if isinstance(self._name, Path):
+            return self._name.n
         return self._name
 
     def set_name(self, name):
@@ -23,6 +26,8 @@ class GraphInfo:
         if scope is None:
             yield
         else:
+            if isinstance(scope, Path):
+                scope = scope.n
             with tf.variable_scope(scope, reuse=reuse) as scope:
                 yield scope
 

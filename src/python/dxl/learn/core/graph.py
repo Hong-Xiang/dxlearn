@@ -70,8 +70,8 @@ class Graph(ConfigurableWithName):
         self.graph_info = graph_info
         if self.graph_info.scope is None:
             self.graph_info.scope = self.name
-        if self.graph_info.name is None:
-            self.graph_info.name = name
+        if self.graph_info._name is None:
+            self.graph_info._name = name
         
 
     def __hash__(self):

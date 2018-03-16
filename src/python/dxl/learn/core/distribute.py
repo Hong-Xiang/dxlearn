@@ -190,21 +190,41 @@ def make_distribute_host(cluster_config, job, task, server_config=None, master_j
 
 
 class Barrier:
-    def __init__(self, name, worker_hosts, tensors=()):
+    def __init__(self, name, signal_hosts, join_hosts, task_lists=()):
         self.name = name
-        self.worker_hosts = worker_hosts
-        self.tensors = tensors
-        self.op = self.construct()
+        self.signal_hosts = signal_hosts
+        self.join_hosts = join_hosts
+        self.task_lists = task_lists
+        self.signal_ops, self.join_ops = self.construct()
 
     def construct(self):
-        queue = tf.FIFOQueue(len(self.worker_hosts), tf.bool, [],
-                             name=self.name, shared_name=self.name)
-        if ThisHost.host() in self.worker_hosts:
-            with tf.control_dependencies(self.tensors):
-                return queue.enqueue(False)
+        from .utils import map_data
+        nb_signal = len(self.signal_hosts)
+        nb_join = len(self.join_hosts)
+        with tf.name_scope(self.name):
+            queues = []
+            for i, h in enumerate(self.join_hosts):
+                _name = "{}_{}".format(self.name, i)
+                queues.append(tf.FIFOQueue(nb_signal, tf.bool, [],
+                                           name=_name, shared_name=_name))
+        join_ops = [q.dequeue_many(nb_signal) for q in queues]
+        task_lists = [map_data(tl) for tl in self.task_lists]
+        signal_ops = []
+        for tl in task_lists:
+            with tf.control_dependencies(tl):
+                _ops = [q.enqueue(False) for q in queues]
+            with tf.control_dependencies(_ops):
+                signal_ops.append(tf.no_op())
+        return signal_ops, join_ops
+
+    def barrier(self, host):
+        if host in self.signal_hosts:
+            return self.signal_ops[self.signal_hosts.index(host)]
+        elif host in self.join_hosts:
+            return self.join_ops[self.join_hosts.index(host)]
         else:
-            return queue.dequeue_many(len(self.worker_hosts))
+            return tf.no_op()
 
     def run(self):
         from .session import ThisSession
-        ThisSession.run(self.op)
+        ThisSession.run(self.barrier(ThisHost.host()))

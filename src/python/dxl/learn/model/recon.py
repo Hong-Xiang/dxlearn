@@ -62,6 +62,7 @@ class ProjectionSplitter(Model):
             result['slice_{}'.format(i)] = tf.slice(ip,
                                                     [size * i, 0],
                                                     [size, ip_shape[1]])
-        result = {k: Tensor(result[k], None, self.graph_info.update(name=None))
+        ginfo = inputs[self.KEYS.TENSOR.INPUT].graph_info
+        result = {k: Tensor(result[k], None, ginfo.update(name=ginfo.name + '_{}'.format(k)))
                   for k in result}
         return result
