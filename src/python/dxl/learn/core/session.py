@@ -23,7 +23,7 @@ class SessionBase(ConfigurableWithName, metaclass=ABCMeta):
 
     def get_session_config(self):
         config = tf.ConfigProto()
-        if self.config(self.KEYS.CONFIG.IS_ALLOW_GROWTH):
+        if self.config(self.KEYS.CONFIG.IS_ALLOW_GROWTH) or self.config(self.KEYS.CONFIG.IS_ALLOW_GROWTH) is None:
             config.gpu_options.allow_growth = True
         if self.config(self.KEYS.CONFIG.IS_LOG_DEVICE_PLACEMENT):
             config.log_device_placement = True

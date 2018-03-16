@@ -1,5 +1,6 @@
 from typing import Iterable
 from abc import ABCMeta, abstractmethod
+from dxl.fs import Path
 
 
 class DefaultConfig:
@@ -31,9 +32,9 @@ class Configurable(metaclass=ABCMeta):
 
 
 class ConfigurableWithName(Configurable):
-    def __init__(self, name):
+    def __init__(self, name: Path):
         super().__init__()
-        self.name = name
+        self.name = Path(name)
 
 
 class ConfigurableWithClass(Configurable):

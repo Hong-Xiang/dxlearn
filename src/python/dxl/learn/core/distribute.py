@@ -99,9 +99,13 @@ class Server:
         job = ThisHost.host().job
         task_index = ThisHost.host().task
         cluster = Cluster.cluster()
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
         cls._server = tf.train.Server(cluster,
                                       job_name=job,
-                                      task_index=task_index,)
+                                      task_index=task_index,
+                                      config=config)
         return cls._server
 
     @classmethod
@@ -183,3 +187,44 @@ def make_distribute_host(cluster_config, job, task, server_config=None, master_j
     if master_job is not None:
         Master.set_master(master_job, master_task_index)
     return ThisHost.host()
+
+
+class Barrier:
+    def __init__(self, name, signal_hosts, join_hosts, task_lists=()):
+        self.name = name
+        self.signal_hosts = signal_hosts
+        self.join_hosts = join_hosts
+        self.task_lists = task_lists
+        self.signal_ops, self.join_ops = self.construct()
+
+    def construct(self):
+        from .utils import map_data
+        nb_signal = len(self.signal_hosts)
+        nb_join = len(self.join_hosts)
+        with tf.name_scope(self.name):
+            queues = []
+            for i, h in enumerate(self.join_hosts):
+                _name = "{}_{}".format(self.name, i)
+                queues.append(tf.FIFOQueue(nb_signal, tf.bool, [],
+                                           name=_name, shared_name=_name))
+        join_ops = [q.dequeue_many(nb_signal) for q in queues]
+        task_lists = [map_data(tl) for tl in self.task_lists]
+        signal_ops = []
+        for tl in task_lists:
+            with tf.control_dependencies(tl):
+                _ops = [q.enqueue(False) for q in queues]
+            with tf.control_dependencies(_ops):
+                signal_ops.append(tf.no_op())
+        return signal_ops, join_ops
+
+    def barrier(self, host):
+        if host in self.signal_hosts:
+            return self.signal_ops[self.signal_hosts.index(host)]
+        elif host in self.join_hosts:
+            return self.join_ops[self.join_hosts.index(host)]
+        else:
+            return tf.no_op()
+
+    def run(self):
+        from .session import ThisSession
+        ThisSession.run(self.barrier(ThisHost.host()))
