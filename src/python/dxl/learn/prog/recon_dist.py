@@ -147,11 +147,7 @@ def main(job, task):
     print('|DEBUG| Make Graph done.')
     
     init_run(m_op_init, w_ops_init, global_graph, local_graphs)
-    recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
-    ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X_BUFFER)[0])
-    ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X_BUFFER)[1])
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
-    ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.EFFICIENCY_MAP))
 
     # time.sleep(5)
     # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
