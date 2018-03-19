@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 setup(name='dxl-learn',
-      version='0.0.3',
+      version='0.0.4',
       description='Machine learn library.',
       url='https://github.com/Hong-Xiang/dxlearn',
       author='Hong Xiang',
@@ -8,5 +8,5 @@ setup(name='dxl-learn',
       license='MIT',
       packages=['dxl.learn'],
       package_dir={'': 'src/python'},
-      install_requires=[],
+      install_requires=['dxl-fs', 'click'],
       zip_safe=False)
