@@ -1,4 +1,17 @@
 import numpy as np
+from scanner import Block
+
+def make_lors(blockpairs):
+    lors = []
+    for ibp in blockpairs:
+        b0 = ibp[0]
+        b1 = ibp[1]
+        m0 = b1.meshes()
+        m1 = b2.meshes()
+        lors.append(list(itertools.product(m0, m1)))
+    return lors
+
+
 def partition_lors(lors: np.ndarray):
     """
     patition the input lors into three np.array
