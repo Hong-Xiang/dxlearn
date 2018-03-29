@@ -117,4 +117,8 @@ ENV/
 .mypy_cache/
 
 # develop test files
-develop-cgy/
+*.npy
+*.png
+develop-cgy/graph
+*.txt
+*.ls
