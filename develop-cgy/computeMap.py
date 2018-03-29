@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
-# op = tf.load_op_library(
-    # '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
-sop = tf.load_op_library(
-    '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/siddon_gpu.so')
-
-op = sop
+op = tf.load_op_library(
+    '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
+# sop = tf.load_op_library(
+    # '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/siddon_gpu.so')
+sop = op
+# op = sop
 
 sp  = sop.projection_gpu
 sbp = sop.backprojection_gpu
@@ -23,9 +23,9 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     imgz = tf.zeros(grid[::-1], tf.float32)
     imgx = tf.transpose(imgz, perm=[2, 0, 1])
     imgy = tf.transpose(imgz, perm=[1, 0, 2])
-    xlors = tf.constant(xlors, tf.float32)
-    ylors = tf.constant(ylors, tf.float32)
-    zlors = tf.constant(zlors, tf.float32)
+    xlors0 = tf.constant(xlors, tf.float32)
+    ylors0 = tf.constant(ylors, tf.float32)
+    zlors0 = tf.constant(zlors, tf.float32)
     # grid = inputs[self.KEYS.TENSOR.GRID].data
     # center = inputs[self.KEYS.TENSOR.CENTER].data
     # size = inputs[self.KEYS.TENSOR.SIZE].data
@@ -34,9 +34,9 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     # zlors = inputs[self.KEYS.TENSOR.LORS_Z].data
 
     # lors tranposed
-    xlors = tf.transpose(xlors)
-    ylors = tf.transpose(ylors)
-    zlors = tf.transpose(zlors)
+    xlors = tf.transpose(xlors0)
+    ylors = tf.transpose(ylors0)
+    zlors = tf.transpose(zlors0)
 
     xproj = tf.ones(xlors.shape.as_list()[1], 1)
     yproj = tf.ones(ylors.shape.as_list()[1], 1)
@@ -80,27 +80,30 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     bpyt = tf.transpose(bpy, perm=[1, 0, 2])
 
     # result = bpxt + bpyt + bpz
-    result = bpxt + bpyt
+    result = bpxt + bpyt + bpz
+    # result = bpxt 
     result = tf.transpose(result)
-
+    # return result
     with tf.Session() as sess:
         return sess.run(result)
+    # return result, xlors0, ylors0, zlors0
     # result = imgz / (effmap+1e-8) * bpz
     # return Tensor(result, None, self.graph_info.update(name=None))
 
 
 def siddonMap(grid, size, origin, lors):
+    pass
     # grid = grid[::-1]
     # origin = origin[::-1]
     # size = size[::-1]
-    lors = tf.constant(lors, tf.float32)
-    proj = tf.ones(lors.shape.as_list()[0], 1)
-    img = tf.zeros(grid, tf.float32)
-    result = sbp(model = 'siddon', image=img, grid=grid, origin=origin, size=size,
-                            lors=lors, lor_values=proj,
-                            tof_bin = 1e-15, time_resolution=2)
-    # result = tf.transpose(result)
+    # lors = tf.constant(lors, tf.float32)
+    # proj = tf.ones(lors.shape.as_list()[0], 1)
+    # img = tf.zeros(grid, tf.float32)
+    # result = sbp(model = 'siddon', image=img, grid=grid, origin=origin, size=size,
+    #                         lors=lors, lor_values=proj,
+    #                         tof_bin = 1e-15, time_resolution=2)
+    # # result = tf.transpose(result)
 
-    with tf.Session() as sess:
-        return sess.run(result)
+    # with tf.Session() as sess:
+    #     return sess.run(result)
 

@@ -129,10 +129,8 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
                             //  inter_x * (index0 ) + l_bound,
                             //  inter_y * (index1 ) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                if (projection_value < 1e-5)
-                    image_data[offset + index] += 0.0;
-                else
-                    image_data[offset + index] += value / projection_value;
+                if (projection_value > 1e-5)
+                    atomicAdd(image_data + offset + index, value / projection_value);
             }
         }
     }
@@ -179,6 +177,7 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
                                 const int gx, const int gy, const float inter_x, const float inter_y,
                                 const float *projection_value, const int num_events, float *image)
 {
+    int cloop = 0;
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
@@ -186,14 +185,17 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
         //std::cout<<"events dims:"<<events.dim_size(0)<<", "<<events.dim_size(1)<<std::endl;
         //debug
         //std::cout<<"event:"<<event.IsAligned()<<std::endl;
+        cloop ++;
         float dcos_x = 0;
         float dcos_y = 0;
         float cross_x = 0;
         float cross_y = 0;
+        // printf("tid %d of %d loop. bdim: %d, gdim: %d, tid: %d, bid: %d\n", tid, cloop, blockDim.x, gridDim.x, threadIdx.x, blockIdx.x);
         if (CalculateCrossPoint(x1[tid], y1[tid], z1[tid],
                                 x2[tid], y2[tid], z2[tid],
                                 slice_z, dcos_x, dcos_y, cross_x, cross_y))
         {
+            // printf("CROSS OF %d: (%f, %f)\n", tid, cross_x, cross_y);
             BackLoopPatch(patch_size, offset,
                       inter_x, inter_y, cross_x, cross_y,
                       sigma2, dcos_x, dcos_y,
@@ -298,9 +300,10 @@ void backprojection(const float *x1, const float *y1, const float *z1,
         int offset = iSlice * slice_mesh_num;
         // int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
+        std::cout << "DEBUG INFO!!!!!  " << iSlice << std::endl;
         // std :: cout << "slice_z" << slice_z << std::endl;
         // float cross_x, cross_y;
-        BackComputeSlice<<<32, 512>>>(x1, y1, z1, x2, y2, z2,
+        BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
                                       patch_size, offset, slice_z,
                                       l_bound, b_bound, sigma2,
                                       gx, gy, inter_x, inter_y,
