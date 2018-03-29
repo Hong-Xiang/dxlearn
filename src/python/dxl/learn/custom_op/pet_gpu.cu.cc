@@ -1,3 +1,4 @@
+#define GOOGLE_CUDA 1
 #if GOOGLE_CUDA
 #define EIGEN_USE_GPU
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
@@ -31,7 +32,7 @@ __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
     // float pos2_x = event_flat(3), pos2_y = event_flat(4), pos2_z = event_flat(5);
     float d0 = pos2_x - pos1_x, d1 = pos2_y - pos1_y, d2 = pos2_z - pos1_z;
     float ratio = (s_center - pos1_z) / d2;
-    if (ratio < 0 || ratio > 1)
+    if (ratio < 0.0 || ratio > 1.0)
         return false;
     //the x and y value of cross point.
     cross_x = pos1_x + d0 * ratio;
@@ -54,7 +55,7 @@ __device__ void CalculateSMV(const float cross_x, const float cross_y,
     float delta_y = cross_y - mesh_y;
     float r_cos = (delta_x * dcos_x + delta_y * dcos_y);
     float d2 = delta_x * delta_x + delta_y * delta_y - r_cos * r_cos;
-    value = (d2 < 9 * sigma2) ? std::exp(-0.5 * d2 / sigma2) : 0;
+    value = (d2 < 9.0 * sigma2) ? std::exp(-0.5 * d2 / sigma2) : 0.0;
 }
 
 __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
@@ -83,7 +84,7 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
             else
             {
                 int index = index0 + index1 * l0;
-                float value = 0;
+                float value = 0.0;
                 // compute the system matrix value.
                 CalculateSMV(cross_x, cross_y,
                              inter_x * (index0 + 0.5) + l_bound,
@@ -103,8 +104,10 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
                               const float l_bound, const float b_bound, const int l0, const int l1,
                               const float projection_value, float *image_data)
 {
-    int index_x = (int)((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
-    int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
+    // int index_x = (int)((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
+    // int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
+    int index_x = (int)((cross_x - l_bound) / inter_x ) - (int)(patch_size / 2 );
+    int index_y = (int)((cross_y - b_bound) / inter_y ) - (int)(patch_size / 2 );
     for (int j = 0; j < patch_size; j++)
     {
         for (int i = 0; i < patch_size; i++)
@@ -118,14 +121,16 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
             else
             {
                 int index = index0 + index1 * l0;
-                float value = 0;
+                float value = 0.0;
                 // compute the system matrix value.
                 CalculateSMV(cross_x, cross_y,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
+                            //  inter_x * (index0 ) + l_bound,
+                            //  inter_y * (index1 ) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
                 if (projection_value < 1e-5)
-                    image_data[offset + index] += 0;
+                    image_data[offset + index] += 0.0;
                 else
                     image_data[offset + index] += value / projection_value;
             }
@@ -224,10 +229,13 @@ void projection(const float *x1, const float *y1, const float *z1,
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
 
-    float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
+    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
+
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+
+    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
@@ -272,10 +280,14 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
 
-    float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
+    // float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
+    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
+    std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
+    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1 + 5;
+    std :: cout << "PATHC SIZE " << patch_size << std::endl;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
@@ -284,7 +296,9 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
         int offset = iSlice * slice_mesh_num;
-        int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
+        // int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
+        float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
+        // std :: cout << "slice_z" << slice_z << std::endl;
         // float cross_x, cross_y;
         BackComputeSlice<<<32, 512>>>(x1, y1, z1, x2, y2, z2,
                                       patch_size, offset, slice_z,
