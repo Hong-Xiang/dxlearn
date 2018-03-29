@@ -8,5 +8,5 @@ setup(name='dxl-learn',
       license='MIT',
       packages=['dxl.learn'],
       package_dir={'': 'src/python'},
-      install_requires=['dxl-fs', 'click'],
+      install_requires=['dxl-fs', 'click', 'dxl-shape'],
       zip_safe=False)
