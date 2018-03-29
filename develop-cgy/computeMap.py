@@ -1,14 +1,14 @@
 import tensorflow as tf
 import numpy as np
 op = tf.load_op_library(
-    '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
+    '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 # sop = tf.load_op_library(
     # '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/siddon_gpu.so')
-sop = op
+
 # op = sop
 
-sp  = sop.projection_gpu
-sbp = sop.backprojection_gpu
+# sp  = sop.projection_gpu
+# sbp = sop.backprojection_gpu
 
 
 projection = op.projection_gpu
@@ -43,8 +43,13 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     zproj = tf.ones(zlors.shape.as_list()[1], 1)
 
     model = 'tor'
+<<<<<<< HEAD
     # kernel_width = np.sqrt(6.8 * 6.8 / np.pi)
     kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
+=======
+    kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
+    # kernel_width = np.sqrt(20 * 20 / np.pi)
+>>>>>>> master
 
     bpz = backprojection(image=imgz, grid=grid, lors=zlors,
                          center=center, size=size, line_integral=zproj,  kernel_width=kernel_width, model=model)
@@ -79,14 +84,15 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
                          center=centery, size=sizey, line_integral=yproj,  kernel_width=kernel_width, model=model)
     bpyt = tf.transpose(bpy, perm=[1, 0, 2])
 
-    # result = bpxt + bpyt + bpz
     result = bpxt + bpyt + bpz
-    # result = bpxt 
+    # result = bpxt + bpyt
     result = tf.transpose(result)
-    # return result
-    with tf.Session() as sess:
-        return sess.run(result)
-    # return result, xlors0, ylors0, zlors0
+    config = tf.ConfigProto()    
+    config.gpu_options.allow_growth = True    
+    with tf.Session(config=config) as sess:
+        result = sess.run(result)
+    tf.reset_default_graph()
+    return result
     # result = imgz / (effmap+1e-8) * bpz
     # return Tensor(result, None, self.graph_info.update(name=None))
 

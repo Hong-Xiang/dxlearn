@@ -235,7 +235,7 @@ def main(job, task):
 
 
 @click.command()
-@click.option('--job', '-j', help = 'Job')
+@click.option('--job', '-j', help = 'Job', )
 @click.option('--task', '-t', help = 'task', type = int, default = 0)
 def cli(job, task):
     main(job, task)
