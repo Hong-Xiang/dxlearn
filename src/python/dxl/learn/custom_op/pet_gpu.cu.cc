@@ -63,7 +63,7 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
                           const float cross_x, const float cross_y,
                           const float sigma2, const float dcos_x, const float dcos_y,
                           const float l_bound, const float b_bound, const int l0, const int l1,
-                          float &projection_value, const float *image_data)
+                          float *projection_value, const float *image_data)
 {
     // auto image_flat = image.flat<float>();
     // int l0 = image.dim_size(0);
@@ -90,7 +90,7 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                projection_value += image_data[offset + index] * value;
+                atomicAdd(projection_value, image_data[offset + index] * value);
             }
         }
     }
@@ -164,7 +164,7 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                       inter_x, inter_y, cross_x, cross_y,
                       sigma2, dcos_x, dcos_y,
                       l_bound, b_bound, gx, gy,
-                      projection_value[tid], image);
+                      projection_value + tid, image);
         }
     }
 }
@@ -177,7 +177,7 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
                                 const int gx, const int gy, const float inter_x, const float inter_y,
                                 const float *projection_value, const int num_events, float *image)
 {
-    int cloop = 0;
+    // int cloop = 0;
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
@@ -185,7 +185,7 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
         //std::cout<<"events dims:"<<events.dim_size(0)<<", "<<events.dim_size(1)<<std::endl;
         //debug
         //std::cout<<"event:"<<event.IsAligned()<<std::endl;
-        cloop ++;
+        // cloop ++;
         float dcos_x = 0;
         float dcos_y = 0;
         float cross_x = 0;
@@ -235,9 +235,9 @@ void projection(const float *x1, const float *y1, const float *z1,
 
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
 
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
@@ -247,7 +247,7 @@ void projection(const float *x1, const float *y1, const float *z1,
         int offset = iSlice * slice_mesh_num;
         int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         // float cross_x, cross_y;
-        ComputeSlice<<<32, 512>>>(x1, y1, z1, x2, y2, z2,
+        ComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
                                   patch_size, offset, slice_z,
                                   l_bound, b_bound, sigma2,
                                   gx, gy, inter_x, inter_y,
@@ -284,23 +284,23 @@ void backprojection(const float *x1, const float *y1, const float *z1,
 
     // float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
     float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
-    std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
+    // std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
     // int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1 + 5;
-    std :: cout << "PATHC SIZE " << patch_size << std::endl;
+    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1 ;
+    // std :: cout << "PATHC SIZE " << patch_size << std::endl;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
-    std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
+    // std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
         int offset = iSlice * slice_mesh_num;
         // int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
-        std::cout << "DEBUG INFO!!!!!  " << iSlice << std::endl;
+        // std::cout << "DEBUG INFO!!!!!  " << iSlice << std::endl;
         // std :: cout << "slice_z" << slice_z << std::endl;
         // float cross_x, cross_y;
         BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,

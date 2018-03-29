@@ -236,11 +236,11 @@ def make_lors(block_pairs):
     return np.array(lors).reshape(-1, 6)
 
 
-def make_maps(ring_num, end):
+def make_maps(start, end):
     rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
     r1 = rpet.rings(0)
     total_time = 0
-    for ir in range(ring_num, end):
+    for ir in range(start, end):
         print("start compute the {} th map.".format(ir))
         st = time.time()
         # ir = 6
@@ -275,10 +275,10 @@ def make_maps(ring_num, end):
         print("{} th map use: {} seconds".format(ir, tdiff))
         total_time += tdiff
         print("total time: {} seconds".format(total_time))
-        print("time remain: {} seconds".format(total_time/(ir + 1)*(rpet.num_rings - ir - 1)))
+        print("time remain: {} seconds".format(total_time/(ir-start + 1)*(end - ir - 1)))
         
 
-def main(ring_num, end):
+def main(start, end):
     # # rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
     # rpet = RingPET(400.0, 420.0, 0.0, 320, 4, Vec3(20, 160, 3.4), Vec3(1, 1, 1))
     # r1 = rpet.rings(num = 160)
@@ -318,18 +318,18 @@ def main(ring_num, end):
     # tdiff = et-st
     # print(effmap)
     # print("the total time: {} seconds".format(tdiff))
-    make_maps(ring_num, end)
+    make_maps(start, end)
 
 @click.command()
-@click.option('--ring_num', '-r', help = 'start ring', type = int)
-@click.option('--end',      '-e', help = 'end ring', type = int)
+@click.option('--start', '-s', help = 'start ring', type = int)
+@click.option('--end',   '-e', help = 'end ring', type = int)
 # @click.option('--task', '-t', help = 'task', type = int, default = 0)
-def cli(ring_num, end):
-    main(ring_num, end)
+def cli(start, end):
+    main(start, end)
 
 if __name__ == "__main__":
     cli()
 
 
-if __name__ == "__main__":
-  test_tor_map()
+# if __name__ == "__main__":
+#   test_tor_map()
