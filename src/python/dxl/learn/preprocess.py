@@ -1,4 +1,17 @@
 import numpy as np
+# from scanner import Block
+
+# def make_lors(blockpairs):
+#     lors = []
+#     for ibp in blockpairs:
+#         b0 = ibp[0]
+#         b1 = ibp[1]
+#         m0 = b1.meshes()
+#         m1 = b2.meshes()
+#         lors.append(list(itertools.product(m0, m1)))
+#     return lors
+
+
 def partition_lors(lors: np.ndarray):
     """
     patition the input lors into three np.array
@@ -15,10 +28,16 @@ def partition_lors(lors: np.ndarray):
     x_d = diff[:, 0]
     y_d = diff[:, 1]
     z_d = diff[:, 2]
-    xlors = lors[np.array([np.intersect1d(np.where(x_d > y_d),
-                                          np.where(x_d > z_d))])].reshape((-1, dim_size1))
+    # x_mask = np.logical_and(x_d >= y_d,x_d >= z_d)
+    # y_mask = np.logical_and(np.logical_and(x_d < y_d,y_d >= z_d), np.logical_not(x_mask))
+    # z_mask = np.logical_not(np.logical_or(x_mask, y_mask))
+    # xlors = lors[x_mask, :]
+    # ylors = lors[y_mask, :]
+    # zlors = lors[z_mask, :]
+    xlors = lors[np.array([np.intersect1d(np.where(x_d >= y_d),
+                                          np.where(x_d >= z_d))])].reshape((-1, dim_size1))
     ylors = lors[np.array([np.intersect1d(np.where(y_d > x_d),
-                                          np.where(y_d > z_d))])].reshape((-1, dim_size1))
+                                          np.where(y_d >= z_d))])].reshape((-1, dim_size1))
     zlors = lors[np.array([np.intersect1d(np.where(z_d > x_d),
                                           np.where(z_d > y_d))])].reshape((-1, dim_size1))
     return xlors, ylors, zlors

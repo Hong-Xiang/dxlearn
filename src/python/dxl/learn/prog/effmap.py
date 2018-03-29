@@ -10,14 +10,14 @@ from typing import Iterable
 import pdb
 import time
 
-from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
-from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
+from dxl.learn.model.tor_recon import BackProjection, ReconStep, ProjectionSplitter, EfficiencyMap
+from dxl.learn.graph.effmap import GlobalGraph, LocalGraph
 
 from dxl.learn.preprocess import preprocess
 
 import time
 
-NB_WORKERS = 4
+NB_WORKERS = 2
 
 def ptensor(t, name=None):
     print("|DEBUG| name: {} | data: {} | run() {} |.".format(name, t.data, t.run()))
@@ -38,18 +38,18 @@ def dist_init(job, task):
 
 
 def init_global(hmi):
-    root = './'
+    root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
 
     # load the effciency map
     effmap = np.load(root + 'map.npy')
     # load the lors from file
     lors = np.load(root + 'lors.npy')
-    lors = lors[:, :6]
+    lors = lors[:int(1e6), :6]
     xlors, ylors, zlors = preprocess(lors) 
     xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
     ylors = ylors[:, [0, 2, 1, 3, 5, 4]]
     # intialize the image to be reconstructed
-    x_value = (lors.shape)[0]/effmap.size
+    x_value = 0
     x = np.ones(effmap.shape)*x_value
     grid = np.array([150, 150, 150], dtype = np.int32)
     center = np.array([0., 0., 0.], dtype = np.float32)
@@ -60,7 +60,7 @@ def init_global(hmi):
     # y = np.matmul(system_matrix, x).astype(np.float32)
     # x = np.ones(x.shape)
     # effmap = np.matmul(system_matrix.T, np.ones(y.shape)).astype(np.float32)
-    gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
+    gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, hmi)
     return gg
 
 
@@ -69,11 +69,11 @@ def init_local(global_graph: GlobalGraph, hosts):
     result = [global_graph.copy_to_local(h) for h in hosts]
     return result
 
-def make_recon_local(global_graph, local_graphs):
+def make_backproj_local(global_graph, local_graphs):
     for g in local_graphs:
         g.copy_to_global(global_graph)
-        g.recon_local()
-    global_graph.x_update_by_merge()
+        g.backproj_local()
+    # global_graph.x_update_by_merge()
 
 
 def get_my_local_graph(local_graphs: Iterable[LocalGraph]):
@@ -159,7 +159,7 @@ def main(job, task):
     
 
     m_op_init, w_ops_init = global_graph.init_op(local_graphs)
-    make_recon_local(global_graph, local_graphs)
+    make_backproj_local(global_graph, local_graphs)
     m_op_rec, w_ops_rec = global_graph.recon_step(local_graphs, hosts)
     m_op, w_ops = global_graph.merge_step(m_op_rec, w_ops_rec, hosts)
     # global_tensors = {'x': x_t, 'y': y_t, 'sm': sm_t, 'em': e_t}
@@ -168,11 +168,7 @@ def main(job, task):
     # gop, l_ops = recon_step(update_global, x_g2l, x_l, y_l, sm_l, em_l, hosts)
     # init_op = make_init_op(g2l_init, hosts)
 
-
     make_distribute_session()
-
-
-
 
     tf.summary.FileWriter('./graph', ThisSession.session().graph)
     print('|DEBUG| Make Graph done.')
@@ -189,9 +185,9 @@ def main(job, task):
         delta_time = end_time - start_time
         msg = "the step running time is:{}".format(delta_time/(i+1))
         print(msg)
-        if ThisHost.is_master(): 
-            res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-            np.save('./gpu_all/recon_{}.npy'.format(i), res)
+        if ThisHost.is_master():
+            res = global_graph.tensor(global_graph.KEYS.TENSOR.X_UPDATE).run()
+            np.save('./debug/recon_{}.npy'.format(i), res)
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)
