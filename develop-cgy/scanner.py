@@ -237,9 +237,9 @@ def make_lors(block_pairs):
 
 
 def test_tor_map():
-  # rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
-  rpet = RingPET(400.0, 400.0, 0.0, 400, 4, Vec3(20, 160, 4), Vec3(1, 16, 1))
-  r1 = rpet.rings(num=215)
+  rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
+  # rpet = RingPET(400.0, 400.0, 0.0, 400, 20, Vec3(20, 160, 4), Vec3(1, 16, 1))
+  r1 = rpet.rings(num=0)
   r2 = rpet.rings(num=216 + 50)
   bs = make_block_pairs([
       r1,
@@ -249,11 +249,11 @@ def test_tor_map():
   nb_lors = len(lors)
   # np.save('./debug/lors_{}.npy'.format(nb_lors), lors)
   print('[INFO :: DXL.LEARN] Number of lors:', len(lors))
-  grid = [160, 240, 320]
+  grid = [160, 160, 440]
   center = [0., 0., 0.]
   # size = [544.*2., 544.*3., 544.*4.]
-  size = [1120., 1680., 2240.]
-  volsize = [7., 7., 7.]
+  size = [544., 544., 1496.]
+  # volsize = [7., 7., 7.]
 
   def kernel(lors):
     # exit()
@@ -270,9 +270,9 @@ def test_tor_map():
     return computeMap(grid, center, size, xlors, ylors, zlors)
 
   st = time.time()
-  stack_shape = [nb_lors] + grid[:-1]
-  print(stack_shape)
-  result = np.zeros(stack_shape)
+  # stack_shape = [nb_lors] + grid[:-1]
+  # print(stack_shape)
+  # result = np.zeros(stack_shape)
   # import tensorflow as tf  
   start_time_it = time.time()
   # with tf.Session() as sess:
