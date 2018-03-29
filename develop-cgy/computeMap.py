@@ -43,8 +43,13 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     zproj = tf.ones(zlors.shape.as_list()[1], 1)
 
     model = 'tor'
+<<<<<<< HEAD
+    # kernel_width = np.sqrt(6.8 * 6.8 / np.pi)
+    kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
+=======
     kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
     # kernel_width = np.sqrt(20 * 20 / np.pi)
+>>>>>>> master
 
     bpz = backprojection(image=imgz, grid=grid, lors=zlors,
                          center=center, size=size, line_integral=zproj,  kernel_width=kernel_width, model=model)
