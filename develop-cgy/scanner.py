@@ -226,6 +226,7 @@ def make_block_pairs(block_list):
 
 def make_lors(block_pairs):
 <<<<<<< HEAD
+<<<<<<< HEAD
   lors = []
   # print((block_pairs))
   for ibp in block_pairs:
@@ -338,6 +339,8 @@ def test_siddon_map():
   print("the total time: {} seconds".format(tdiff))
 
 =======
+=======
+>>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
     lors = []
     # print((block_pairs))
     for ibp in block_pairs:
@@ -439,7 +442,10 @@ def main(start, end):
 # @click.option('--task', '-t', help = 'task', type = int, default = 0)
 def cli(start, end):
     main(start, end)
+<<<<<<< HEAD
 >>>>>>> master
+=======
+>>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
 
 if __name__ == "__main__":
     cli()
