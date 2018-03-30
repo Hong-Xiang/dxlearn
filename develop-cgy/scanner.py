@@ -167,6 +167,13 @@ class RingPET():
     # print(len(rings))
     return rings
 
+  def wash_lors(self, lors):
+    """
+    to process the list mode data with specific DOI information
+    """
+    
+    pass
+
   # def _make_blocks(self):
   #     num_rings = self.num_rings
   #     num_blocks = self.num_blocks
@@ -235,9 +242,9 @@ def make_lors(block_pairs):
         lors.append(list(itertools.product(m0, m1)))
     return np.array(lors).reshape(-1, 6)
 
-
 def make_maps(start, end):
-    rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
+    # rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
+    rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
     r1 = rpet.rings(0)
     total_time = 0
     for ir in range(start, end):
@@ -251,9 +258,9 @@ def make_maps(start, end):
         xlors, ylors, zlors = preprocess(lors)  
         xlors = xlors[:, [1, 2, 0, 4, 5, 3]] # y z x
         ylors = ylors[:, [0, 2, 1, 3, 5, 4]] # x z y
-        grid = [160, 160, 440]  
+        grid = [195, 195, 540]  
         center = [0., 0., 0.]
-        size = [544., 544., 1496.]
+        size = [666.9, 666.9, 1846.8]
         et = time.time()
         # subnum = 3
         # xsub = xlors.shape[0]//3
@@ -269,7 +276,7 @@ def make_maps(start, end):
         #     effmap.append(computeMap(grid, center, size, subxlors[isub], subylors[isub], subzlors[isub]))
         # summap = effmap[0] + effmap[1] +effmap[2]
         effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-        np.save('./maps/effmap_{}.npy'.format(ir), effmap)
+        np.save('./maps2/effmap_{}.npy'.format(ir), effmap)
         et = time.time()
         tdiff = et-st
         print("{} th map use: {} seconds".format(ir, tdiff))
@@ -277,47 +284,29 @@ def make_maps(start, end):
         print("total time: {} seconds".format(total_time))
         print("time remain: {} seconds".format(total_time/(ir-start + 1)*(end - ir - 1)))
         
+def merge_effmap(num_rings, file_dir):
+  """
+  to do: implemented in GPU to reduce the calculated time
+  """
+  temp = np.load(file_dir+'effmap_{}.npy'.format(0))
+  final_map = np.zeros(temp.shape)
+  print(final_map.shape)
+  st = time.time()
+  for ir in range(num_rings):
+    temp = np.load(file_dir+'effmap_{}.npy'.format(ir))
+    print("process :{}/{}".format(ir+1, num_rings))
+    for jr in range(num_rings - ir):
+      if ir == 0:
+        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]/2
+      else:
+        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]
+    et = time.time()
+    tr = (et -st)/(num_rings*(num_rings-1)/2 - (num_rings - ir - 1)*(num_rings-ir-2)/2)*((num_rings - ir-1)*(num_rings-ir-2)/2)
+    print("estimated time remains: {} seconds".format(tr))
+  np.save(file_dir+'summap.npy', final_map)
 
-def main(start, end):
-    # # rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
-    # rpet = RingPET(400.0, 420.0, 0.0, 320, 4, Vec3(20, 160, 3.4), Vec3(1, 1, 1))
-    # r1 = rpet.rings(num = 160)
-    # r2 = rpet.rings(num = 216+50)
-    # # print(len(r1))
-    # # print(r2)
-    # bs = make_block_pairs([r1,])
-    # # print(len(bs))
-    # lors = make_lors(bs)
-    # # print(lors)
-    # # np.save('./debug/lors.npy', lors[:1000, :])
-    # print(len(lors))
-    # # exit()
-    # xlors, ylors, zlors = preprocess(lors) 
-    # # np.save('./debug/xlors.npy', xlors[:1000, :])
-    # # np.save('./debug/ylors.npy', ylors[:1000, :])
-    # # np.save('./debug/zlors.npy', zlors[:1000, :])
-    # xlors = xlors[:, [1, 2, 0, 4, 5, 3]] # y z x
-    # ylors = ylors[:, [0, 2, 1, 3, 5, 4]] # x z y
-    # # exit()
-    # grid = [160, 240, 320]
-    # center = [0., 0., 0.]
-    # # size = [544.*2., 544.*3., 544.*4.]
-    # size = [1120., 1680., 2240.]
-    # origin = [-544., -840., -1120.]
-    # # volsize = [7., 7., 7.] 
-    # st = time.time()
-    # # print(xlors.shape)
-    # # print(ylors.shape)
-    # # slors = np.hstack((lors, np.zeros((lors.shape[0], 1))))
-    # # print(slors.shape)
-    # # exit()
-    # # effmap = siddonMap(grid, volsize, origin, slors)
-    # effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-    # np.save('./debug/effmap_{}.npy'.format(0), effmap)
-    # et = time.time()
-    # tdiff = et-st
-    # print(effmap)
-    # print("the total time: {} seconds".format(tdiff))
+
+def main(start:int, end:int):
     make_maps(start, end)
 
 @click.command()
@@ -328,7 +317,8 @@ def cli(start, end):
     main(start, end)
 
 if __name__ == "__main__":
-    cli()
+    # cli()
+    merge_effmap(540, './maps2/')
 
 
 # if __name__ == "__main__":

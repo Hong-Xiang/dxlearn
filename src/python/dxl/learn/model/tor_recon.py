@@ -2,16 +2,12 @@ from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
 op = tf.load_op_library(
-<<<<<<< HEAD
-    '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
-=======
     '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 
 # mlop = tf.load_op_library(
 #     '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/make_lors.so')
 
 # makelors = mlop.make_lors
->>>>>>> newway
 
 projection = op.projection_gpu
 backprojection = op.backprojection_gpu
@@ -84,18 +80,12 @@ class ReconStep(Model):
         bpz = backprojection(image=imgz, grid=grid, lors=zlors,
                              center=center, size=size, line_integral=pz,  kernel_width=kernel_width, model=model)
         # x-dominant, tranposed
-<<<<<<< HEAD
-        gridx = grid
-        centerx = center
-        sizex = size
-=======
         gridx = tf.constant(
             np.array([grid[2], grid[0], grid[1]]), name='gridx')
         centerx = tf.constant(
             np.array([center[2], center[0], center[1]]), name='centerx')
         sizex = tf.constant(
             np.array([size[2], size[0], size[1]]), name='sizex')
->>>>>>> newway
         px = projection(lors=xlors, image=imgx, grid=gridx,
                         center=centerx, size=sizex, kernel_width=kernel_width, model=model)
 
@@ -104,11 +94,6 @@ class ReconStep(Model):
         bpxt = tf.transpose(bpx, perm=[1, 2, 0])
 
         # y-dominant, tranposed
-<<<<<<< HEAD
-        gridy = grid
-        centery = center
-        sizey = size
-=======
         # gridy = grid
         # centery = center
         # sizey = size
@@ -118,7 +103,6 @@ class ReconStep(Model):
             np.array([center[1], center[0], center[2]]), name='centery')
         sizey = tf.constant(
             np.array([size[1], size[0], size[2]]), name='sizey')
->>>>>>> newway
         py = projection(lors=ylors, image=imgy, grid=gridy,
                         center=centery, size=sizey, kernel_width=kernel_width, model=model)
 
@@ -131,8 +115,6 @@ class ReconStep(Model):
         return Tensor(result, None, self.graph_info.update(name=None))
 
 
-<<<<<<< HEAD
-=======
 class Projection(Model):
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
@@ -316,7 +298,6 @@ class BackProjection(Model):
         return Tensor(result, None, self.graph_info.update(name=None))
 
 
->>>>>>> newway
 class EfficiencyMap(Model):
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
@@ -332,8 +313,6 @@ class EfficiencyMap(Model):
         return Tensor(tf.matmul(sm, ones, transpose_a=True), None, self.graph_info.update(name=None))
 
 
-<<<<<<< HEAD
-=======
 class DataSplitter(Model):
     """
     split the blockpairs into multiple parts without data loss.
@@ -367,7 +346,6 @@ class DataSplitter(Model):
         return result
 
 
->>>>>>> newway
 class ProjectionSplitter(Model):
     def __init__(self, name, nb_split, graph_info):
         self._nb_split = nb_split
