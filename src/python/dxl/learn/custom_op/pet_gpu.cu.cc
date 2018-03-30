@@ -5,31 +5,15 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
-// __global__ void ProjectionKernel(const float *in, const int N, float *out)
-// {
-//     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < N;
-//          i += blockDim.x * gridDim.x)
-//     {
-//         out[i] = in[i] + 1;
-//     }
-// }
 
-// void ProjectionKernelLauncher(const float *in, const int N, float *out)
-// {
-//     ProjectionKernel<<<32, 256>>>(in, N, out);
-// }
-
+///
+/// calculate the cross point 
 __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
                                     float pos2_x, float pos2_y, float pos2_z,
                                     const float s_center,
                                     float &dcos_x, float &dcos_y,
                                     float &cross_x, float &cross_y)
 {
-    // float pos1_x = 0, pos1_y = 0, pos1_z = 0;
-    // float pos2_x = 0, pos2_y = 0, pos2_z = 0;
-    // auto event_flat = event.unaligned_flat<float>();
-    // float pos1_x = event_flat(0), pos1_y = event_flat(1), pos1_z = event_flat(2);
-    // float pos2_x = event_flat(3), pos2_y = event_flat(4), pos2_z = event_flat(5);
     float d0 = pos2_x - pos1_x, d1 = pos2_y - pos1_y, d2 = pos2_z - pos1_z;
     float ratio = (s_center - pos1_z) / d2;
     if (ratio < 0.0 || ratio > 1.0)
@@ -90,7 +74,7 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                atomicAdd(projection_value, image_data[offset + index] * value);
+                projection_value += image_data[offset +index]* value;
             }
         }
     }
@@ -169,6 +153,9 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
     }
 }
 
+///
+///back
+///
 __global__ void BackComputeSlice(const float *x1, const float *y1, const float *z1,
                                 const float *x2, const float *y2, const float *z2,
                                 const unsigned int patch_size, const unsigned int offset,
@@ -177,25 +164,18 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
                                 const int gx, const int gy, const float inter_x, const float inter_y,
                                 const float *projection_value, const int num_events, float *image)
 {
-    // int cloop = 0;
+    
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
-        // unsigned int num_events = events.dim_size(0);
-        //std::cout<<"events dims:"<<events.dim_size(0)<<", "<<events.dim_size(1)<<std::endl;
-        //debug
-        //std::cout<<"event:"<<event.IsAligned()<<std::endl;
-        // cloop ++;
         float dcos_x = 0;
         float dcos_y = 0;
         float cross_x = 0;
         float cross_y = 0;
-        // printf("tid %d of %d loop. bdim: %d, gdim: %d, tid: %d, bid: %d\n", tid, cloop, blockDim.x, gridDim.x, threadIdx.x, blockIdx.x);
         if (CalculateCrossPoint(x1[tid], y1[tid], z1[tid],
                                 x2[tid], y2[tid], z2[tid],
                                 slice_z, dcos_x, dcos_y, cross_x, cross_y))
         {
-            // printf("CROSS OF %d: (%f, %f)\n", tid, cross_x, cross_y);
             BackLoopPatch(patch_size, offset,
                       inter_x, inter_y, cross_x, cross_y,
                       sigma2, dcos_x, dcos_y,
@@ -245,7 +225,7 @@ void projection(const float *x1, const float *y1, const float *z1,
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
         int offset = iSlice * slice_mesh_num;
-        int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
+        float slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         // float cross_x, cross_y;
         ComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
                                   patch_size, offset, slice_z,
