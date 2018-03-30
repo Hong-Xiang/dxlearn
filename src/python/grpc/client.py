@@ -48,7 +48,7 @@ def main():
   stub = recon_pb2_grpc.ReconstructionStub(channel)
   effmap_file = './debug/map.npy'
   lor_files = ['./debug/{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
-  lor_range = [0, int(1e6)]
+  lor_range = [0, int(1e8)]
   grid = [150, 150, 150]
   center = [0., 0., 0.]
   size = [150., 150., 150.]

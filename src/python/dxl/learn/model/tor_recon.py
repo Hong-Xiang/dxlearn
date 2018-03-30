@@ -198,7 +198,7 @@ class Projection(Model):
     grid = self.grid
     center = self.center
     size = self.size
-    imgz = inputs[self.KEYS.TENSOR.IMAGE].data
+    imgz = tf.transpose(inputs[self.KEYS.TENSOR.IMAGE].data)
     imgx = tf.transpose(imgz, perm=ROTATIONS_IMAGE['x'])
     imgy = tf.transpose(imgz, perm=ROTATIONS_IMAGE['y'])
     imgs = {'x': imgx, 'y': imgy, 'z': imgz}
@@ -273,7 +273,7 @@ class BackProjection(Model):
         graph_info=graph_info)
 
   def kernel(self, inputs):
-    imgz = inputs[self.KEYS.TENSOR.IMAGE].data
+    imgz = tf.transpose(inputs[self.KEYS.TENSOR.IMAGE].data)
     imgs = {
         'x': tf.transpose(imgz, perm=ROTATIONS_IMAGE['x']),
         'y': tf.transpose(imgz, perm=ROTATIONS_IMAGE['y']),
@@ -318,7 +318,7 @@ class BackProjection(Model):
     }
 
     return {
-        a: Tensor(v, None, self.graph_info.update(name=None))
+        a: Tensor(tf.transpose(v), None, self.graph_info.update(name=None))
         for a, v in backprojections.items()
     }
 
