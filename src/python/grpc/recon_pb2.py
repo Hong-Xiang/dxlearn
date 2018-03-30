@@ -19,11 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='recon.proto',
   package='',
   syntax='proto3',
-<<<<<<< HEAD
-  serialized_pb=_b('\n\x0brecon.proto\"\x85\x01\n\x0cReconPayload\x12\x1b\n\x13\x65\x66\x66iciency_map_file\x18\x01 \x01(\t\x12\x10\n\x08lor_file\x18\x02 \x01(\t\x12\x11\n\tlor_start\x18\x03 \x01(\x05\x12\x0f\n\x07lor_end\x18\x04 \x01(\x05\x12\r\n\x05image\x18\x05 \x03(\x02\x12\x13\n\x0bimage_shape\x18\x06 \x03(\x05\"\x17\n\x05Image\x12\x0e\n\x06values\x18\x01 \x03(\x02\x32\x36\n\x0eReconstruction\x12$\n\tReconStep\x12\r.ReconPayload\x1a\x06.Image\"\x00\x62\x06proto3')
-=======
-  serialized_pb=_b('\n\x0brecon.proto\"\x8c\x01\n\x0cReconPayload\x12\x1b\n\x13\x65\x66\x66iciency_map_file\x18\x01 \x01(\t\x12\x11\n\tlor_files\x18\x02 \x03(\t\x12\x11\n\tlor_range\x18\x03 \x03(\x05\x12\r\n\x05image\x18\x04 \x03(\x02\x12\x0c\n\x04grid\x18\x05 \x03(\x05\x12\x0e\n\x06\x63\x65nter\x18\x06 \x03(\x02\x12\x0c\n\x04size\x18\x07 \x03(\x02\"B\n\x05Image\x12\r\n\x05image\x18\x01 \x03(\x02\x12\x0c\n\x04grid\x18\x02 \x03(\x05\x12\x0e\n\x06\x63\x65nter\x18\x03 \x03(\x02\x12\x0c\n\x04size\x18\x04 \x03(\x02\x32\x36\n\x0eReconstruction\x12$\n\tReconStep\x12\r.ReconPayload\x1a\x06.Image\"\x00\x62\x06proto3')
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
+  serialized_pb=_b('\n\x0brecon.proto\"\x8c\x01\n\x0cReconPayload\x12\x1b\n\x13\x65\x66\x66iciency_map_file\x18\x01 \x01(\t\x12\x11\n\tlor_files\x18\x02 \x03(\t\x12\x11\n\tlor_range\x18\x03 \x03(\x05\x12\r\n\x05image\x18\x04 \x03(\x02\x12\x0c\n\x04grid\x18\x05 \x03(\x05\x12\x0e\n\x06\x63\x65nter\x18\x06 \x03(\x02\x12\x0c\n\x04size\x18\x07 \x03(\x02\"B\n\x05Image\x12\r\n\x05image\x18\x01 \x03(\x02\x12\x0c\n\x04grid\x18\x02 \x03(\x05\x12\x0e\n\x06\x63\x65nter\x18\x03 \x03(\x02\x12\x0c\n\x04size\x18\x04 \x03(\x02\x32:\n\x0eReconstruction\x12(\n\tReconStep\x12\r.ReconPayload\x1a\x06.Image\"\x00(\x01\x30\x01\x62\x06proto3')
 )
 
 
@@ -44,11 +40,6 @@ _RECONPAYLOAD = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='lor_file', full_name='ReconPayload.lor_file', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-=======
       name='lor_files', full_name='ReconPayload.lor_files', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
@@ -59,56 +50,33 @@ _RECONPAYLOAD = _descriptor.Descriptor(
       name='lor_range', full_name='ReconPayload.lor_range', index=2,
       number=3, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='lor_start', full_name='ReconPayload.lor_start', index=2,
-      number=3, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-=======
       name='image', full_name='ReconPayload.image', index=3,
       number=4, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='lor_end', full_name='ReconPayload.lor_end', index=3,
-      number=4, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-=======
       name='grid', full_name='ReconPayload.grid', index=4,
       number=5, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='image', full_name='ReconPayload.image', index=4,
-      number=5, type=2, cpp_type=6, label=3,
-=======
       name='center', full_name='ReconPayload.center', index=5,
       number=6, type=2, cpp_type=6, label=3,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='image_shape', full_name='ReconPayload.image_shape', index=5,
-      number=6, type=5, cpp_type=1, label=3,
-=======
       name='size', full_name='ReconPayload.size', index=6,
       number=7, type=2, cpp_type=6, label=3,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -126,11 +94,7 @@ _RECONPAYLOAD = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=16,
-<<<<<<< HEAD
-  serialized_end=149,
-=======
   serialized_end=156,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
 )
 
 
@@ -142,18 +106,12 @@ _IMAGE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-      name='values', full_name='Image.values', index=0,
-=======
       name='image', full_name='Image.image', index=0,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
       number=1, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
-<<<<<<< HEAD
-=======
     _descriptor.FieldDescriptor(
       name='grid', full_name='Image.grid', index=1,
       number=2, type=5, cpp_type=1, label=3,
@@ -175,7 +133,6 @@ _IMAGE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
   ],
   extensions=[
   ],
@@ -188,13 +145,8 @@ _IMAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-<<<<<<< HEAD
-  serialized_start=151,
-  serialized_end=174,
-=======
   serialized_start=158,
   serialized_end=224,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
 )
 
 DESCRIPTOR.message_types_by_name['ReconPayload'] = _RECONPAYLOAD
@@ -223,13 +175,11 @@ _RECONSTRUCTION = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-<<<<<<< HEAD
-  serialized_start=176,
-  serialized_end=230,
-=======
+
   serialized_start=226,
+
   serialized_end=280,
->>>>>>> 69901e0fe34721a58822a0dddaeee48b5309f8e7
+
   methods=[
   _descriptor.MethodDescriptor(
     name='ReconStep',
