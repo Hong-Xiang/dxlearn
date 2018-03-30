@@ -2,7 +2,7 @@ from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
 op = tf.load_op_library(
-    '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
+    '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
 )
 
 projection = op.projection_gpu

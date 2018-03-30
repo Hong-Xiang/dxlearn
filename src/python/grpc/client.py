@@ -64,7 +64,7 @@ def main():
     return req
 
   st = time.time()
-  for i in range(10):
+  for i in range(20):
     reqs = splitted_image_maker(image, payload_maker)
     res = [r for r in stub.ReconStep(reqs)]
     image = combine_image(res)
