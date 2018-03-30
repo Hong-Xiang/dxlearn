@@ -14,7 +14,7 @@ class ReconstructionStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.ReconStep = channel.unary_unary(
+    self.ReconStep = channel.stream_stream(
         '/Reconstruction/ReconStep',
         request_serializer=recon__pb2.ReconPayload.SerializeToString,
         response_deserializer=recon__pb2.Image.FromString,
@@ -25,7 +25,7 @@ class ReconstructionServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def ReconStep(self, request, context):
+  def ReconStep(self, request_iterator, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -35,7 +35,7 @@ class ReconstructionServicer(object):
 
 def add_ReconstructionServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'ReconStep': grpc.unary_unary_rpc_method_handler(
+      'ReconStep': grpc.stream_stream_rpc_method_handler(
           servicer.ReconStep,
           request_deserializer=recon__pb2.ReconPayload.FromString,
           response_serializer=recon__pb2.Image.SerializeToString,
