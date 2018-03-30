@@ -6,8 +6,8 @@ service Reconstruction {
 
 message ReconPayload {
   string efficiency_map_file = 1;
-  repeated lors_files = 2;
-  repeated int32 lor_index = 3
+  repeated string lor_files = 2;
+  repeated int32 lor_range = 3;
   repeated float image = 4;
   repeated int32 grid = 5;
   repeated float center = 6;
@@ -15,7 +15,7 @@ message ReconPayload {
 }
 
 message Image {
-  repeated float values = 1;
+  repeated float image = 1;
   repeated int32 grid = 2;
   repeated float center = 3;
   repeated float size = 4;
