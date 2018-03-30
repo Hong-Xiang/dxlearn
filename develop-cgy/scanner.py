@@ -225,119 +225,6 @@ def make_block_pairs(block_list):
 
 
 def make_lors(block_pairs):
-<<<<<<< HEAD
-  lors = []
-  # print((block_pairs))
-  for ibp in block_pairs:
-    b0 = ibp[0]
-    b1 = ibp[1]
-    m0 = b0.meshes()
-    m1 = b1.meshes()
-    lors.append(list(itertools.product(m0, m1)))
-  return np.array(lors).reshape(-1, 6)
-
-
-def test_tor_map():
-  rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
-  # rpet = RingPET(400.0, 400.0, 0.0, 400, 20, Vec3(20, 160, 4), Vec3(1, 16, 1))
-  r1 = rpet.rings(num=0)
-  r2 = rpet.rings(num=216 + 50)
-  bs = make_block_pairs([
-      r1,
-  ])
-  lors = make_lors(bs)
-  # exit()
-  nb_lors = len(lors)
-  # np.save('./debug/lors_{}.npy'.format(nb_lors), lors)
-  print('[INFO :: DXL.LEARN] Number of lors:', len(lors))
-  grid = [160, 160, 440]
-  center = [0., 0., 0.]
-  # size = [544.*2., 544.*3., 544.*4.]
-  size = [544., 544., 1496.]
-  # volsize = [7., 7., 7.]
-
-  def kernel(lors):
-    # exit()
-    xlors, ylors, zlors = preprocess(lors)
-    xlors = xlors[:, [1, 2, 0, 4, 5, 3]]  # y z x
-    ylors = ylors[:, [0, 2, 1, 3, 5, 4]]  # x z y
-    np.save('./debug/xlors.npy', xlors)
-    # np.save('./debug/ylors.npy', ylors[:1000, :])
-    # np.save('./debug/zlors.npy', zlors[:1000, :])
-    # exit()
-    # print(xlors.shape)
-    # print(ylors.shape)
-    # exit()
-    return computeMap(grid, center, size, xlors, ylors, zlors)
-
-  st = time.time()
-  # stack_shape = [nb_lors] + grid[:-1]
-  # print(stack_shape)
-  # result = np.zeros(stack_shape)
-  # import tensorflow as tf  
-  start_time_it = time.time()
-  # with tf.Session() as sess:
-  seperate = False
-  if seperate:
-    for i in range(nb_lors):
-      effmap = kernel(lors[i:i+1, :])
-      img_sz = np.sum(np.sum(effmap, axis=0), axis=0)
-      zslice = np.argmax(img_sz)
-      result[i, :] = effmap[:,:,zslice]
-      itime = (time.time()-start_time_it)/(i+1)
-      print('[INFO :: DXL.LEARN] Running LOR {} of {}, {:0.3f} s/step, remain {:0.3f} s.'.format(i, nb_lors, itime, itime*(nb_lors-i)))
-  else:
-    effmap = kernel(lors)
-    np.save('./debug/effmap_{}.npy'.format(0), effmap)
-  # np.save('./debug/effmap_stack_{}.npy'.format(nb_lors), result)
-  et = time.time()
-  tdiff = et - st
-  print(effmap)
-  print("the total time: {} seconds".format(tdiff))
-
-
-def test_siddon_map():
-  # rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
-  rpet = RingPET(400.0, 400.0, 0.0, 400, 4, Vec3(20, 160, 4), Vec3(1, 1, 1))
-  r1 = rpet.rings(num=215)
-  r2 = rpet.rings(num=216 + 50)
-  bs = make_block_pairs([
-      r1,
-  ])
-  # print(len(bs))
-  lors = make_lors(bs)
-  # print(lors)
-  # np.save('./debug/lors.npy', lors[:1000, :])
-  print(len(lors))
-  # exit()
-  xlors, ylors, zlors = preprocess(lors)
-  # np.save('./debug/xlors.npy', xlors[:1000, :])
-  # np.save('./debug/ylors.npy', ylors[:1000, :])
-  # np.save('./debug/zlors.npy', zlors[:1000, :])
-  xlors = xlors[:, [1, 2, 0, 4, 5, 3]]  # y z x
-  ylors = ylors[:, [0, 2, 1, 3, 5, 4]]  # x z y
-  # exit()
-  grid = [160, 240, 320]
-  center = [0., 0., 0.]
-  # size = [544.*2., 544.*3., 544.*4.]
-  size = [1120., 1680., 2240.]
-  origin = [-544., -840., -1120.]
-  volsize = [7., 7., 7.]
-  st = time.time()
-  # print(xlors.shape)
-  # print(ylors.shape)
-  slors = np.hstack((lors, np.zeros((lors.shape[0], 1))))
-  print(slors.shape)
-  # exit()
-  effmap = siddonMap(grid, volsize, origin, slors)
-  # effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-  np.save('./debug/effmap_{}.npy'.format(0), effmap)
-  et = time.time()
-  tdiff = et - st
-  print(effmap)
-  print("the total time: {} seconds".format(tdiff))
-
-=======
     lors = []
     # print((block_pairs))
     for ibp in block_pairs:
@@ -439,7 +326,6 @@ def main(start, end):
 # @click.option('--task', '-t', help = 'task', type = int, default = 0)
 def cli(start, end):
     main(start, end)
->>>>>>> master
 
 if __name__ == "__main__":
     cli()
