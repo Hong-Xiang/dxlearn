@@ -10,14 +10,14 @@ from typing import Iterable
 import pdb
 import time
 
-from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
+from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter
 from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
 
 from dxl.learn.preprocess import preprocess
 
 import time
 
-NB_WORKERS = 2
+NB_WORKERS = 1
 
 def ptensor(t, name=None):
     print("|DEBUG| name: {} | data: {} | run() {} |.".format(name, t.data, t.run()))
@@ -26,7 +26,7 @@ def ptensor(t, name=None):
 def dist_init(job, task):
     cfg = {"master": ["192.168.1.118:2221"],
            "worker": ["192.168.1.118:2333",
-                      "192.168.1.118:2334",
+                    #   "192.168.1.118:2334",
                     #   "192.168.1.110:2333",
                     #   "192.168.1.110:2334",
                      ]}
@@ -41,19 +41,22 @@ def init_global(hmi):
     root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
 
     # load the effciency map
-    effmap = np.load(root + 'map.npy')
+    effmap = np.load(root + 'mouse_maps/summap.npy')
     # load the lors from file
-    lors = np.load(root + 'lors.npy')
+    lors = np.load(root + 'mouse_data.npy')
     lors = lors[:int(1e6), :6]
     xlors, ylors, zlors = preprocess(lors) 
     xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
     ylors = ylors[:, [0, 2, 1, 3, 5, 4]]
+    print('shape of xlors', xlors.shape)
+    print('shape of ylors', ylors.shape)
+    print('shape of zlors', zlors.shape)
     # intialize the image to be reconstructed
     x_value = (lors.shape)[0]/effmap.size
     x = np.ones(effmap.shape)*x_value
-    grid = np.array([150, 150, 150], dtype = np.int32)
-    center = np.array([0., 0., 0.], dtype = np.float32)
-    size = np.array([150, 150, 150], dtype = np.float32)
+    grid = [140, 140, 25]
+    center = [0., 0., 0.]
+    size = [35., 35., 25.]
     # phantom = np.load(root + 'phantom_64.0.npy')
     # x = phantom.reshape([phantom.size, 1]).astype(np.float32)
     # system_matrix = np.load(root + 'system_matrix_64.npy').astype(np.float32)
@@ -152,6 +155,7 @@ def full_step_run(m_op, w_ops, global_graph, local_graphs, nb_iter=0, verbose=0)
 
 
 def main(job, task):
+    root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
     hosts, hmi = dist_init(job, task)
     global_graph = init_global(hmi)
     local_graphs = init_local(global_graph, hosts)
@@ -179,7 +183,7 @@ def main(job, task):
     # time.sleep(5)
     # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
     start_time = time.time()
-    for i in range(5):
+    for i in range(50):
         full_step_run(m_op, w_ops, global_graph, local_graphs, i)
         end_time = time.time()
         delta_time = end_time - start_time
@@ -187,7 +191,7 @@ def main(job, task):
         print(msg)
         if ThisHost.is_master():
             res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-            np.save('./debug/recon_{}.npy'.format(i), res)
+            np.save(root+'mouse_maps/recon_{}.npy'.format(i), res)
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)

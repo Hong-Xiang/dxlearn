@@ -32,8 +32,9 @@ def recon_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
 
 
 if __name__ == "__main__":
-  emap = np.load('map.npy').T
-  lors = np.load('lors.npy')
+  root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
+  emap = np.load(root+'map.npy').T
+  lors = np.load(root+'lors.npy')
   lors = lors[:int(1e6), :]
   grid = [150, 150, 150]
   center = [0., 0., 0.]
@@ -43,4 +44,4 @@ if __name__ == "__main__":
   from dxl.learn.preprocess import preprocess
   xlors, ylors, zlors = preprocess(lors)
   img_new = recon_step(emap, [xlors, ylors, zlors], img, center, size)
-  np.save('img.npy', img_new)
+  np.save(root+'img.npy', img_new)
