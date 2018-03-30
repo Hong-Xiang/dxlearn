@@ -300,10 +300,7 @@ void backprojection(const float *x1, const float *y1, const float *z1,
         int offset = iSlice * slice_mesh_num;
         // int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
-<<<<<<< HEAD
-=======
         // std::cout << "DEBUG INFO!!!!!  " << iSlice << std::endl;
->>>>>>> master
         // std :: cout << "slice_z" << slice_z << std::endl;
         // float cross_x, cross_y;
         BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
