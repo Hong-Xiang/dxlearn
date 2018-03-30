@@ -119,6 +119,6 @@ ENV/
 # develop test files
 *.npy
 *.png
-develop-cgy/graph
+develop-cgy/
 *.txt
 *.ls
