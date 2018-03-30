@@ -11,7 +11,7 @@ backprojection = op.backprojection_gpu
 ALL_AXIS = ['x', 'y', 'z']
 
 ROTATIONS = {'x': [1, 2, 0], 'y': [0, 2, 1], 'z': [0, 1, 2]}
-BACK_ROTATIONS = {'x': [2, 0, 1], 'y': [0, 2, 1], 'z': [2, 1, 0]}
+BACK_ROTATIONS = {'x': [2, 0, 1], 'y': [0, 2, 1], 'z': [0, 1, 2]}
 ROTATIONS_IMAGE = {'x': [2, 0, 1], 'y': [1, 0, 2], 'z': [0, 1, 2]}
 BACK_ROTATIONS_IMAGE = {'x': [1, 2, 0], 'y': [1, 0, 2], 'z': [0, 1, 2]}
 KERNEL_WIDTH = np.sqrt(3.0 * 3.0 * np.pi)
@@ -215,6 +215,7 @@ class Projection(Model):
       slices_inds = indices(a) + indices(a, 3)
       slices = [lors[a][:, i] for i in slices_inds]
       lors[a] = tf.stack(slices)
+    lors['z'] = tf.transpose(lors['z'][:, :6])
     # lors = {k: tf.transpose(lors[k]) for k in lors}
 
     # xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
@@ -234,6 +235,7 @@ class Projection(Model):
           model=model)
 
     projections = {k: projection_axis(k) for k in ALL_AXIS}
+
     return {
         a: Tensor(projections[a], None, self.graph_info.update(name=None))
         for a in ALL_AXIS
@@ -290,6 +292,7 @@ class BackProjection(Model):
       slices = [lors[a][:, i] for i in slices_inds]
       lors[a] = tf.stack(slices)
     # lors = {k: tf.transpose(lors[k]) for k in lors}
+    lors['z'] = tf.transpose(lors['z'][:, :6])
 
     projections = {
         'x': inputs[self.KEYS.TENSOR.PROJ_X].data,
