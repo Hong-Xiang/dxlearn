@@ -238,6 +238,7 @@ def make_lors(block_pairs):
 
 def make_maps(start, end):
     rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
+    rpet = RingPET(24.25, 29.25, 0.0, 25, 152, Vec3(5, 1, 1), Vec3(1, 2, 2))
     r1 = rpet.rings(0)
     total_time = 0
     for ir in range(start, end):
@@ -251,9 +252,12 @@ def make_maps(start, end):
         xlors, ylors, zlors = preprocess(lors)  
         xlors = xlors[:, [1, 2, 0, 4, 5, 3]] # y z x
         ylors = ylors[:, [0, 2, 1, 3, 5, 4]] # x z y
-        grid = [160, 160, 440]  
+        # grid = [160, 160, 440]  
+        # center = [0., 0., 0.]
+        # size = [544., 544., 1496.]
+        grid = [140, 140, 25]  
         center = [0., 0., 0.]
-        size = [544., 544., 1496.]
+        size = [35., 35., 25.]
         et = time.time()
         # subnum = 3
         # xsub = xlors.shape[0]//3
@@ -269,7 +273,7 @@ def make_maps(start, end):
         #     effmap.append(computeMap(grid, center, size, subxlors[isub], subylors[isub], subzlors[isub]))
         # summap = effmap[0] + effmap[1] +effmap[2]
         effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-        np.save('./maps/effmap_{}.npy'.format(ir), effmap)
+        np.save('./mouse_maps/effmap_{}.npy'.format(ir), effmap)
         et = time.time()
         tdiff = et-st
         print("{} th map use: {} seconds".format(ir, tdiff))
