@@ -243,8 +243,11 @@ def make_lors(block_pairs):
     return np.array(lors).reshape(-1, 6)
 
 def make_maps(start, end):
+    root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
+    file_dir = 'mouse_maps/'
     # rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
-    rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
+    # rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
+    rpet = RingPET(24.25, 29.25, 0.0, 50, 61, Vec3(5, 2.5, 0.5),Vec3(1, 5, 1))
     r1 = rpet.rings(0)
     total_time = 0
     for ir in range(start, end):
@@ -258,9 +261,12 @@ def make_maps(start, end):
         xlors, ylors, zlors = preprocess(lors)  
         xlors = xlors[:, [1, 2, 0, 4, 5, 3]] # y z x
         ylors = ylors[:, [0, 2, 1, 3, 5, 4]] # x z y
-        grid = [195, 195, 540]  
+        # grid = [195, 195, 540]  
+        # center = [0., 0., 0.]
+        # size = [666.9, 666.9, 1846.8]
+        grid = [140, 140, 50]  
         center = [0., 0., 0.]
-        size = [666.9, 666.9, 1846.8]
+        size = [35, 35, 25]
         et = time.time()
         # subnum = 3
         # xsub = xlors.shape[0]//3
@@ -275,35 +281,20 @@ def make_maps(start, end):
         # for isub in range(subnum): 
         #     effmap.append(computeMap(grid, center, size, subxlors[isub], subylors[isub], subzlors[isub]))
         # summap = effmap[0] + effmap[1] +effmap[2]
-        effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-        np.save('./maps2/effmap_{}.npy'.format(ir), effmap)
+        crystal_size = rpet.block_size.z/rpet.grid.z
+        print('crystal_size:', crystal_size)
+        effmap = computeMap(grid, center, size, xlors, ylors, zlors, rpet.block_size.z/rpet.grid.x)
+        np.save(root+file_dir+'effmap_{}.npy'.format(ir), effmap)
         et = time.time()
         tdiff = et-st
         print("{} th map use: {} seconds".format(ir, tdiff))
         total_time += tdiff
         print("total time: {} seconds".format(total_time))
         print("time remain: {} seconds".format(total_time/(ir-start + 1)*(end - ir - 1)))
-        
-def merge_effmap(num_rings, file_dir):
-  """
-  to do: implemented in GPU to reduce the calculated time
-  """
-  temp = np.load(file_dir+'effmap_{}.npy'.format(0))
-  final_map = np.zeros(temp.shape)
-  print(final_map.shape)
-  st = time.time()
-  for ir in range(num_rings):
-    temp = np.load(file_dir+'effmap_{}.npy'.format(ir))
-    print("process :{}/{}".format(ir+1, num_rings))
-    for jr in range(num_rings - ir):
-      if ir == 0:
-        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]/2
-      else:
-        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]
-    et = time.time()
-    tr = (et -st)/(num_rings*(num_rings-1)/2 - (num_rings - ir - 1)*(num_rings-ir-2)/2)*((num_rings - ir-1)*(num_rings-ir-2)/2)
-    print("estimated time remains: {} seconds".format(tr))
-  np.save(file_dir+'summap.npy', final_map)
+
+def enumerate_map():
+    rpet = RingPET(24.25, 29.25, 0.0, 50, 61, Vec3(5, 2.5, 0.5),Vec3(1, 5, 1))       
+
 
 
 def main(start:int, end:int):
@@ -317,8 +308,8 @@ def cli(start, end):
     main(start, end)
 
 if __name__ == "__main__":
-    # cli()
-    merge_effmap(540, './maps2/')
+    cli()
+    
 
 
 # if __name__ == "__main__":

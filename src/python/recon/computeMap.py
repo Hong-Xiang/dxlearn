@@ -15,7 +15,7 @@ projection = op.projection_gpu
 backprojection = op.backprojection_gpu
 
 
-def computeMap(grid, center, size, xlors, ylors, zlors):
+def computeMap(grid, center, size, xlors, ylors, zlors, crystal_size):
     # imgz = inputs[self.KEYS.TENSOR.IMAGE].data
     # grid = grid[::-1]
     # size = size[::-1]
@@ -43,7 +43,7 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
     zproj = tf.ones(zlors.shape.as_list()[1], 1)
 
     model = 'tor'
-    kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
+    kernel_width = np.sqrt( crystal_size* crystal_size / np.pi)
     # kernel_width = np.sqrt(20 * 20 / np.pi)
 
     bpz = backprojection(image=imgz, grid=grid, lors=zlors,
