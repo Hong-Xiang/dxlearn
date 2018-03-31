@@ -3,6 +3,9 @@ import tensorflow as tf
 import numpy as np
 from enum import Enum
 
+import warn
+
+warn(DeprecationWarning())
 op = tf.load_op_library(
     '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
 )

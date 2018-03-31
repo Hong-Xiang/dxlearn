@@ -55,6 +55,7 @@ class ReconStep(Model):
         projections['z'],
         self.graph_info.update(name=None))()
     new_img = sum(map(lambda t: t.data, backprojections.values()))
+    # new_img = backprojections['z'].data
     emap = self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP).data
     result = img.data / (emap + 1e-8) * new_img
     return Tensor(result, None, self.graph_info.update(name=None))

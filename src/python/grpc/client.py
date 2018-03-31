@@ -36,9 +36,6 @@ import time
 
 
 def recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size):
-
-
-
   def payload_maker():
     req = recon_pb2.ReconPayload()
     req.efficiency_map_file = effmap_file
@@ -57,21 +54,27 @@ def recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size):
 
 def recon_multi(stubs, effmap_file, lor_files, lor_range):
   nb_workers = len(stubs)
-  nb_lor_per_worker = (lor_range[1] - lor_range[0])//nb_workers
+  nb_lor_per_worker = (lor_range[1] - lor_range[0]) // nb_workers
+
 
 def main():
-  channel = grpc.insecure_channel('localhost:50050', )
+  channel = grpc.insecure_channel('192.168.1.118:50050', )
   stub = recon_pb2_grpc.ReconstructionStub(channel)
-  effmap_file = './debug/map.npy'
-  lor_files = ['./debug/{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
-  lor_range = [0, int(1e6)]
+  # root = './debug/'
+  root = '/hqlf/hongxwing/RPCRecon/debug/'
+  effmap_file = root + 'map.npy'
+  lor_files = [root + '{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
+  lor_range = [0, int(1e5)]
+  # grid = [90, 110, 130]
   grid = [150, 150, 150]
   center = [0., 0., 0.]
+  # size = [90., 110., 130.]
   size = [150., 150., 150.]
   image = np.ones(grid)
   st = time.time()
   for i in range(20):
-    image = recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size)
+    image = recon(stub, effmap_file, lor_files, lor_range, image, grid, center,
+                  size)
     # print(result)
     np.save('./debug/rpc_result_{}.npy'.format(i), image)
     et = time.time()

@@ -5,7 +5,8 @@ import recon_pb2
 import recon_pb2_grpc
 from concurrent import futures
 import numpy as np
-from dxl.learn.high_level.reconstep import recon_step
+# from dxl.learn.high_level.reconstep import recon_step
+from dxl.learn.model.tor_recon import recon_step
 
 CHUNK_SIZE = 256 * 256
 
@@ -23,6 +24,8 @@ def reconstruct_step(efficiency_map_file, lor_files, lor_range, image, center,
       effmap = np.array(fin['data'])
   elif efficiency_map_file.endswith('.npy'):
     effmap = np.load(efficiency_map_file)
+  effmap = effmap.T
+  # effmap = effmap[::-1, ::-1, ::-1]
   lors = []
   for lor_file in lor_files:
     if lor_file.endswith('.h5'):
