@@ -131,3 +131,18 @@ class TensorRaw(Tensor):
         self.data_info,
         self.graph_info.from_dict(
             self.graph_info.update_to_dict(name=result.name)))
+
+
+def tf_tensor(t: Tensor):
+  """
+  Unified access to convert tensor to Tensor of tensorflow.
+  """
+  if isinstance(t, tf.Tensor):
+    return t
+  if isinstance(t, Tensor):
+    return t.data
+  if isinstance(t, np.ndarray):
+    if t.dtype == np.float64:
+      t = t.astype(np.float32)
+    return tf.constant(t, name="from_numpy_ndarray")
+  raise TypeError("Can not convert {} to {}".format(type(t), tf.Tensor))

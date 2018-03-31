@@ -1,6 +1,8 @@
 from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
+from enum import Enum
+
 op = tf.load_op_library(
     '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
 )
@@ -326,23 +328,34 @@ class BackProjection(Model):
     }
 
 
-# class EfficiencyMap(Model):
-#   class KEYS(Model.KEYS):
-#     class TENSOR(Model.KEYS.TENSOR):
-#       SYSTEM_MATRIX: 'system_matrix'
+class EfficiencyMap(Model):
+  class KEYS(Model.KEYS):
+    class TENSOR(Model.KEYS.TENSOR):
+      LORS_X = 'xlors'
+      LORS_Y = 'ylors'
+      LORS_Z = 'zlors'
+  
 
-#   def __init__(self, name, system_matrix, graph_info):
-#     super().__init__(
-#         name, {self.KEYS.TENSOR.SYSTEM_MATRIX: system_matrix},
-#         graph_info=graph_info)
+  def __init__(self, name, xlors, ylors, zlors, grid, center, size, graph_info):
+    self.grid = grid
+    self.center = center
+    self.size = size
+    super().__init__(
+        name, {
+          self.KEYS.TENSOR.LORS_X: xlors,
+          self.KEYS.TENSOR.LORS_Y: ylors,
+          self.KEYS.TENSOR.LORS_Z: zlors,
+        },
+        graph_info=graph_info)
 
-#   def kernel(self, inputs):
-#     sm: Tensor = inputs[self.KEYS.TENSOR.SYSTEM_MATRIX].data
-#     ones = tf.ones([sm.shape[0], 1])
-#     return Tensor(
-#         tf.matmul(sm, ones, transpose_a=True),
-#         None,
-#         self.graph_info.update(name=None))
+  def kernel(self, inputs):
+
+    sm: Tensor = inputs[self.KEYS.TENSOR.SYSTEM_MATRIX].data
+    ones = tf.ones([sm.shape[0], 1])
+    return Tensor(
+        tf.matmul(sm, ones, transpose_a=True),
+        None,
+        self.graph_info.update(name=None))
 
 
 class DataSplitter(Model):
@@ -401,3 +414,14 @@ class ProjectionSplitter(Model):
         for k in result
     }
     return result
+
+class ImageRotation:
+  class KEYS(Model.KEYS):
+    class TENSOR(Model.KEYS.TENSOR):
+      SOURCE = 'source'
+      X = 'xlors'
+      Y = 'ylors'
+      Z = 'zlors'
+  
+  def __init__(self, source, source_rotation)
+  
