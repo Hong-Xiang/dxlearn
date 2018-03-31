@@ -1,16 +1,11 @@
 syntax = "proto3";
 
 service Reconstruction {
-<<<<<<< HEAD
   rpc ReconStep (stream ReconPayload) returns (stream Image) {}
-=======
-  rpc ReconStep (ReconPayload) returns (Image) {}
->>>>>>> d90212f59008ca3fd4572fc7e30fc94fc8d75f6b
 }
 
 message ReconPayload {
   string efficiency_map_file = 1;
-<<<<<<< HEAD
   repeated string lor_files = 2;
   repeated int32 lor_range = 3;
   repeated float image = 4;
@@ -24,15 +19,4 @@ message Image {
   repeated int32 grid = 2;
   repeated float center = 3;
   repeated float size = 4;
-=======
-  string lor_file = 2;
-  int32 lor_start = 3;
-  int32 lor_end = 4;
-  repeated float image = 5;
-  repeated int32 image_shape = 6;
-}
-
-message Image {
-  repeated float values = 1;
->>>>>>> d90212f59008ca3fd4572fc7e30fc94fc8d75f6b
 }
