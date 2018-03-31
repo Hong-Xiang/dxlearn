@@ -44,7 +44,7 @@ def computeMap(grid, center, size, xlors, ylors, zlors):
 
     model = 'tor'
     kernel_width = np.sqrt(3.4 * 3.4 / np.pi)
-    # kernel_width = np.sqrt(20 * 20 / np.pi)
+
 
     bpz = backprojection(image=imgz, grid=grid, lors=zlors,
                          center=center, size=size, line_integral=zproj,  kernel_width=kernel_width, model=model)
