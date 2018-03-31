@@ -146,43 +146,54 @@ def get_my_local_graph(local_graphs: Iterable[LocalGraph]):
       host.job, host.task_index))
 
 
-def init_run(master_op, worker_ops, global_graph: GlobalGraph,
+def run_step(master_op, worker_ops, global_graph, local_graphs):
+  if ThisHost.is_master():
+    _op = master_op
+  else:
+    _op = get_my_local_graph(local_graphs)
+  ThisSession.run(_op)
+
+def run_init_ops(master_op, worker_ops, global_graph: GlobalGraph,
              local_graphs: Iterable[LocalGraph]):
   if ThisHost.is_master():
     ThisSession.run(master_op)
     print_tensor(global_graph.tensor(global_graph.KEYS.TENSOR.X), 'x:global')
   else:
-    print_info('PRE INIT Barrier')
-    print_tensor(
-        global_graph.tensor(global_graph.KEYS.TENSOR.X),
+    print_info('Pre intialization.')
+    print_tensor(global_graph.tensor(global_graph.KEYS.TENSOR.X),
         'x:global direct fetch')
-    ThisSession.run(worker_ops[ThisHost.host().task_index])
+    tid = ThisHost.host().task_index
+    ThisSession.run(worker_ops[tid])
     lg = get_my_local_graph(local_graphs)
     TK = lg.KEYS.TENSOR
     ptensor(lg.tensor(TK.X), 'x:local')
     # ptensor(lg.tensor(TK.SYSTEM_MATRIX), 'x:local')
-  print('INIT DONE. ==============================')
+  print_info('Intialization DONE. ==============================')
 
 
-def recon_run(master_op, worker_ops, global_graph, local_graphs):
+def run_recon_step(master_op, worker_ops, global_graph, local_graphs):
   if ThisHost.is_master():
-    print('PRE RECON')
-    ptensor(global_graph.tensor('x'))
-    print('START RECON')
+    print_info('PRE RECON')
+    print_tensor(global_graph.tensor('x'))
+    print_info('START RECON')
     ThisSession.run(master_op)
-    print('POST RECON')
+    print_info('POST RECON')
     ptensor(global_graph.tensor('x'), 'x:global')
   else:
-    print('PRE RECON')
+    print_info('PRE RECON')
     lg = get_my_local_graph(local_graphs)
     TK = lg.KEYS.TENSOR
-    ptensor(lg.tensor(TK.X), 'x:local')
-    print('POST RECON')
+    print_tensor(lg.tensor(TK.X), 'x:local')
+    print_info('POST RECON')
     ThisSession.run(worker_ops[ThisHost.host().task_index])
     # ptensor(lg.tensor(TK.X_UPDATE), 'x:update')
-    ptensor(lg.tensor(TK.X_RESULT), 'x:result')
-    ptensor(lg.tensor(TK.X_GLOBAL_BUFFER), 'x:global_buffer')
+    print_tensor(lg.tensor(TK.X_RESULT), 'x:result')
+    print_tensor(lg.tensor(TK.X_GLOBAL_BUFFER), 'x:global_buffer')
     # ThisSession.run(ThisHost.host().task_index)
+
+def run_merge_step(master_op, worker_ops, global_graph, local_graphs):
+  if ThisHost.is_master():
+    ThisSession.run(master_op)
 
 
 def full_step_run(m_op,
