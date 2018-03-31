@@ -19,7 +19,7 @@ REGISTER_OP("ProjectionGpu")
     .Attr("kernel_width: float")
     .Attr("model: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext *c) {
-        c->set_output(0, c->Matrix(c->Dim(c->input(0), 0), 1));
+        c->set_output(0, c->Matrix(c->Dim(c->input(0), 1), 1));
         return Status::OK();
     });
 
