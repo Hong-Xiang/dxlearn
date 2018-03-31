@@ -29,3 +29,8 @@ tf_custom_op_library(
     gpu_srcs = ["pet_gpu.cu.cc"],
 )
 
+tf_custom_op_library(
+    name = "tof_tor.so",
+    srcs = ["tof_tor.cc"],
+    gpu_srcs = ["tof_tor.cu.cc"]
+)

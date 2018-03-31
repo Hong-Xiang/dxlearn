@@ -5,9 +5,8 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
-
 ///
-/// calculate the cross point 
+/// calculate the cross point
 __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
                                     float pos2_x, float pos2_y, float pos2_z,
                                     const float s_center,
@@ -30,7 +29,9 @@ __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
     return true;
 }
 
-__device__ void CalculateSMV(const float cross_x, const float cross_y,
+__device__ void CalculateSMV(const float xc, const float yc, const float zc,
+                             const float slice_z, const float tof_bin, const float tof_sigma2,
+                             const float cross_x, const float cross_y,
                              const float mesh_x, const float mesh_y,
                              const float dcos_x, const float dcos_y,
                              const float sigma2, float &value)
@@ -38,11 +39,19 @@ __device__ void CalculateSMV(const float cross_x, const float cross_y,
     float delta_x = cross_x - mesh_x;
     float delta_y = cross_y - mesh_y;
     float r_cos = (delta_x * dcos_x + delta_y * dcos_y);
+    // the distance square betwwen mesh to the tube center line.
     float d2 = delta_x * delta_x + delta_y * delta_y - r_cos * r_cos;
     value = (d2 < 9.0 * sigma2) ? std::exp(-0.5 * d2 / sigma2) : 0.0;
+    // the distance square between mesh to the tof center.
+    float d2_tof = ((xc - cross_x) * (xc - cross_x) + (yc - cross_y) * (yc - cross_y) + (zc - slice_z) * (zc - slice_z) - d2);
+     float tof_sigma2_expand = tof_sigma2 + (tof_bin * tof_bin) / 12;
+    float t2 = d2_tof / tof_sigma2_expand;
+    value *= tof_bin * exp(-0.5 * t2) / sqrt(2.0 * M_PI * sigma2);
 }
 
-__device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
+__device__ void LoopPatch(const float xc, const float yc, const float zc,
+                          const float tof_bin, const float tof_sigma2, const float slice_z,
+                          const unsigned patch_size, const unsigned int offset,
                           const float inter_x, const float inter_y,
                           const float cross_x, const float cross_y,
                           const float sigma2, const float dcos_x, const float dcos_y,
@@ -70,18 +79,21 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
                 int index = index0 + index1 * l0;
                 float value = 0.0;
                 // compute the system matrix value.
-                CalculateSMV(cross_x, cross_y,
+                CalculateSMV(xc, yc, zc, slice_z, tof_bin, tof_sigma2,
+                             cross_x, cross_y,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                atomicAdd(projection_value,image_data[offset +index]* value);
+                atomicAdd(projection_value, image_data[offset + index] * value);
             }
         }
     }
 }
 
 // for backprojection
-__device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offset,
+__device__ void BackLoopPatch(const float xc, const float yc, const float zc,
+                              const float tof_bin, const float tof_sigma2, const float slice_z,
+                              const unsigned patch_size, const unsigned int offset,
                               const float inter_x, const float inter_y,
                               const float cross_x, const float cross_y,
                               const float sigma2, const float dcos_x, const float dcos_y,
@@ -90,8 +102,8 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
 {
     // int index_x = (int)((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
     // int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
-    int index_x = (int)((cross_x - l_bound) / inter_x ) - (int)(patch_size / 2 );
-    int index_y = (int)((cross_y - b_bound) / inter_y ) - (int)(patch_size / 2 );
+    int index_x = (int)((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
+    int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
     for (int j = 0; j < patch_size; j++)
     {
         for (int i = 0; i < patch_size; i++)
@@ -107,11 +119,12 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
                 int index = index0 + index1 * l0;
                 float value = 0.0;
                 // compute the system matrix value.
-                CalculateSMV(cross_x, cross_y,
+                CalculateSMV(xc, yc, zc, slice_z, tof_bin, tof_sigma2,
+                             cross_x, cross_y,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
-                            //  inter_x * (index0 ) + l_bound,
-                            //  inter_y * (index1 ) + b_bound,
+                             //  inter_x * (index0 ) + l_bound,
+                             //  inter_y * (index1 ) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
                 if (projection_value > 1e-5)
                     atomicAdd(image_data + offset + index, value / projection_value);
@@ -122,13 +135,14 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
 
 __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                              const float *x2, const float *y2, const float *z2,
+                             const float *xc, const float *yc, const float *zc,
+                             const float tof_bin, const float tof_sigma2, const float slice_z,
                              const unsigned int patch_size, const unsigned int offset,
-                             const float slice_z,
                              const float l_bound, const float b_bound, const float sigma2,
                              const int gx, const int gy, const float inter_x, const float inter_y,
                              float *projection_value, const int num_events, const float *image)
 {
-    // int counter = 0;
+
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
@@ -144,29 +158,30 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                                 x2[tid], y2[tid], z2[tid],
                                 slice_z, dcos_x, dcos_y, cross_x, cross_y))
         {
-            // counter += 1;
-            LoopPatch(patch_size, offset,
+            LoopPatch(xc[tid], yc[tid], zc[tid],
+                      tof_bin, tof_sigma2, slice_z,
+                      patch_size, offset,
                       inter_x, inter_y, cross_x, cross_y,
                       sigma2, dcos_x, dcos_y,
                       l_bound, b_bound, gx, gy,
                       projection_value + tid, image);
         }
     }
-    // printf("count num is: %d\n", counter );
 }
 
 ///
 ///back
 ///
 __global__ void BackComputeSlice(const float *x1, const float *y1, const float *z1,
-                                const float *x2, const float *y2, const float *z2,
-                                const unsigned int patch_size, const unsigned int offset,
-                                const float slice_z,
-                                const float l_bound, const float b_bound, const float sigma2,
-                                const int gx, const int gy, const float inter_x, const float inter_y,
-                                const float *projection_value, const int num_events, float *image)
+                                 const float *x2, const float *y2, const float *z2,
+                                 const float *xc, const float *yc, const float *zc,
+                                 const float tof_bin, const float tof_sigma2, const float slice_z,
+                                 const unsigned int patch_size, const unsigned int offset,
+                                 const float l_bound, const float b_bound, const float sigma2,
+                                 const int gx, const int gy, const float inter_x, const float inter_y,
+                                 const float *projection_value, const int num_events, float *image)
 {
-    
+
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
@@ -178,20 +193,24 @@ __global__ void BackComputeSlice(const float *x1, const float *y1, const float *
                                 x2[tid], y2[tid], z2[tid],
                                 slice_z, dcos_x, dcos_y, cross_x, cross_y))
         {
-            BackLoopPatch(patch_size, offset,
-                      inter_x, inter_y, cross_x, cross_y,
-                      sigma2, dcos_x, dcos_y,
-                      l_bound, b_bound, gx, gy,
-                      projection_value[tid], image);
+            BackLoopPatch(xc[tid], yc[tid], zc[tid],
+                          tof_bin, tof_sigma2, slice_z,
+                          patch_size, offset,
+                          inter_x, inter_y, cross_x, cross_y,
+                          sigma2, dcos_x, dcos_y,
+                          l_bound, b_bound, gx, gy,
+                          projection_value[tid], image);
         }
     }
 }
 
 void projection(const float *x1, const float *y1, const float *z1,
                 const float *x2, const float *y2, const float *z2,
+                const float *xc, const float *yc, const float *zc,
                 float *projection_value,
                 const int *grid, const float *center, const float *size,
                 const float kernel_width,
+                const float tof_bin, const float tof_sigma2,
                 const float *image, const int num_events)
 {
     // auto grid_flat = grid.flat<int>();
@@ -213,7 +232,7 @@ void projection(const float *x1, const float *y1, const float *z1,
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
 
-    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
+    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz; // intervals
 
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
@@ -229,21 +248,23 @@ void projection(const float *x1, const float *y1, const float *z1,
         int offset = iSlice * slice_mesh_num;
         float slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         // float cross_x, cross_y;
-        ComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
-                                  patch_size, offset, slice_z,
-                                  l_bound, b_bound, sigma2,
-                                  gx, gy, inter_x, inter_y,
-                                  projection_value, num_events,
-                                  image);
-                                
+        ComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2, xc, yc, zc,
+                                   tof_bin, tof_sigma2, slice_z,
+                                   patch_size, offset,
+                                   l_bound, b_bound, sigma2,
+                                   gx, gy, inter_x, inter_y,
+                                   projection_value, num_events,
+                                   image);
     }
 }
 
 void backprojection(const float *x1, const float *y1, const float *z1,
                     const float *x2, const float *y2, const float *z2,
+                    const float *xc, const float *yc, const float *zc,
                     const float *projection_value,
                     const int *grid, const float *center, const float *size,
-                    const float kernel_width,
+                    const float kernel_width, 
+                    const float tof_bin, const float tof_sigma2,
                     float *image, const int num_events)
 {
     // auto grid_flat = grid.flat<int>();
@@ -264,20 +285,19 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     float center_x = center_cpu[0], center_y = center_cpu[1], center_z = center_cpu[2]; // position of center
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
- 
 
     // float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
-    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
+    float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz; // intervals
     // std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
     // int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1 ;
+    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
     // std :: cout << "PATHC SIZE " << patch_size << std::endl;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
-    std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
+    // std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
@@ -286,12 +306,13 @@ void backprojection(const float *x1, const float *y1, const float *z1,
         float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
         // std :: cout << "slice_z" << slice_z << std::endl;
         // float cross_x, cross_y;
-        BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
-                                      patch_size, offset, slice_z,
-                                      l_bound, b_bound, sigma2,
-                                      gx, gy, inter_x, inter_y,
-                                      projection_value, num_events,
-                                      image);
+        BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2, xc, yc, zc,
+                                       tof_bin, tof_sigma2, slice_z,
+                                       patch_size, offset,
+                                       l_bound, b_bound, sigma2,
+                                       gx, gy, inter_x, inter_y,
+                                       projection_value, num_events,
+                                       image);
     }
 }
 
