@@ -3,7 +3,10 @@ from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
 import warnings
-
+import os
+TF_ROOT = os.environ.get('TENSORFLOW_ROOT')
+op = tf.load_op_library(
+    TF_ROOT + '/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 warnings.warn(DeprecationWarning())
 
 projection = op.projection_gpu

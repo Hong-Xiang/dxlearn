@@ -4,12 +4,13 @@ import numpy as np
 from enum import Enum
 
 
-import warn
+import warnings
 
-warn(DeprecationWarning())
+warnings.warn(DeprecationWarning())
+import os
+TF_ROOT = os.environ.get('TENSORFLOW_ROOT')
 op = tf.load_op_library(
-    '/home/hongxwing/Downloads/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
-)
+    TF_ROOT + '/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 
 projection = op.projection_gpu
 backprojection = op.backprojection_gpu

@@ -6,8 +6,8 @@ def map_data(list_of_tensors):
     from .tensor import Tensor
     result = []
     if isinstance(list_of_tensors, (tf.Tensor, Tensor, tf.Operation)):
-        raise TypeError("map_data requires list of Tensor-like objects, maybe add a []?")
-        # list_of_tensors = [list_of_tensors]
+        # raise TypeError("map_data requires list of Tensor-like objects, maybe add a []?")
+        list_of_tensors = [list_of_tensors]
     for t in list_of_tensors:
         if isinstance(t, Tensor):
             result.append(t.data)
