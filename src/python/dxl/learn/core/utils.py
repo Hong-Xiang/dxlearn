@@ -1,9 +1,13 @@
 def map_data(list_of_tensors):
+    """
+    Get tensorflow.Tensor for list of Tensor-like of objects.
+    """
     import tensorflow as tf
     from .tensor import Tensor
     result = []
     if isinstance(list_of_tensors, (tf.Tensor, Tensor, tf.Operation)):
-        list_of_tensors = [list_of_tensors]
+        raise TypeError("map_data requires list of Tensor-like objects, maybe add a []?")
+        # list_of_tensors = [list_of_tensors]
     for t in list_of_tensors:
         if isinstance(t, Tensor):
             result.append(t.data)

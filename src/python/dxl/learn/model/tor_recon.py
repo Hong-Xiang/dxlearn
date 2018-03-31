@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 from enum import Enum
 
+
 import warn
 
 warn(DeprecationWarning())
