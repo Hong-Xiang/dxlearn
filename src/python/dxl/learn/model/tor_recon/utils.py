@@ -27,7 +27,7 @@ class ImageInfo:
 ALL_AXIS_VALUES = ('x', 'y', 'c')
 
 
-def seperate_lors(lor: np.ndarray) -> List[np.ndarray]:
+def seperate_lors(lors: np.ndarray) -> List[np.ndarray]:
   def partition_lors(lors: np.ndarray):
     """
     patition the input lors into three np.array

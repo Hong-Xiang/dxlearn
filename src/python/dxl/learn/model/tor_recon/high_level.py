@@ -4,9 +4,8 @@ from .recon_step import ReconStep
 from typing import List
 
 
-def reconstruction_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
-                        image: np.ndarray, center: List[float],
-                        size: List[float]):
+def recon_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
+               image: np.ndarray, center: List[float], size: List[float]):
   """
     A single reconstruction step.
     """
@@ -33,15 +32,17 @@ def reconstruction_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
 
 
 def test():
-  emap = np.load('map.npy')
-  lors = np.load('lors.npy')
+  emap = np.load('./debug/map.npy')
+  lors = np.load('./debug/lors.npy')
   lors = lors[:int(1e6), :]
   grid = [150, 150, 150]
   center = [0., 0., 0.]
   size = [150., 150., 150.]
 
   img = np.ones(grid)
-  from .utils import seperate_lors 
+  from .utils import seperate_lors
+  from tqdm import tqdm
   xlors, ylors, zlors = seperate_lors(lors)
-  img_new = recon_step(emap, [xlors, ylors, zlors], img, center, size)
-  np.save('img.npy', img_new)
+  for i in tqdm(range(10)):
+    img = recon_step(emap, [xlors, ylors, zlors], img, center, size)
+    np.save('./debug/high_level_{}.npy'.format(i), img)
