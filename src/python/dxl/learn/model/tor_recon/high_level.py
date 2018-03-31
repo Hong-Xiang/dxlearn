@@ -32,7 +32,7 @@ def recon_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
 
 
 def test():
-  emap = np.load('./debug/map.npy')
+  emap = np.load('./debug/map.npy').T
   lors = np.load('./debug/lors.npy')
   lors = lors[:int(1e6), :]
   grid = [150, 150, 150]
