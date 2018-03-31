@@ -35,24 +35,9 @@ def combine_image(request_iterator):
 import time
 
 
-def main():
-  channel = grpc.insecure_channel(
-      'localhost:50050',
-      options=[(
-          'grpc.max_send_message_length',
-          MAX_MESSAGE_LENGTH,
-      ), (
-          'grpc.max_receive_message_length',
-          MAX_MESSAGE_LENGTH,
-      )])
-  stub = recon_pb2_grpc.ReconstructionStub(channel)
-  effmap_file = './debug/map.npy'
-  lor_files = ['./debug/{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
-  lor_range = [0, int(1e8)]
-  grid = [150, 150, 150]
-  center = [0., 0., 0.]
-  size = [150., 150., 150.]
-  image = np.ones(grid)
+def recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size):
+
+
 
   def payload_maker():
     req = recon_pb2.ReconPayload()
@@ -64,16 +49,35 @@ def main():
     req.size.extend(size)
     return req
 
+  reqs = splitted_image_maker(image, payload_maker)
+  res = [r for r in stub.ReconStep(reqs)]
+  image = combine_image(res)
+  return image
+
+
+def recon_multi(stubs, effmap_file, lor_files, lor_range):
+  nb_workers = len(stubs)
+  nb_lor_per_worker = (lor_range[1] - lor_range[0])//nb_workers
+
+def main():
+  channel = grpc.insecure_channel('localhost:50050', )
+  stub = recon_pb2_grpc.ReconstructionStub(channel)
+  effmap_file = './debug/map.npy'
+  lor_files = ['./debug/{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
+  lor_range = [0, int(1e6)]
+  grid = [150, 150, 150]
+  center = [0., 0., 0.]
+  size = [150., 150., 150.]
+  image = np.ones(grid)
   st = time.time()
   for i in range(20):
-    reqs = splitted_image_maker(image, payload_maker)
-    res = [r for r in stub.ReconStep(reqs)]
-    image = combine_image(res)
+    image = recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size)
     # print(result)
     np.save('./debug/rpc_result_{}.npy'.format(i), image)
     et = time.time()
     print('RUN: {} s, PER IT: {} s.'.format(et - st, (et - st) / (i + 1)))
   print('DONE!')
+
 
 if __name__ == "__main__":
   main()
