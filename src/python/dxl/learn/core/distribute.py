@@ -238,7 +238,7 @@ class Barrier:
     task_lists = [map_data(tl) for tl in self.task_lists]
 
     def make_signal_op_for_one_signal_host(task_list):
-      with tf.control_dependencies(tl):
+      with tf.control_dependencies(task_list):
         _ops = [q.enqueue(False) for q in queues]
       with tf.control_dependencies(_ops):
         return tf.no_op()

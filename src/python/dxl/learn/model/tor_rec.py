@@ -1,8 +1,11 @@
 from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
+
+import os
+TF_ROOT = os.environ.get('TENSORFLOW_ROOT')
 op = tf.load_op_library(
-    '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
+    TF_ROOT + '/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 
 projection = op.projection_gpu
 backprojection = op.backprojection_gpu
