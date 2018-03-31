@@ -3,9 +3,10 @@ import tensorflow as tf
 import numpy as np
 from enum import Enum
 
+import os
+TF_ROOT = os.environ.get('TENSORFLOW_ROOT')
 op = tf.load_op_library(
-    '/home/chengaoyu/tools/tensorflow/bazel-bin/tensorflow/core/user_ops/pet_gpu.so'
-)
+    TF_ROOT + '/bazel-bin/tensorflow/core/user_ops/pet_gpu.so')
 
 projection = op.projection_gpu
 backprojection = op.backprojection_gpu
@@ -14,6 +15,8 @@ ALL_AXIS = ['x', 'y', 'z']
 
 ROTATIONS = {'x': [1, 2, 0], 'y': [0, 2, 1], 'z': [0, 1, 2]}
 BACK_ROTATIONS = {'x': [2, 0, 1], 'y': [0, 2, 1], 'z': [0, 1, 2]}
+# ROTATIONS_IMAGE = {'x': [2, 0, 1], 'y': [1, 0, 2], 'z': [0, 1, 2]}
+# BACK_ROTATIONS_IMAGE = {'x': [1, 2, 0], 'y': [1, 0, 2], 'z': [0, 1, 2]}
 ROTATIONS_IMAGE = {'x': [2, 0, 1], 'y': [1, 0, 2], 'z': [0, 1, 2]}
 BACK_ROTATIONS_IMAGE = {'x': [1, 2, 0], 'y': [1, 0, 2], 'z': [0, 1, 2]}
 KERNEL_WIDTH = np.sqrt(3.0 * 3.0 * np.pi)
@@ -238,10 +241,15 @@ class Projection(Model):
 
     projections = {k: projection_axis(k) for k in ALL_AXIS}
 
-    return {
+    result = {
         a: Tensor(projections[a], None, self.graph_info.update(name=None))
         for a in ALL_AXIS
     }
+    # result.update({
+    #     'lors'+k: Tensor(lors[k], None, self.graph_info.update(name=None))
+    #     for k in lors
+    # })
+    return result
 
 
 class BackProjection(Model):

@@ -36,9 +36,6 @@ import time
 
 
 def recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size):
-
-
-
   def payload_maker():
     req = recon_pb2.ReconPayload()
     req.efficiency_map_file = effmap_file
@@ -55,23 +52,58 @@ def recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size):
   return image
 
 
-def recon_multi(stubs, effmap_file, lor_files, lor_range):
-  nb_workers = len(stubs)
-  nb_lor_per_worker = (lor_range[1] - lor_range[0])//nb_workers
+import threading
+from multiprocessing import Pool
+
 
 def main():
-  channel = grpc.insecure_channel('localhost:50050', )
-  stub = recon_pb2_grpc.ReconstructionStub(channel)
-  effmap_file = './debug/map.npy'
-  lor_files = ['./debug/{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
-  lor_range = [0, int(1e6)]
+  workers = [
+      # '192.168.1.118:50050',
+      # '192.168.1.118:50051',
+      '192.168.1.111:50050',
+      '192.168.1.111:50051',
+  ]
+  NB_WORKERS = len(workers)
+  channels = [grpc.insecure_channel(w) for w in workers]
+  stubs = [recon_pb2_grpc.ReconstructionStub(c) for c in channels]
+  root = '/hqlf/hongxwing/RPCRecon/debug/'
+  effmap_file = root + 'map.npy'
+  lor_files = [root + '{}lors.npy'.format(a) for a in ['x', 'y', 'z']]
+  lor_step = int(1e6)
+  lor_range = [0, lor_step]
+  # grid = [90, 110, 130]
   grid = [150, 150, 150]
   center = [0., 0., 0.]
+  # size = [90., 110., 130.]
   size = [150., 150., 150.]
   image = np.ones(grid)
+  # root = './debug/'
+  images = [None for i in range(NB_WORKERS)]
+
+  def recon_thrd(iworker):
+    s = stubs[iworker]
+    lor_range = [lor_step * iworker, lor_step * (iworker + 1)]
+    result = recon(s, effmap_file, lor_files, lor_range, image, grid, center,
+                   size)
+    images[iworker] = images
+
   st = time.time()
+
   for i in range(20):
-    image = recon(stub, effmap_file, lor_files, lor_range, image, grid, center, size)
+    image = recon(stubs[0], effmap_file, lor_files, lor_range, image, grid,
+                  center, size)
+    # with Pool(NB_WORKERS) as p:
+    # images = p.map(recon_thrd, range(NB_WORKERS))
+    # threads = [
+    #     threading.Thread(target=recon_thrd, args=(iw, ))
+    #     for iw in range(NB_WORKERS)
+    # ]
+    # # return result
+    # for t in threads:
+    #   t.start()
+    # for t in threads:
+    #   t.join()
+    # image = np.sum(images, axis=0)
     # print(result)
     np.save('./debug/rpc_result_{}.npy'.format(i), image)
     et = time.time()
