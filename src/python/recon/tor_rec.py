@@ -46,7 +46,7 @@ def init_global(hmi):
     effmap = np.load(root + 'map.npy')
     # load the lors from file
     lors = np.load(root + 'lors.npy')
-    lors = lors[:int(1e6), :6]
+    lors = lors[:, :6]
     xlors, ylors, zlors = preprocess(lors) 
     xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
     ylors = ylors[:, [0, 2, 1, 3, 5, 4]]
@@ -56,7 +56,7 @@ def init_global(hmi):
     
     grid = [150, 150, 150]
     center = [0., 0., 0.]
-    size = [150, 150, 150]
+    size = [150., 150., 150.]
 
     # grid = np.array([150, 150, 150], dtype = np.int32)
     # center = np.array([0., 0., 0.], dtype = np.float32)
@@ -67,7 +67,7 @@ def init_global(hmi):
     # y = np.matmul(system_matrix, x).astype(np.float32)
     # x = np.ones(x.shape)
     # effmap = np.matmul(system_matrix.T, np.ones(y.shape)).astype(np.float32)
-    gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors,  effmap, hmi)
+    gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
     return gg
 
 
@@ -186,7 +186,7 @@ def main(job, task):
     # time.sleep(5)
     # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
     start_time = time.time()
-    for i in range(5):
+    for i in range(20):
         full_step_run(m_op, w_ops, global_graph, local_graphs, i)
         end_time = time.time()
         delta_time = end_time - start_time

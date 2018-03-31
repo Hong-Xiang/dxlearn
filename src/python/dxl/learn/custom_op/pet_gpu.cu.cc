@@ -74,7 +74,7 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
                              inter_x * (index0 + 0.5) + l_bound,
                              inter_y * (index1 + 0.5) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                projection_value += image_data[offset +index]* value;
+                atomicAdd(projection_value,image_data[offset +index]* value);
             }
         }
     }
@@ -128,7 +128,7 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                              const int gx, const int gy, const float inter_x, const float inter_y,
                              float *projection_value, const int num_events, const float *image)
 {
-
+    // int counter = 0;
     for (int tid = blockIdx.x * blockDim.x + threadIdx.x; tid < num_events;
          tid += blockDim.x * gridDim.x)
     {
@@ -144,6 +144,7 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                                 x2[tid], y2[tid], z2[tid],
                                 slice_z, dcos_x, dcos_y, cross_x, cross_y))
         {
+            // counter += 1;
             LoopPatch(patch_size, offset,
                       inter_x, inter_y, cross_x, cross_y,
                       sigma2, dcos_x, dcos_y,
@@ -151,6 +152,7 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
                       projection_value + tid, image);
         }
     }
+    // printf("count num is: %d\n", counter );
 }
 
 ///
@@ -233,6 +235,7 @@ void projection(const float *x1, const float *y1, const float *z1,
                                   gx, gy, inter_x, inter_y,
                                   projection_value, num_events,
                                   image);
+                                
     }
 }
 
@@ -261,6 +264,7 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     float center_x = center_cpu[0], center_y = center_cpu[1], center_z = center_cpu[2]; // position of center
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
+ 
 
     // float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
     float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
@@ -273,7 +277,7 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
     float sigma2 = kernel_width * kernel_width / 9;
     // float dcos_x, dcos_y;
-    // std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
+    std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {

@@ -78,9 +78,9 @@ class ReconStep(Model):
     def __init__(self, name, image, efficiency_map,
                  grid, center, size,
                  xlors, ylors, zlors, graph_info):
-        self.grid = grid
-        self.center = center
-        self.size = size
+        self.grid = np.array(grid, dtype = np.int32)
+        self.center = np.array(center, dtype = np.float32)
+        self.size = np.array(size, dtype = np.float32)
         super().__init__(name,
                          {self.KEYS.TENSOR.IMAGE: image,
                           #   self.KEYS.TENSOR.PROJECTION: projection,
