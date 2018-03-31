@@ -4,7 +4,7 @@ from dxl.shape.rotation.matrix import *
 from dxl.shape.utils.vector import Vector3
 from dxl.shape.utils.axes import Axis3, AXIS3_X, AXIS3_Z
 
-from computeMap import computeMap, siddonMap
+from computeMap import TorMap, SiddonMap
 
 from dxl.learn.preprocess import preprocess
 import click
@@ -12,6 +12,7 @@ import time
 
 import itertools
 
+root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/maps_tor_2m/'
 
 class Vec3():
   def __init__(self, x=0, y=0, z=0):
@@ -244,7 +245,10 @@ def make_lors(block_pairs):
 
 def make_maps(start, end):
     # rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
-    rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
+    # rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
+
+    rpet = RingPET(400.0, 420.0, 0.0, 416, 48, Vec3(20., 51.3, 3.42), Vec3(5, 15, 1))
+    rpet = RingPET(400.0, 420.0, 0.0, 540, 48, Vec3(20., 51.3, 3.42), Vec3(1, 15, 1))
     r1 = rpet.rings(0)
     total_time = 0
     for ir in range(start, end):
@@ -252,16 +256,18 @@ def make_maps(start, end):
         st = time.time()
         # ir = 6
         r2 = rpet.rings(ir)
-
         bs = make_block_pairs([r1,r2])
         lors = make_lors(bs)
         xlors, ylors, zlors = preprocess(lors)  
         xlors = xlors[:, [1, 2, 0, 4, 5, 3]] # y z x
         ylors = ylors[:, [0, 2, 1, 3, 5, 4]] # x z y
-        grid = [195, 195, 540]  
+        grid = [540, 195, 195]  
+        # origin = [-711.36, -333.45, -333.45]
         center = [0., 0., 0.]
-        size = [666.9, 666.9, 1846.8]
-        et = time.time()
+        size = [1846.8, 666.9, 666.9]
+        
+        # voxsize = [3.42, 3.42, 3.42]
+        # et = time.time()
         # subnum = 3
         # xsub = xlors.shape[0]//3
         # ysub = ylors.shape[0]//3
@@ -275,8 +281,11 @@ def make_maps(start, end):
         # for isub in range(subnum): 
         #     effmap.append(computeMap(grid, center, size, subxlors[isub], subylors[isub], subzlors[isub]))
         # summap = effmap[0] + effmap[1] +effmap[2]
-        effmap = computeMap(grid, center, size, xlors, ylors, zlors)
-        np.save('./maps2/effmap_{}.npy'.format(ir), effmap)
+        
+        # effmap = SiddonMap(grid, voxsize, origin, lors)
+
+        effmap = TorMap(grid, center, size, xlors, ylors, zlors)
+        np.save(root+'effmap_{}.npy'.format(ir), effmap)
         et = time.time()
         tdiff = et-st
         print("{} th map use: {} seconds".format(ir, tdiff))
@@ -284,26 +293,26 @@ def make_maps(start, end):
         print("total time: {} seconds".format(total_time))
         print("time remain: {} seconds".format(total_time/(ir-start + 1)*(end - ir - 1)))
         
-def merge_effmap(num_rings, file_dir):
-  """
-  to do: implemented in GPU to reduce the calculated time
-  """
-  temp = np.load(file_dir+'effmap_{}.npy'.format(0))
-  final_map = np.zeros(temp.shape)
-  print(final_map.shape)
-  st = time.time()
-  for ir in range(num_rings):
-    temp = np.load(file_dir+'effmap_{}.npy'.format(ir))
-    print("process :{}/{}".format(ir+1, num_rings))
-    for jr in range(num_rings - ir):
-      if ir == 0:
-        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]/2
-      else:
-        final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]
-    et = time.time()
-    tr = (et -st)/(num_rings*(num_rings-1)/2 - (num_rings - ir - 1)*(num_rings-ir-2)/2)*((num_rings - ir-1)*(num_rings-ir-2)/2)
-    print("estimated time remains: {} seconds".format(tr))
-  np.save(file_dir+'summap.npy', final_map)
+# def merge_effmap(num_rings):
+#   """
+#   to do: implemented in GPU to reduce the calculated time
+#   """
+#   temp = np.load(root+'effmap_{}.npy'.format(0))
+#   final_map = np.zeros(temp.shape)
+#   print(final_map.shape)
+#   st = time.time()
+#   for ir in range(num_rings):
+#     temp = np.load(root+'effmap_{}.npy'.format(ir))
+#     print("process :{}/{}".format(ir+1, num_rings))
+#     for jr in range(num_rings - ir):
+#       if ir == 0:
+#         final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]/2
+#       else:
+#         final_map[:,:,jr:num_rings] += temp[:,:,0:num_rings-jr]
+#     et = time.time()
+#     tr = (et -st)/(num_rings*(num_rings-1)/2 - (num_rings - ir - 1)*(num_rings-ir-2)/2)*((num_rings - ir-1)*(num_rings-ir-2)/2)
+#     print("estimated time remains: {} seconds".format(tr))
+#   np.save(root+'summap.npy', final_map)
 
 def test_tor_map():
   rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
@@ -359,8 +368,9 @@ def test_tor_map():
 
 
 def test_siddon_map():
-  # rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
-  rpet = RingPET(400.0, 400.0, 0.0, 400, 4, Vec3(20, 160, 4), Vec3(1, 1, 1))
+  rpet = RingPET(400.0, 420.0, 0.0, 432, 4, Vec3(20, 122.4, 3.4), Vec3(1, 4, 1))
+  rpet = RingPET(400.0, 420.0, 0.0, 416, 48, Vec3(20, 51.3, 3.42), Vec3(5, 15, 1))
+  # rpet = RingPET(400.0, 400.0, 0.0, 400, 4, Vec3(20, 160, 4), Vec3(1, 1, 1))
   r1 = rpet.rings(num=215)
   r2 = rpet.rings(num=216 + 50)
   bs = make_block_pairs([
@@ -412,7 +422,8 @@ def main(start:int, end:int):
 # @click.option('--task', '-t', help = 'task', type = int, default = 0)
 def cli(start, end):
     main(start, end)
+    # merge_maps()
 
 if __name__ == "__main__":
-    # cli()
-    merge_effmap(540, './maps2/')
+    cli()
+    # merge_effmap(540, './maps2/')

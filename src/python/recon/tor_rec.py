@@ -10,12 +10,14 @@ from typing import Iterable
 import pdb
 import time
 
-from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
+# from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
 from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
 
 from dxl.learn.preprocess import preprocess
 
 import time
+
+root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
 
 NB_WORKERS = 2
 
@@ -38,7 +40,7 @@ def dist_init(job, task):
 
 
 def init_global(hmi):
-    root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
+
 
     # load the effciency map
     effmap = np.load(root + 'map.npy')
@@ -51,9 +53,14 @@ def init_global(hmi):
     # intialize the image to be reconstructed
     x_value = (lors.shape)[0]/effmap.size
     x = np.ones(effmap.shape)*x_value
-    grid = np.array([150, 150, 150], dtype = np.int32)
-    center = np.array([0., 0., 0.], dtype = np.float32)
-    size = np.array([150, 150, 150], dtype = np.float32)
+    
+    grid = [150, 150, 150]
+    center = [0., 0., 0.]
+    size = [150, 150, 150]
+
+    # grid = np.array([150, 150, 150], dtype = np.int32)
+    # center = np.array([0., 0., 0.], dtype = np.float32)
+    # size = np.array([150, 150, 150], dtype = np.float32)
     # phantom = np.load(root + 'phantom_64.0.npy')
     # x = phantom.reshape([phantom.size, 1]).astype(np.float32)
     # system_matrix = np.load(root + 'system_matrix_64.npy').astype(np.float32)
@@ -170,7 +177,7 @@ def main(job, task):
 
     make_distribute_session()
 
-    tf.summary.FileWriter('./graph', ThisSession.session().graph)
+    # tf.summary.FileWriter('./graph', ThisSession.session().graph)
     print('|DEBUG| Make Graph done.')
     
     init_run(m_op_init, w_ops_init, global_graph, local_graphs)
@@ -187,7 +194,7 @@ def main(job, task):
         print(msg)
         if ThisHost.is_master():
             res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-            np.save('./debug/recon_{}.npy'.format(i), res)
+            np.save(root +'/rec_test/recon_{}.npy'.format(i), res)
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)

@@ -94,47 +94,47 @@ def cut_lors(lors: np.ndarray, limit: np.float32):
     p_end = lors[:, 3:6]
     # print(p_end)
     p_diff = p_end - p_start
-    print("p_diff:\n", p_diff)
+    # print("p_diff:\n", p_diff)
     p_dis = np.sqrt(np.sum(np.square(p_diff), 1))
-    print("p_dis:\n", p_dis.shape)
+    # print("p_dis:\n", p_dis.shape)
     dcos = np.array([p_diff[:, 0]/p_dis[:],
                      p_diff[:, 1]/p_dis[:],
-                     p_diff[:, 2]/p_dis[:]]).reshape((-1, 3))
-    print("d_cos:\n", dcos)
+                     p_diff[:, 2]/p_dis[:]]).transpose()
+    # print("d_cos:\n", dcos)
     t_dis = lors[:, 6]
-    print("t_dis:\n", t_dis.shape)
+    # print("t_dis:\n", t_dis.shape)
     ratio = np.array(0.5 - (t_dis/p_dis))
-    print("ratio: \n", ratio)
+    # print("ratio: \n", ratio)
     lor_center = np.array([ratio*p_diff[:, 0],
                            ratio*p_diff[:, 1],
-                           ratio*p_diff[:, 2]]).reshape((-1, 3)) + p_start
+                           ratio*p_diff[:, 2]]).transpose() + p_start
 
-    print("lor_center:\n", lor_center)
+    # print("lor_center:\n", lor_center)
 
     # cut the lors
     dcs = np.sqrt(np.sum(np.square(lor_center - p_start), 1)).reshape((-1))
 
-    print("dcs:\n", dcs)
+    # print("dcs:\n", dcs)
 
     index = np.array([np.where(dcs > limit)]).reshape((-1))
 
-    print("l_index:\n", index)
+    # print("l_index:\n", index)
 
-    print("p_start:\n", p_start[index])
+    # print("p_start:\n", p_start[index])
 
     p_start[index] = (lor_center[index] - np.array(limit*dcos[index,:]).reshape((-1, 3)))
 
-    print("p_start:\n", p_start[index])
+    # print("p_start:\n", p_start[index])
     dce = np.sqrt(np.sum(np.square(lor_center - p_end), 1)).reshape((-1))
 
-    print("dce:\n", dce)
+    # print("dce:\n", dce)
     index = np.array([np.where(dce > limit)]).reshape((-1))
 
-    print("r_index:\n", index)
+    # print("r_index:\n", index)
 
-    print("p_end:\n", p_end[index])
+    # print("p_end:\n", p_end[index])
     p_end[index] = (lor_center[index] + np.array(limit*dcos[index,:]).reshape((-1, 3)))
-    print("p_end:\n", p_end[index])
+    # print("p_end:\n", p_end[index])
     return np.hstack((np.array(p_start),
                       np.array(p_end),
                       np.array(lor_center)))
