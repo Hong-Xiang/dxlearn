@@ -1,3 +1,14 @@
+"""
+Session creating, managing module.
+
+For most cases, only
+
+ - make_session
+ - maks_distribute_session
+ - ThisSession
+
+are required.
+"""
 import tensorflow as tf
 from contextlib import contextmanager
 from .config import ConfigurableWithName
@@ -165,13 +176,13 @@ class ThisSession:
     cls._session = _pre_session
 
 
+def make_session(session_name='session'):
+  ThisSession.set_session(Session(session_name))
+  return ThisSession.session()
+
+
 def make_distribute_session(session_name='session', target=None):
   if target is None:
     target = Server.server().target
   ThisSession.set_session(SessionMonitored(session_name, target))
-  return ThisSession.session()
-
-
-def make_session(session_name='session'):
-  ThisSession.set_session(Session(session_name))
   return ThisSession.session()
