@@ -5,7 +5,7 @@ import tensorflow as tf
 from ..core import VariableInfo, TensorVariable, TensorNumpyNDArray, DistributeGraphInfo, Host, Master, Barrier
 from ..core import ThisHost
 from ..model.splitter import ProjectionSplitter
-from ..model.tor_reconstep import TorStep
+from ..model.siddon_reconstep import SiddonStep
 from ..model.on_collections import Summation
 from ..core.utils import map_data
 
@@ -14,29 +14,22 @@ class GlobalGraph(Graph):
     class KEYS(Graph.KEYS):
         class TENSOR(Graph.KEYS.TENSOR):
             X = 'x'
-            XLORS = 'xlors'
-            YLORS = 'ylors'
-            ZLORS = 'zlors'
+            LORS = 'lors'
             EFFICIENCY_MAP = 'efficiency_map'
             X_BUFFER = 'x_buffer'
             X_BUFFER_TARGET = 'x_buffer_target'
             X_INIT = 'x_init'
-            XLORS_SPLIT = 'xlors_split'
-            YLORS_SPLIT = 'ylors_split'
-            ZLORS_SPLIT = 'zlors_split'
+            LORS_SPLIT = 'lors_split'
             # SYSTEM_MATRIX_SPLIT = 'system_matrix_split'
             LOCAL_INIT_OPS = 'local_init_ops'
             INIT_OP = 'init_op'
             X_UPDATE = 'x_update'
 
     def make_tensors(self, x: np.ndarray,
-                     xlors: np.ndarray, ylors: np.ndarray,
-                     zlors: np.ndarray, em: np.ndarray,
+                     lors: np.ndarray, em: np.ndarray,
                      graph_info: DistributeGraphInfo):
         x = x.astype(np.float32)
-        xlors = xlors.astype(np.float32)
-        ylors = ylors.astype(np.float32)
-        zlors = zlors.astype(np.float32)
+        lors = lors.astype(np.float32)
         # sm = sm.astype(np.float32)
         em = em.astype(np.float32)
         x_var_info = VariableInfo(None, x.shape, tf.float32)
@@ -45,34 +38,30 @@ class GlobalGraph(Graph):
                                                x_t.graph_info.update(name='x_init')))
         em_t = TensorNumpyNDArray(em, None,
                                   x_t.graph_info.update(name='effmap'))
-        xlors_t = TensorNumpyNDArray(xlors, None,
-                                     x_t.graph_info.update(name='xlors'))
-        ylors_t = TensorNumpyNDArray(ylors, None,
-                                     x_t.graph_info.update(name='ylors'))
-        zlors_t = TensorNumpyNDArray(zlors, None,
-                                     x_t.graph_info.update(name='zlors'))
+        lors_t = TensorNumpyNDArray(lors, None,
+                                    x_t.graph_info.update(name='xlors'))
         return {
             self.KEYS.TENSOR.X: x_t,
             self.KEYS.TENSOR.X_INIT: x_init,
-            self.KEYS.TENSOR.XLORS: xlors_t,
-            self.KEYS.TENSOR.YLORS: ylors_t,
-            self.KEYS.TENSOR.ZLORS: zlors_t,
+            self.KEYS.TENSOR.LORS: lors_t,
             self.KEYS.TENSOR.EFFICIENCY_MAP: em_t,
             self.KEYS.TENSOR.X_BUFFER: [],
             self.KEYS.TENSOR.X_BUFFER_TARGET: [],
             self.KEYS.TENSOR.LOCAL_INIT_OPS: [],
         }
 
-    def __init__(self, x: np.ndarray, grid: np.ndarray,
-                 center: np.ndarray, size: np.ndarray,
-                 xlors: np.ndarray, ylors: np.ndarray,
-                 zlors: np.ndarray, em: np.ndarray, graph_info):
+    def __init__(self, x: np.ndarray, grid,
+                 origin, voxsize,
+                 time_res, tof_bin,
+                 lors: np.ndarray, em: np.ndarray, graph_info):
         self.grid = grid
-        self.center = center
-        self.size = size
+        self.origin = origin
+        self.voxsize = voxsize
+        self.time_res = time_res,
+        self.tof_bin = tof_bin,
         super().__init__('global_graph',
                          self.make_tensors(
-                             x, xlors, ylors, zlors,
+                             x, lors,
                              em, graph_info),
                          graph_info=graph_info)
 
@@ -80,17 +69,11 @@ class GlobalGraph(Graph):
         spt = ProjectionSplitter('splitter', nb_workers,
                                  self.graph_info.update(name=None))
 
-        xlors_ts = spt(self.tensor(self.KEYS.TENSOR.XLORS))
-        ylors_ts = spt(self.tensor(self.KEYS.TENSOR.YLORS))
-        zlors_ts = spt(self.tensor(self.KEYS.TENSOR.ZLORS))
+        lors_ts = spt(self.tensor(self.KEYS.TENSOR.LORS))
 
-        xlors_ts = [xlors_ts['slice_{}'.format(i)] for i in range(nb_workers)]
-        ylors_ts = [ylors_ts['slice_{}'.format(i)] for i in range(nb_workers)]
-        zlors_ts = [zlors_ts['slice_{}'.format(i)] for i in range(nb_workers)]
+        lors_ts = [lors_ts['slice_{}'.format(i)] for i in range(nb_workers)]
 
-        self.tensors[self.KEYS.TENSOR.XLORS_SPLIT] = xlors_ts
-        self.tensors[self.KEYS.TENSOR.YLORS_SPLIT] = ylors_ts
-        self.tensors[self.KEYS.TENSOR.ZLORS_SPLIT] = zlors_ts
+        self.tensors[self.KEYS.TENSOR.LORS_SPLIT] = lors_ts
         # y_ts = spt(self.tensor(self.KEYS.TENSOR.Y))
         # sm_ts = spt(self.tensor(self.KEYS.TENSOR.SYSTEM_MATRIX))
 
@@ -102,19 +85,14 @@ class GlobalGraph(Graph):
     def copy_to_local(self, host: Host) -> 'LocalGraph':
         tid = host.task_index
         x_cp, x_l = self.tensor(self.KEYS.TENSOR.X).copy_to(host, True)
-        xlors_cp, xlors_l = self.tensor(self.KEYS.TENSOR.XLORS_SPLIT)[tid].copy_to(
-            host, True)
-        ylors_cp, ylors_l = self.tensor(self.KEYS.TENSOR.YLORS_SPLIT)[tid].copy_to(
-            host, True)
-        zlors_cp, zlors_l = self.tensor(self.KEYS.TENSOR.ZLORS_SPLIT)[tid].copy_to(
+        lors_cp, lors_l = self.tensor(self.KEYS.TENSOR.LORS_SPLIT)[tid].copy_to(
             host, True)
         em_cp, em_l = self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP).copy_to(
             host, True)
-        self.tensors[self.KEYS.TENSOR.LOCAL_INIT_OPS] += [x_cp,
-                                                          xlors_cp, ylors_cp,
-                                                          zlors_cp, em_cp]
-        return LocalGraph(tid, x_l, em_l, self.grid, self.center,
-                          self.size, xlors_l, ylors_l, zlors_l,
+        self.tensors[self.KEYS.TENSOR.LOCAL_INIT_OPS] += [x_cp, lors_cp, em_cp]
+        return LocalGraph(tid, x_l, em_l, self.grid,
+                          self.origin, self.voxsize,
+                          self.time_res, self.tof_bin, lors_l,
                           x_cp, self.graph_info.update(name=None, host=host))
 
     def init_op(self, local_graphs: Iterable['LocalGraph']):
@@ -133,10 +111,6 @@ class GlobalGraph(Graph):
     def x_update_by_merge(self):
         sm = Summation('summation', self.graph_info.update(name=None))
         TK = self.KEYS.TENSOR
-        # op_copy_back = []
-        # for b, bt in zip(self.tensor(TK.X_BUFFER), self.tensor(TK.X_BUFFER_TARGET)):
-        # op_copy_back.append(b.assign(bt))
-        # with tf.control_dependencies(map_data(op_copy_back)):
         x_s = sm(self.tensor(TK.X_BUFFER))
         x_u = self.tensor(TK.X).assign(x_s)
         self.tensors[TK.X_UPDATE] = x_u
@@ -174,28 +148,28 @@ class LocalGraph(Graph):
         class TENSOR(Graph.KEYS.TENSOR):
             X = 'x'
             EFFICIENCY_MAP = 'efficiency_map'
-            XLORS = 'xlors'
-            YLORS = 'ylors'
-            ZLORS = 'zlors'
+            LORS = 'lors'
             X_COPY_FROM_GLOBAL = 'x_copy_from_global'
             X_COPY_TO_GLOBAL = 'x_copy_to_global'
             X_UPDATE = 'x_update'
             X_RESULT = 'x_result'
             X_GLOBAL_BUFFER = 'x_global_buffer'
 
-    def __init__(self, tid, x, em, grid, center, size,
-                 xlors, ylors, zlors, x_copy, graph_info):
+    def __init__(self, tid, x, em, 
+                 grid, origin, voxsize,
+                 time_res, tof_bin,
+                 lors, x_copy, graph_info):
         self.tid = tid
         self.grid = grid
-        self.center = center
-        self.size = size
+        self.origin = origin
+        self.voxsize = voxsize
+        self.time_res = time_res
+        self.tof_bin = tof_bin
         name = 'local_graph_{}'.format(tid)
         super().__init__(name, {
             self.KEYS.TENSOR.X: x,
             self.KEYS.TENSOR.EFFICIENCY_MAP: em,
-            self.KEYS.TENSOR.XLORS: xlors,
-            self.KEYS.TENSOR.YLORS: ylors,
-            self.KEYS.TENSOR.ZLORS: zlors,
+            self.KEYS.TENSOR.LORS: lors,
             self.KEYS.TENSOR.X_COPY_FROM_GLOBAL: x_copy
         }, graph_info=graph_info)
 
@@ -210,16 +184,16 @@ class LocalGraph(Graph):
         return x_cp
 
     def recon_local(self):
-        x_n = ReconStep('recon_step_{}'.format(self.tid),
+        x_n = SiddonStep('siddon_step_{}'.format(self.tid),
                         self.tensor(self.KEYS.TENSOR.X_COPY_FROM_GLOBAL),
                         # self.tensor(self.KEYS.TENSOR.Y),
                         self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP),
                         self.grid,
-                        self.center,
-                        self.size,
-                        self.tensor(self.KEYS.TENSOR.XLORS),
-                        self.tensor(self.KEYS.TENSOR.YLORS),
-                        self.tensor(self.KEYS.TENSOR.ZLORS),
+                        self.origin,
+                        self.voxsize,
+                        self.time_res,
+                        self.tof_bin,
+                        self.tensor(self.KEYS.TENSOR.LORS),
                         # self.tensor(self.KEYS.TENSOR.SYSTEM_MATRIX),
                         self.graph_info.update(name=None))()
         self.tensors[self.KEYS.TENSOR.X_RESULT] = x_n
