@@ -58,6 +58,13 @@ class Master:
 
   @classmethod
   def master_host(cls):
+    """
+    Alias to master host.
+    """
+    return cls.host()
+
+  @classmethod
+  def host(cls):
     return cls._master_host
 
   @classmethod
@@ -279,6 +286,7 @@ class DistributeTask:
     self.master_graph_info = None
 
   def dist_init(self, job, task):
+    from .graph_info import DistributeGraphInfo
     make_distribute_host(self.cfg, job, task, None, 'master', 0)
     self.master_host = Master.master_host()
     self.hosts = [Host('worker', i) for i in range(NB_WORKERS)]
@@ -309,6 +317,7 @@ class DistributeTask:
 
   def ginfo_master(self):
     return self.master_graph_info
-  
+
   def ginfo_this(self):
+    from .graph_info import DistributeGraphInfo
     return DistributeGraphInfo(None, None, None, ThisHost.host())
