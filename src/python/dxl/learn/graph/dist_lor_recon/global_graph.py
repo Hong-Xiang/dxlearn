@@ -41,7 +41,6 @@ class GlobalGraph(Graph):
   def add_local_result(self, x):
     self.tensors[self.KEYS.TENSOR.X_BUFFER].append(x)
 
-
   def merge_local_x(self):
     sm = Summation('summation', self.graph_info.update(name=None))
     TK = self.KEYS.TENSOR
@@ -50,10 +49,3 @@ class GlobalGraph(Graph):
     self.tensors[TK.X_UPDATE] = x_u
     return x_u
 
-
-
-    # l_ops = []
-    # for h in worker_hosts:
-    #     with tf.control_dependencies([merge_barrier.barrier(h)]):
-    #         l_ops.append(tf.no_op())
-    # return gop, l_ops
