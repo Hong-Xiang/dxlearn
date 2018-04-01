@@ -7,7 +7,7 @@ def merge_effmap(num_rings, file_dir):
   """
   root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
   temp = np.load(root+file_dir+'effmap_{}.npy'.format(0))
-  final_map = np.zeros(temp.shape).transpose()
+  final_map = np.zeros(temp.shape)
   print(final_map.shape)
   st = time.time()
   for ir in range(num_rings):

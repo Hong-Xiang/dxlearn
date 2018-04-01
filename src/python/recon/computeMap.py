@@ -102,7 +102,7 @@ def SiddonMap(grid, size, origin, lors):
     img = tf.zeros(grid, tf.float32)
     result = sbp(model='siddon', image=img, grid=grid, origin=origin, size=size,
                  lors=lors, lor_values=proj,
-                 tof_bin=1e-15, time_resolution=20000)
+                 tof_bin=1e-15, time_resolution=2)
     # result = tf.transpose(result)
 
     config = tf.ConfigProto()

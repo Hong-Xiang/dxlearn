@@ -68,7 +68,7 @@ backprojection = op.backprojection_gpu
 #     return Tensor(result, None, self.graph_info.update(name=None))
 
 
-class ReconStep(Model):
+class TorStep(Model):
   class KEYS(Model.KEYS):
     class TENSOR(Model.KEYS.TENSOR):
       IMAGE = 'image'
@@ -212,3 +212,4 @@ class ReconStep(Model):
     result = imgz / (effmap + 1e-8) * (bpxt + bpyt + bpz)
     # result = imgz / (effmap+1e-8) * bpz
     return Tensor(result, None, self.graph_info.update(name=None))
+

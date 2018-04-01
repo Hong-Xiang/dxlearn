@@ -122,7 +122,7 @@ __device__ void cal_crs(const float *lor, const int *grid, const float *orgin, c
 	int i_f, i_l, j_f, j_l, k_f, k_l, i_min, i_max, j_min, j_max, k_min, k_max;
 	int Nx, Ny, Nz;
 
-   // printf("lor[0]=%f lor[1]=%f lor[2]=%f lor[3]=%f lor[4]=%f lor[5]=%f\n", lor[0], lor[1],lor[2], lor[3],lor[4],lor[5]);
+    //printf("lor[0]=%f lor[1]=%f lor[2]=%f lor[3]=%f lor[4]=%f lor[5]=%f\n", lor[0], lor[1],lor[2], lor[3],lor[4],lor[5]);
 	p1x = lor[0]; // sou_p[0];
 	p2x = lor[3]; // end_p[0];
 	pdx = p2x - p1x;
@@ -284,7 +284,7 @@ __device__ void cal_crs(const float *lor, const int *grid, const float *orgin, c
 		k_max = max(k_f, k_l);
 		
 		Np = (i_max - i_min+1) + (j_max - j_min+1) + (k_max - k_min+1);
-	//	printf("np: %d, imax %d, imin %d, jmax %d jmin %d k_max %d kmin %d\n", Np, i_max, i_min, j_max, j_min, k_max, k_min);
+		//printf("np: %d, imax %d, imin %d, jmax %d jmin %d k_max %d kmin %d\n", Np, i_max, i_min, j_max, j_min, k_max, k_min);
 		alphatemp = min(alpha[2], alpha[1]);
 		alphaavg = (min(alphatemp, alpha[0]) + alphamin) / 2;
 
@@ -292,6 +292,25 @@ __device__ void cal_crs(const float *lor, const int *grid, const float *orgin, c
 		index[1] = int(((p1y + alphaavg * pdy) - orgin[1]) / size[1]);
 		index[0] = int(((p1z + alphaavg * pdz) - orgin[0]) / size[0]);
 
+/*
+		printf("pdx=%f\n", pdx);
+		printf("pdy=%f\n", pdy);
+		printf("pdz=%f\n", pdz);
+		printf("p1x=%f\n", p1x);
+		printf("p1y=%f\n", p1y);
+		printf("p1z=%f\n", p1z);
+		printf("orgin[0]=%f\n", orgin[0]);
+		printf("orgin[1]=%f\n", orgin[1]);
+		printf("orgin[2]=%f\n", orgin[2]);
+
+		printf("size[0]=%f\n", size[0]);
+		printf("size[1]=%f\n", size[1]);
+		printf("size[2]=%f\n", size[2]);
+
+		printf("index[0]=%d\n", index[0]);
+		printf("index[1]=%d\n", index[1]);
+		printf("index[2]=%d\n", index[2]);
+		*/
 		alphau[2] = size[2] / (fabs(pdx) + realmin);
 		alphau[1] = size[1] / (fabs(pdy) + realmin);
 		alphau[0] = size[0] / (fabs(pdz) + realmin);
@@ -352,9 +371,9 @@ __device__ void cal_weight(float *alpha, float *alphau, int *index, int *u, floa
 			//tmp_index = index[2] * grid[1] * grid[0] + index[0] * grid[1] + index[1];
 	                tmp_index = index[0]* grid[1]*grid[2]+index[1]*grid[2]+index[2];
 					tmp_data = (alpha[2] - alpha[3]) * dconv * TOF;
-            //            printf("index[0]=%d\n",index[0]);
-            //            printf("index[1]=%d\n",index[1]);
-             //           printf("index[2]=%d\n",index[2]);
+                 //       printf("index[0]=%d\n",index[0]);
+                  //     printf("index[1]=%d\n",index[1]);
+                  //     printf("index[2]=%d\n",index[2]);
              //           printf("tmp_index=%d\n",tmp_index);
           //                printf("alpha[2]-alpha[3]=%f\n",alpha[2]-alpha[3]);
           //              printf("dconv=%f\n",dconv);
@@ -482,7 +501,9 @@ __device__ void BackProjectionOneEvent(const float *lor, const float *tofinfo, c
 
 	int tmp_index=0;
 	float tmp_data=0.;
-         
+      
+
+
 	cal_crs(lor, grid, orgin, size, alpha, alphau, index, dconv, u, Np);
         
     //    printf("Np=%d\n",Np);
@@ -507,6 +528,7 @@ __device__ void BackProjectionOneEvent(const float *lor, const float *tofinfo, c
               //          printf("image[%d]=%f\n ", tmp_index, image[tmp_index]);
 		}
 	}
+	
 }
 
 __device__ void PrepareInputs(const EventsInfo events_info,
@@ -523,10 +545,11 @@ __device__ void PrepareInputs(const EventsInfo events_info,
 	for (int i = 0; i < 3; ++i)
 	{
 		gird[i] = image_info.grid[i];
-		origin[i] = image_info.center[i] - image_info.size[i];
+		origin[i] = image_info.center[i];// -image_info.size[i];
 		size_[i] = image_info.size[i];
 	}
 }
+
 __global__ void ProjectionKernel(const float *lor,
 								 const EventsInfo events_info,
 								 const float *image,
@@ -582,5 +605,7 @@ void BackProjectionKernelLauncher(const float *lor,
 								  float *result)
 {
 	BackProjectionKernel<<<NB_BLOCKS, NB_THREADS>>>(lor, lor_values, events_info, image_info, tof_info, result);
+
+
 }
 #endif
