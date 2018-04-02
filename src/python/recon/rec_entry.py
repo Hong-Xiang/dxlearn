@@ -11,8 +11,8 @@ import pdb
 import time
 
 # from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
-from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
-# from dxl.learn.graph.siddon_recon import GlobalGraph, LocalGraph
+# from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
+from dxl.learn.graph.siddon_recon import GlobalGraph, LocalGraph
 from dxl.learn.preprocess import preprocess
 
 import time
@@ -20,18 +20,29 @@ import time
 root = './debug/'
 
 NB_WORKERS = 2
+MASTER_IP_SUFFIX = '110'
+WORKERS_IO_SUFFIX = ['118', '116', '111']
+NB_PROCESS_PER_WORKER = 2
+MODEL = 'TOR'
 
 def ptensor(t, name=None):
     print("|DEBUG| name: {} | data: {} | run() {} |.".format(name, t.data, t.run()))
 
 
 def dist_init(job, task):
-    cfg = {"master": ["192.168.1.110:2221"],
-           "worker": ["192.168.1.110:2337",
-                      "192.168.1.110:2338",
-                    #   "192.168.1.110:2333",
-                    #   "192.168.1.110:2334",
-                     ]}
+    # cfg = {"master": ["192.168.1.110:2221"],
+    #        "worker": ["192.168.1.110:2337",
+    #                   "192.168.1.110:2338",
+    #                 #   "192.168.1.110:2333",
+    #                 #   "192.168.1.110:2334",
+    #                  ]}
+    cfg = {"master": ["192.168.1.{}:2221".format(MASTER_IP_SUFFIX)]}
+    workers = []
+    for worker in WORKERS_IO_SUFFIX:
+      for p in range(2333, 2333 + NB_PROCESS_PER_WORKER):
+        workers.append("192.168.1.{}:{}".format(worker, p))
+    cfg.update({'worker': workers})
+
     make_distribute_host(cfg, job, task, None, 'master', 0)
     master_host = Master.master_host()
     hosts = [Host('worker', i) for i in range(NB_WORKERS)]
@@ -40,43 +51,43 @@ def dist_init(job, task):
 
 
 # #  for tor reconstruction
-def init_global(hmi):
-
-    # load the effciency map
-    effmap = np.load(root + 'map.npy')
-    # load the lors from file
-    lors = np.load(root + 'lors.npy')
-    lors = lors[:, :6]
-    xlors, ylors, zlors = preprocess(lors) 
-    xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
-    ylors = ylors[:, [0, 2, 1, 3, 5, 4]]
-    # intialize the image to be reconstructed
-    x_value = (lors.shape)[0]/effmap.size
-    x = np.ones(effmap.shape)*x_value
-    
-    grid = [150, 150, 150]
-    center = [0., 0., 0.]
-    size = [150., 150., 150.]
-    gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
-    return gg
-
 # def init_global(hmi):
+
 #     # load the effciency map
-#     effmap = np.load(root + 'effmaps/siddon_1_4.npy')
+#     effmap = np.load(root + 'map.npy')
 #     # load the lors from file
-#     lors = np.load(root + 'events.npy')
-#     lors = lors[:int(5e7), :7]
+#     lors = np.load(root + 'lors.npy')
+#     lors = lors[:, :6]
+#     xlors, ylors, zlors = preprocess(lors) 
+#     xlors = xlors[:, [1, 2, 0, 4, 5, 3]]
+#     ylors = ylors[:, [0, 2, 1, 3, 5, 4]]
 #     # intialize the image to be reconstructed
 #     x_value = (lors.shape)[0]/effmap.size
 #     x = np.ones(effmap.shape)*x_value
     
-#     grid = [416, 195, 195]
-#     origin = [-711.36, -333.45, -333.45]
-#     size = [3.42, 3.42, 3.42]
-#     time_res = float(2)
-#     tof_bin = float(1e-12)
-#     gg = GlobalGraph(x, grid, origin, size, time_res, tof_bin, lors,effmap, hmi)
-#     return gg    
+#     grid = [150, 150, 150]
+#     center = [0., 0., 0.]
+#     size = [150., 150., 150.]
+#     gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
+#     return gg
+
+def init_global(hmi):
+    # load the effciency map
+    effmap = np.load(root + 'effmaps/siddon_1_4.npy')
+    # load the lors from file
+    lors = np.load(root + 'events.npy')
+    lors = lors[:int(5e7), :7]
+    # intialize the image to be reconstructed
+    x_value = (lors.shape)[0]/effmap.size
+    x = np.ones(effmap.shape)*x_value
+    
+    grid = [416, 195, 195]
+    origin = [-711.36, -333.45, -333.45]
+    size = [3.42, 3.42, 3.42]
+    time_res = float(2)
+    tof_bin = float(1e-12)
+    gg = GlobalGraph(x, grid, origin, size, time_res, tof_bin, lors,effmap, hmi)
+    return gg    
 
 
 
