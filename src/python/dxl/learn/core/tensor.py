@@ -8,6 +8,7 @@ from dxl.fs import Path
 
 from .distribute import Host
 from .graph_info import DistributeGraphInfo, GraphInfo
+import warnings
 
 
 class DataInfo:
@@ -21,13 +22,6 @@ class DataInfo:
     return data_info
 
 
-class VariableInfo(DataInfo):
-  def __init__(self, info, shape, dtype):
-    super().__init__(info)
-    self.shape = shape
-    self.dtype = dtype
-
-
 class Tensor:
   """
     Abstract Tensor which is one-to-one mapped to one tensor in tensorflow compute graph. 
@@ -38,12 +32,12 @@ class Tensor:
                graph_info: GraphInfo):
     self.data_info = data_info
     self.graph_info = graph_info
-    self.data: tf.Tensor = self.process_data(data)
+    self.data: tf.Tensor = self._process_input_data(data)
     if self.graph_info.name is None:
       self.graph_info.set_name(self.data.name)
     self._nb_copied = 0
 
-  def process_data(self, data):
+  def _process_input_data(self, data):
     return data
 
   @property
@@ -59,6 +53,9 @@ class Tensor:
       return session.run(self.data)
     from .session import ThisSession
     return ThisSession.run(self.data)
+
+  def eval(self):
+    return self.data.eval()
 
   def copy_to(self, host: Host, is_return_variable=False) -> 'Tensor':
     if host == self.graph_info.host:
@@ -89,24 +86,41 @@ class Tensor:
 
 
 class TensorNumpyNDArray(Tensor):
-  def process_data(self, data):
+  def _process_input_data(self, data):
     with self.graph_info.variable_scope():
       data = tf.constant(np.array(data), name=self.graph_info.name)
     return data
 
 
-class TensorVariable(Tensor):
+class VariableInfo(DataInfo):
+  def __init__(self, info=None, shape=None, dtype=None, initializer=None):
+    super().__init__(info)
+    self.shape = shape
+    self.dtype = dtype
+    self.initializer = initializer
+
+
+class Variable(Tensor):
   def __init__(self, data_info: VariableInfo, graph_info: GraphInfo):
     super().__init__(None, data_info, graph_info)
 
-  def process_data(self, data):
+  def _is_constant_initializer(self):
+    with_init = self.data_info.initializer is not None
+    if with_init and isinstance(self.data_info.initializer,
+                                (float, int, np.ndarray)):
+      return True
+    return False
+
+  def _process_input_data(self, data):
     with self.graph_info.variable_scope():
-      data = tf.get_variable(
-          self.graph_info.name,
+      name = self.graph_info.name
+      if self._is_constant_initializer():
+        return tf.get_variable(name, initializer=self.data_info.initializer)
+      return tf.get_variable(
+          name,
           dtype=self.data_info.dtype,
           shape=self.data_info.shape,
           initializer=tf.initializers.zeros)
-    return data
 
   def assign(self, t: Tensor):
     with self.graph_info.variable_scope() as scope:
@@ -115,6 +129,22 @@ class TensorVariable(Tensor):
           data,
           DataInfo(self.data_info.info),
           self.graph_info.update(name=None))
+
+
+class TensorVariable:
+  def __init__(self, data_info, graph_info):
+    warnings.warn(
+        "TensorVariable is going to be deprecated, use Variable instead.")
+    super().__init__(data_info, graph_info)
+
+
+def variable(graph_info,
+             variable_info=None,
+             shape=None,
+             dtype=None,
+             initializer=None):
+  return Variable(
+      VariableInfo(variable_info, shape, dtype, initializer), graph_info)
 
 
 class TensorRaw(Tensor):

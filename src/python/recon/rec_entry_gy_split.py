@@ -17,20 +17,17 @@ from dxl.learn.preprocess import preprocess
 
 import time
 
-import os
-split = int(os.environ.get('SPLIT'))
-# if split > 3:
-  # split -= 2
 root = './'
 
-NB_WORKERS = 1
+NB_WORKERS = 2
 NB_SPLIT = 8
-NB_TOTAL_LOR = None
+import os
+split = int(os.environ.get('SPLIT'))
+NB_LORS = None
 
-# MASTER_IP_SUFFIX = '110'
-# WORKERS_IO_SUFFIX = ['118', '116', '111']
-# NB_PROCESS_PER_WORKER = 2
-# MODEL = 'TOR'
+with open('current_iteration.txt', 'r') as fin:
+  CIT = fin.readline()
+CIT = int(CIT)
 
 
 def ptensor(t, name=None):
@@ -40,16 +37,14 @@ def ptensor(t, name=None):
 
 def dist_init(job, task):
   cfg = {
-      "master": ["localhost:{}".format(2221 + split)],
-      "worker": ["localhost:{}".format(2333 + split)]
+      "master": ["localhost:2221"],
+      "worker": [
+          "localhost:2337",
+          "localhost:2338",
+          #   "192.168.1.110:2333",
+          #   "192.168.1.110:2334",
+      ]
   }
-  # cfg = {"master": ["192.168.1.{}:2221".format(MASTER_IP_SUFFIX)]}
-  # workers = []
-  # for worker in WORKERS_IO_SUFFIX:
-  #   for p in range(2333, 2333 + NB_PROCESS_PER_WORKER):
-  #     workers.append("192.168.1.{}:{}".format(worker, p))
-  # cfg.update({'worker': workers})
-  print("JOB: {}, TASK: {}".format(job, task))
   make_distribute_host(cfg, job, task, None, 'master', 0)
   master_host = Master.master_host()
   hosts = [Host('worker', i) for i in range(NB_WORKERS)]
@@ -62,6 +57,8 @@ def dist_init(job, task):
 
 #     # load the effciency map
 #     effmap = np.load(root + 'map.npy')
+#     effmap = 1/effmap
+#     effmap[np.array([np.where(effmap == np.nan)])] = 0
 #     # load the lors from file
 #     lors = np.load(root + 'lors.npy')
 #     lors = lors[:, :6]
@@ -79,29 +76,31 @@ def dist_init(job, task):
 #     return gg
 
 
-def init_global(hmi, iteration):
+# for siddon
+def init_global(hmi):
   # load the effciency map
   effmap = np.load(root + 'siddon_1_4.npy')
-  # effmap = np.load(root + 'summap.npy')
   effmap = 1 / effmap
   effmap[np.array([np.where(effmap == np.nan)])] = 0
   # load the lors from file
-  # lors = np.load(root + 'events1.4m.npy')
-  lors = np.load(root + 'events.npy')
-  if NB_TOTAL_LOR is not None:
-    nb_total_lor = NB_TOTAL_LOR
+  # lors = np.load(root + 'events.npy')
+  lors = np.load(root + 'events1.4m.npy')
+  if NB_LORS is None:
+    lor_step = lors.shape[0] // NB_SPLIT
   else:
-    nb_total_lor = lors.shape[0]
-  LOR_STEP = nb_total_lor // NB_SPLIT + NB_SPLIT
-  print("LOR STEP: {}, SPLIT: {}.".format(LOR_STEP, split))
-  lors = lors[split * LOR_STEP:(split + 1) * LOR_STEP, :7]
+    lor_step = NB_LORS // NB_SPLIT
+  lors = lors[split * lor_step:(split + 1) * lor_step, :7]
+  #   lors = lors[:int(5e7), :7]
+  lors[:, 6] = 0
   # intialize the image to be reconstructed
-  if iteration == 0:
-    # x_value = (lors.shape)[0] / effmap.size
-    # x = np.ones(effmap.shape) * x_value
-    x = np.ones(effmap.shape) 
+  print('[INFO] Iteration: {}.'.format(CIT))
+  print('[INFO] LOR_STEP: {}'.format(lor_step))
+  print('[INFO] SPLIT:', split)
+  if CIT == 0:
+    x_value = (lors.shape)[0] / effmap.size
+    x = np.ones(effmap.shape) * x_value
   else:
-    x = np.load('result/siddon_recon_{}.npy'.format(iteration - 1))
+    x = np.load('result/gy_siddon_recon_{}.npy'.format(CIT - 1))
 
   grid = [416, 195, 195]
   origin = [-711.36, -333.45, -333.45]
@@ -138,16 +137,16 @@ def init_run(master_op, worker_ops, global_graph: GlobalGraph,
              local_graphs: Iterable[LocalGraph]):
   if ThisHost.is_master():
     ThisSession.run(master_op)
-    ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X), 'x:global')
+    # ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X), 'x:global')
   else:
     print('PRE INIT Barrier')
-    ptensor(
-        global_graph.tensor(global_graph.KEYS.TENSOR.X),
-        'x:global direct fetch')
+    # ptensor(
+        # global_graph.tensor(global_graph.KEYS.TENSOR.X),
+        # 'x:global direct fetch')
     ThisSession.run(worker_ops[ThisHost.host().task_index])
     lg = get_my_local_graph(local_graphs)
     TK = lg.KEYS.TENSOR
-    ptensor(lg.tensor(TK.X), 'x:local')
+    # ptensor(lg.tensor(TK.X), 'x:local')
     # ptensor(lg.tensor(TK.SYSTEM_MATRIX), 'x:local')
   print('INIT DONE. ==============================')
 
@@ -155,21 +154,21 @@ def init_run(master_op, worker_ops, global_graph: GlobalGraph,
 def recon_run(master_op, worker_ops, global_graph, local_graphs):
   if ThisHost.is_master():
     print('PRE RECON')
-    ptensor(global_graph.tensor('x'))
+    # ptensor(global_graph.tensor('x'))
     print('START RECON')
     ThisSession.run(master_op)
     print('POST RECON')
-    ptensor(global_graph.tensor('x'), 'x:global')
+    # ptensor(global_graph.tensor('x'), 'x:global')
   else:
     print('PRE RECON')
     lg = get_my_local_graph(local_graphs)
     TK = lg.KEYS.TENSOR
-    ptensor(lg.tensor(TK.X), 'x:local')
+    # ptensor(lg.tensor(TK.X), 'x:local')
     print('POST RECON')
     ThisSession.run(worker_ops[ThisHost.host().task_index])
     # ptensor(lg.tensor(TK.X_UPDATE), 'x:update')
-    ptensor(lg.tensor(TK.X_RESULT), 'x:result')
-    ptensor(lg.tensor(TK.X_GLOBAL_BUFFER), 'x:global_buffer')
+    # ptensor(lg.tensor(TK.X_RESULT), 'x:result')
+    # ptensor(lg.tensor(TK.X_GLOBAL_BUFFER), 'x:global_buffer')
     # ThisSession.run(ThisHost.host().task_index)
 
 
@@ -184,11 +183,11 @@ def full_step_run(m_op,
     lg = None
     if ThisHost.is_master():
       TK = global_graph.KEYS.TENSOR
-      ptensor(global_graph.tensor(TK.X), 'x:global')
+      # ptensor(global_graph.tensor(TK.X), 'x:global')
     else:
       lg = get_my_local_graph(local_graphs)
       TK = lg.KEYS.TENSOR
-      ptensor(lg.tensor(TK.X), 'x:local')
+      # ptensor(lg.tensor(TK.X), 'x:local')
   print('START RECON {}'.format(nb_iter))
   if ThisHost.is_master():
     ThisSession.run(m_op)
@@ -198,16 +197,16 @@ def full_step_run(m_op,
     print('POST RECON {}'.format(nb_iter))
     if ThisHost.is_master():
       TK = global_graph.KEYS.TENSOR
-      ptensor(global_graph.tensor(TK.X), 'x:global')
+      # ptensor(global_graph.tensor(TK.X), 'x:global')
     else:
       lg = get_my_local_graph(local_graphs)
       TK = lg.KEYS.TENSOR
-      ptensor(lg.tensor(TK.X), 'x:local')
+      # ptensor(lg.tensor(TK.X), 'x:local')
 
 
-def main(job, task, iteration):
+def main(job, task):
   hosts, hmi = dist_init(job, task)
-  global_graph = init_global(hmi, iteration)
+  global_graph = init_global(hmi)
   local_graphs = init_local(global_graph, hosts)
 
   m_op_init, w_ops_init = global_graph.init_op(local_graphs)
@@ -226,21 +225,23 @@ def main(job, task, iteration):
   print('|DEBUG| Make Graph done.')
 
   init_run(m_op_init, w_ops_init, global_graph, local_graphs)
-  ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
+  # ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
 
   # time.sleep(5)
   # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
   start_time = time.time()
-  full_step_run(m_op, w_ops, global_graph, local_graphs, iteration)
-  end_time = time.time()
-  delta_time = end_time - start_time
-  msg = "the step running time is:{}".format(delta_time / (iteration + 1))
-  print(msg)
-  if ThisHost.is_master():
-    res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-    np.save(root + 'result/siddon_recon_{}_{}.npy'.format(iteration, split),
-            res)
-  ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
+  for i in range(1):
+    full_step_run(m_op, w_ops, global_graph, local_graphs, i)
+    end_time = time.time()
+    delta_time = end_time - start_time
+    msg = "the step running time is:{}".format(delta_time / (i + 1))
+    print(msg)
+    if ThisHost.is_master():
+      if (i % 2 == 0):
+        res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
+        np.save(root + '/result/gy_siddon_recon_{}_{}.npy'.format(CIT, split),
+                res)
+  # ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
   # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
   # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)
   # if ThisHost.is_master():
@@ -258,9 +259,6 @@ def main(job, task, iteration):
   delta_time = end_time - start_time
   msg = "the total running time is:{}".format(delta_time)
   print(msg)
-  # if ThisHost.is_master():
-  #   with open('time_cost.txt', 'w') as fout:
-  #     print(msg, file=fout)
   # import imageio
 
   # img = np.load('recon.npy')
@@ -287,15 +285,14 @@ def main(job, task, iteration):
 
 
 @click.command()
-# @click.option("--iteration", "-i", type=int, help="Iteration number.")
 @click.option(
-    "--job", "-j", help="Job name.")
-# @click.option("--task", "-t", type=int, help="Task index.", default=0)
-def cli(job):
-  with open('current_iteration.txt', 'r') as fin:
-    data = fin.readline()
-  iteration = int(data[:-1])
-  main(job, 0, iteration)
+    '--job',
+    '-j',
+    help='Job',
+)
+@click.option('--task', '-t', help='task', type=int, default=0)
+def cli(job, task):
+  main(job, task)
 
 
 if __name__ == "__main__":

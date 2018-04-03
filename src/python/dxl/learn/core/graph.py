@@ -5,10 +5,11 @@ from .distribute import Host
 from .graph_info import GraphInfo
 from dxl.fs import Path
 
+import warnings
 
 
 class Graph(ConfigurableWithName):
-    """
+  """
     Graph is a collection of Tensors and their opeartions.
 
     `self.tensors` is a dict of Tensors, which is provided as an interface to Graph.
@@ -46,69 +47,74 @@ class Graph(ConfigurableWithName):
 
 
     """
-    class KEYS:
-        class DOMAIN:
-            TENSOR = 'tensor'
-            SUBGRAPH = 'subgraph'
 
-        class TENSOR:
-            MAIN = 'main'
+  class KEYS:
+    class DOMAIN:
+      TENSOR = 'tensor'
+      SUBGRAPH = 'subgraph'
 
-    def __init__(self,
-                 name: Path,
-                 tensors: Dict[str, Tensor],
-                 subgraphs: Dict[str, 'Graph']=None,
-                 graph_info: GraphInfo=None):
+    class TENSOR:
+      MAIN = 'main'
 
-        super().__init__(name)
-        if subgraphs is None:
-            subgraphs = dict()
-        self.subgraphs: Dict[str, Graph] = subgraphs
-        if tensors is None:
-            tensors = dict()
-        self.tensors: Dict[str, Tensor] = tensors
-        self.graph_info = graph_info
-        if self.graph_info.scope is None:
-            self.graph_info.scope = self.name
-        if self.graph_info._name is None:
-            self.graph_info._name = name
-        
+  def __init__(self,
+               name: Path,
+               tensors: Dict[str, Tensor] = None,
+               subgraphs: Dict[str, 'Graph'] = None,
+               graph_info: GraphInfo = None):
 
-    def __hash__(self):
-        return hash(self.name)
+    super().__init__(name)
+    if subgraphs is None:
+      subgraphs = dict()
+    self.subgraphs = subgraphs
+    if tensors is None:
+      tensors = dict()
+    self.tensors = tensors
+    if graph_info is None:
+      graph_info = GraphInfo(name)
+    self.graph_info = graph_info
+    if self.graph_info.scope is None:
+      self.graph_info.scope = self.name
+    if self.graph_info._name is None:
+      self.graph_info._name = name
 
-    def keys(self, domain=None):
-        if domain == self.KEYS.DOMAIN.TENSOR:
-            return self.tensor_keys()
-        if domain == self.KEYS.DOMAIN.SUBGRAPH:
-            return self.subgraph_keys()
-        if domain is None:
-            return tuple(list(self.tensor_keys()) + list(self.subgraph_keys()))
-        raise ValueError("Unknown domain {}.".format(domain))
+  def __hash__(self):
+    return hash(self.name)
 
-    def tensor_keys(self):
-        return self.tensors.keys()
+  def keys(self, domain=None):
+    if domain == self.KEYS.DOMAIN.TENSOR:
+      return self.tensor_keys()
+    if domain == self.KEYS.DOMAIN.SUBGRAPH:
+      return self.subgraph_keys()
+    if domain is None:
+      return tuple(list(self.tensor_keys()) + list(self.subgraph_keys()))
+    raise ValueError("Unknown domain {}.".format(domain))
 
-    def subgraph_keys(self):
-        return self.subgraphs.keys()
+  def tensor_keys(self):
+    return self.tensors.keys()
 
-    def values(self):
-        return self.tensors.values()
+  def subgraph_keys(self):
+    return self.subgraphs.keys()
 
-    def items(self):
-        return self.tensors.values()
+  def values(self):
+    return self.tensors.values()
 
-    def __iter__(self):
-        return self.nodes.__iter__()
+  def items(self):
+    return self.tensors.values()
 
-    def tensor(self, key):
-        return self.tensors.get(key)
+  def __iter__(self):
+    return self.tensors.__iter__()
 
-    def subgraph(self, key):
-        return self.subgraphs.get(key)
+  def tensor(self, key):
+    return self.tensors.get(key)
 
-    def get_or_create_subgraph(self, key, subgraph_maker: Callable[['Graph'], 'Graph']):
-        """
+  def subgraph(self, key):
+    return self.subgraphs.get(key)
+
+  def get_subgraph(self,
+                   key,
+                   subgraph_maker: Callable[['Graph'], 'Graph']
+                   or 'Graph' = None):
+    """
         Get or create subgraph. Useful when defining graph which is intend to be reused.
 
         Since one may use ::
@@ -118,45 +124,49 @@ class Graph(ConfigurableWithName):
             g2 = Graph('name2', subgraphs=reused_subgraphs)
 
         """
-        subgraph = self.subgraph(key)
-        if subgraph is None:
-            subgraph = subgraph_maker(self)
-            self.subgraph[key] = subgraph
-        return subgraph
+    subgraph = self.subgraph(key)
+    if subgraph is None:
+      self.subgraphs[key] = subgraph_maker(self)
+    return self.subgraphs[key]
 
-    def get_or_create_tensor(self, key, tensor_maker: Callable[['Graph'], Tensor]):
+  def get_tensor(self, key, tensor_maker: Callable[['Graph'], Tensor] = None):
+    """
         """
-        """
-        tensor = self.tensor(key)
-        if tensor is None:
-            tensor = tensor_maker(self)
-            self.tensors[key] = tensor
-        return tensor
+    tensor = self.tensor(key)
+    if tensor is None:
+      self.tensors[key] = tensor_maker(self)
+    return self.tensors[key]
 
-    def run(self, fetches=None, inputs=None):
-        if fetches is None:
-            fetches = self.tensor(self.KEYS.TENSOR.MAIN)
-        if inputs is not None:
-            valid_inputs = {k: inputs[k]
-                            for k in inputs if k in self.tensor_keys()}
-        else:
-            valid_inputs = dict()
-        from .session import ThisSession
-        feed_dict = {}
-        for k in self.tensor_keys(k):
-            if k in valid_inputs:
-                feed_dict.update(self.tensor(k), inputs[k])
-        return ThisSession.run(feed_dict=feed_dict)
+  def run(self, fetches=None, inputs=None):
+    """
+    run graph with given fetches and inputs.
+    if fetches is None, use self.KEYS.TENSOR.MAIN.
+    if inputs is a dict, valid inputs will be filtered.
+    """
+    if fetches is None:
+      fetches = self.tensor(self.KEYS.TENSOR.MAIN)
+    if inputs is not None:
+      valid_inputs = {k: inputs[k] for k in inputs if k in self.tensor_keys()}
+    else:
+      valid_inputs = dict()
+    from .session import ThisSession
+    feed_dict = {}
+    for k in self.tensor_keys(k):
+      if k in valid_inputs:
+        feed_dict.update(self.tensor(k), inputs[k])
+    return ThisSession.run(feed_dict=feed_dict)
 
-    @classmethod
-    def tensorflow_tensor(cls, t):
-        import tensorflow as tf
-        if isinstance(t, tf.Tensor):
-            return t
-        if isinstance(t, Tensor):
-            return t.data
-        else:
-            raise TypeError(
-                "Can not convert {} to tensorflow_tensor.".format(type(t)))
-    
-
+  @classmethod
+  def tensorflow_tensor(cls, t):
+    warnings.warn(
+        DeprecationWarning(
+            "Graph.tensorflow_tensor will be deprecated, use dxl.learn.core.tf_tensor instead."
+        ))
+    import tensorflow as tf
+    if isinstance(t, tf.Tensor):
+      return t
+    if isinstance(t, Tensor):
+      return t.data
+    else:
+      raise TypeError("Can not convert {} to tensorflow_tensor.".format(
+          type(t)))
