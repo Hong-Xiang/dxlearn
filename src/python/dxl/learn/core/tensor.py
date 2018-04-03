@@ -28,8 +28,10 @@ class Tensor:
     Providing unified interface to `numpy.ndarray`, `tensorflow.Tensor`, hdf5 file on filesystem, etc.
     """
 
-  def __init__(self, data: tf.Tensor, data_info: DataInfo,
-               graph_info: GraphInfo):
+  def __init__(self,
+               data: tf.Tensor,
+               data_info: DataInfo = None,
+               graph_info: GraphInfo = None):
     self.data_info = data_info
     self.graph_info = graph_info
     self.data: tf.Tensor = self._process_input_data(data)
@@ -90,6 +92,9 @@ class TensorNumpyNDArray(Tensor):
     with self.graph_info.variable_scope():
       data = tf.constant(np.array(data), name=self.graph_info.name)
     return data
+
+
+Constant = TensorNumpyNDArray
 
 
 class VariableInfo(DataInfo):
