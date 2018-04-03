@@ -56,6 +56,9 @@ class Graph(ConfigurableWithName):
     class TENSOR:
       MAIN = 'main'
 
+    class SUBGRAPH:
+      pass
+
   def __init__(self,
                name: Path,
                tensors: Dict[str, Tensor] = None,

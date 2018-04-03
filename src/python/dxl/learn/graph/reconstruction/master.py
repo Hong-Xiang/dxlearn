@@ -17,6 +17,9 @@ class MasterGraph(Graph):
       BUFFER = 'x_buffer'
       UPDATE = 'x_update'
 
+    class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+      SUMMATION = 'summation'
+
   def __init__(self, x, nb_workers, graph_info=None, name='master_graph'):
     super().__init__(name, graph_info=graph_info)
     self._construct_x(x, nb_workers)
@@ -31,11 +34,12 @@ class MasterGraph(Graph):
             shape=x.shape,
             dtype=x.dtype) for i in range(nb_workers)
     ]
-    self.get_tensor(self.KEYS.TENSOR.X, x)
-    self.get_tensor(self.KEYS.TENSOR.BUFFER)
+    self.get_tensor(self.KEYS.TENSOR.X, lambda _: x)
+    self.get_tensor(self.KEYS.TENSOR.BUFFER, lambda _: buffer)
 
   def _construct_summation(self):
     sm = self.get_subgraph(
+        self.KEYS.SUBGRAPH.SUMMATION,
         lambda s: Summation('summation', s.graph_info.update(name=None)))
     x_s = sm(self.tensor(self.KEYS.TENSOR.BUFFER))
     x_u = self.tensor(self.KEYS.TENSOR.X).assign(x_s)
