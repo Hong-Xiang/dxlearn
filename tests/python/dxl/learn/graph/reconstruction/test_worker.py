@@ -34,7 +34,7 @@ class TestWorkerGraphLOR(tf.test.TestCase):
         'z': np.ones([5, 6], dtype=np.float32)
     }
     image_info = ImageInfo([3, 3, 3], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
-    w = WorkerGraphLOR(m, image_info, [3, 3, 3], {
+    w = WorkerGraphLOR(m, image_info,  {
         'x': [3, 6],
         'y': [4, 6],
         'z': [5, 6]

@@ -53,24 +53,22 @@ class WorkerGraphLOR(WorkerGraphBase):
       INIT = 'init'
 
   def __init__(self,
-               global_graph,
+               master_graph,
                image_info,
-               efficiency_map_shape,
                lors_shape,
                task_index,
                graph_info=None,
                name=None):
     self.image_info = image_info
-    self.efficiency_map_shape = efficiency_map_shape
     self.lors_shape = lors_shape
-    super().__init__(global_graph, task_index, graph_info, name=name)
+    super().__init__(master_graph, task_index, graph_info, name=name)
 
   def _construct_inputs(self):
     KT = self.KEYS.TENSOR
     self.tensors[KT.EFFICIENCY_MAP] = variable(
         self.graph_info.update(name='effmap_{}'.format(self.task_index)),
         None,
-        self.efficiency_map_shape,
+        self.tensor(self.KEYS.TENSOR.X).shape,
         tf.float32)
     self.tensors[KT.LORS] = {
         a: variable(

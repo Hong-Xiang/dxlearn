@@ -3,6 +3,14 @@ import h5py
 import tensorflow as tf
 from ...core import ThisHost
 
+import logging
+
+logging.basicConfig(
+    format='[%(levelname)s] %(asctime)s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+)
+logger = logging.getLogger('dxl.learn.graph.reconstruction')
+
 
 class ImageInfo:
   def __init__(self, grid, center, size):
@@ -12,9 +20,15 @@ class ImageInfo:
 
 
 class DataInfo:
-  def __init__(self, map_file, lor_files, lor_ranges=None, lor_step=None):
+  def __init__(self,
+               map_file,
+               lor_files,
+               lor_shapes,
+               lor_ranges=None,
+               lor_step=None):
     self._map_file = map_file
     self._lor_files = lor_files
+    self._lor_shapes = lor_shapes
     self._lor_ranges = lor_ranges
     self._lor_step = lor_step
 
@@ -38,6 +52,12 @@ class DataInfo:
       return [tid * self._lor_step, (tid + 1) * self._lor_step]
     else:
       return None
+
+  def lor_shape(self, axis):
+    if isinstance(self._lor_shapes, (list, tuple)):
+      return self._lor_shapes[axis]
+    else:
+      return self._lor_shapes[axis]
 
 
 def load_data(file_name, lor_range=None):
@@ -116,6 +136,9 @@ sample_reconstruction_config = {
     'x_lor_files': './debug/xlors.npy',
     'y_lor_files': './deubg/ylors.npy',
     'z_lor_files': './deubg/zlors.npy',
+    'x_lor_shape': [100, 6],
+    'y_lor_shape': [100, 6],
+    'z_lor_shape': [100, 6],
     'lor_ranges': None,
     'lor_steps': None,
 }
@@ -132,5 +155,7 @@ def load_reconstruction_configs(config=None):
   image_info = ImageInfo(c['grid'], c['center'], c['size'])
   data_info = DataInfo(c['map_file'],
                        {a: c['{}_lor_files']
+                        for a in ['x', 'y', 'z']},
+                       {a: c['{}_lor_shapes']
                         for a in ['x', 'y', 'z']}, lor_ranges, lor_steps)
   return image_info, data_info
