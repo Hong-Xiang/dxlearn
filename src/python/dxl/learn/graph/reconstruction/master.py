@@ -34,8 +34,8 @@ class MasterGraph(Graph):
             shape=x.shape,
             dtype=x.dtype) for i in range(nb_workers)
     ]
-    self.get_tensor(self.KEYS.TENSOR.X, lambda _: x)
-    self.get_tensor(self.KEYS.TENSOR.BUFFER, lambda _: buffer)
+    self.tensors[self.KEYS.TENSOR.X] = x
+    self.tensors[self.KEYS.TENSOR.BUFFER] = buffer
 
   def _construct_summation(self):
     sm = self.get_subgraph(

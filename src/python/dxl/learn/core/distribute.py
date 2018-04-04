@@ -285,12 +285,15 @@ class DistributeTask:
     self.hosts = []
     self.master_graph_info = None
 
-  def dist_init(self, job, task):
+  def cluster_init(self, job, task):
     from .graph_info import DistributeGraphInfo
     make_distribute_host(self.cfg, job, task, None, 'master', 0)
     self.master_host = Master.master_host()
     self.hosts = [Host('worker', i) for i in range(NB_WORKERS)]
     self.master_graph_info = DistributeGraphInfo(None, None, None, master_host)
+    self.worker_graph_infos = [
+        DistributeGraphInfo(None, None, None, h) for h in self.hosts
+    ]
 
   def add_master_graph(self, g):
     self.master_graph = g
@@ -317,7 +320,12 @@ class DistributeTask:
 
   def ginfo_master(self):
     return self.master_graph_info
+  
+  def ginfo_worker(self, task_index):
+    return self.worker_graph_infos[task_index]
 
   def ginfo_this(self):
     from .graph_info import DistributeGraphInfo
     return DistributeGraphInfo(None, None, None, ThisHost.host())
+  
+    
