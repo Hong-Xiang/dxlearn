@@ -1,5 +1,5 @@
 from .utils import constant_tensor
-from ...core import Master, tf_tensor, Graph, variable
+from ...core import Master, tf_tensor, Graph, variable, Tensor
 import tensorflow as tf
 
 
@@ -52,45 +52,61 @@ class WorkerGraphLOR(WorkerGraphBase):
       LORS = 'lors'
       INIT = 'init'
 
-  def __init__(self, global_graph, image_info, efficiency_map_shape,
-               lors_shape, task_index, graph_info):
-    super().__init__(global_graph, task_index, graph_info)
+  def __init__(self,
+               global_graph,
+               image_info,
+               efficiency_map_shape,
+               lors_shape,
+               task_index,
+               graph_info=None,
+               name=None):
     self.image_info = image_info
-    self._construct_inputs(efficiency_map_shape, lors_shape)
+    self.efficiency_map_shape = efficiency_map_shape
+    self.lors_shape = lors_shape
+    super().__init__(global_graph, task_index, graph_info, name=name)
 
-  def _construct_inputs(self, map_shape, lors_shape):
+  def _construct_inputs(self):
     KT = self.KEYS.TENSOR
-    tid = self.host.task_index
     self.tensors[KT.EFFICIENCY_MAP] = variable(
-        self.graph_info.update(name='effmap_{}'.format(tid)),
+        self.graph_info.update(name='effmap_{}'.format(self.task_index)),
         None,
-        map_shape,
+        self.efficiency_map_shape,
         tf.float32)
-    self.tensors[KE.LORS] = {
+    self.tensors[KT.LORS] = {
         a: variable(
-            self.graph_info.update(name='lor_{}_{}'.format(a, tid)),
+            self.graph_info.update(
+                name='lor_{}_{}'.format(a, self.task_index)),
             None,
-            lors_shape[a],
+            self.lors_shape[a],
             tf.float32)
-        for a in lors_shape
+        for a in self.lors_shape
     }
 
-  def bind(self, efficiency_map, lors):
+  def assign_efficiency_map_and_lors(self, efficiency_map, lors):
     map_assign = self.tensor(
         self.KEYS.TENSOR.EFFICIENCY_MAP).assign(efficiency_map)
     lors_assign = [
         self.tensor(self.KEYS.TENSOR.LORS)[a].assign(lors[a]) for a in lors
     ]
-    with tf.control_dependencies([map_assign] + lors_assign):
-      return tf.no_op()
+    with tf.control_dependencies(
+        [map_assign.data] + [a.data for a in lors_assign]):
+      init = tf.no_op()
+    init = Tensor(init, None, self.graph_info.update(name='init'))
+    self.tensors[self.KEYS.TENSOR.INIT] = init
 
   def _construct_x_result(self):
+    self._construct_inputs()
     KT = self.KEYS.TENSOR
-    from ...model.tor_recon import ReconStep
-    return ReconStep(
-        'recon_step_{}'.format(self.host.task_index),
-        self.tensor(KT.X_COPY_FROM_GLOBAL),
-        self.tensor(KT.EFFICIENCY_MAP),
-        self.tensor(KT.XLORS),
-        self.image_info,
+    from ...model.tor_recon.recon_step import ReconStep
+    x_res = ReconStep(
+        'recon_step_{}'.format(self.task_index),
+        self.tensor(KT.X, is_required=True),
+        self.tensor(KT.EFFICIENCY_MAP, is_required=True),
+        self.image_info.grid,
+        self.image_info.center,
+        self.image_info.size,
+        self.tensor(self.KEYS.TENSOR.LORS)['x'],
+        self.tensor(self.KEYS.TENSOR.LORS)['y'],
+        self.tensor(self.KEYS.TENSOR.LORS)['z'],
         self.graph_info.update(name=None))()
+    self.tensors[self.KEYS.TENSOR.RESULT] = x_res

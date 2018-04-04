@@ -107,7 +107,9 @@ class Graph(ConfigurableWithName):
   def __iter__(self):
     return self.tensors.__iter__()
 
-  def tensor(self, key):
+  def tensor(self, key, is_required=False):
+    if is_required and not key in self.tensors:
+      raise ValueError("Key {} is required but not found.".format(key))
     return self.tensors.get(key)
 
   def subgraph(self, key):
