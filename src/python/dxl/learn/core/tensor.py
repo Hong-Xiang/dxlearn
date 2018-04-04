@@ -110,7 +110,10 @@ class TensorVariable(Tensor):
 
   def assign(self, t: Tensor):
     with self.graph_info.variable_scope() as scope:
-      data = self.data.assign(t.data)
+      if isinstance(t, tf.Tensor):
+        data = self.data.assign(t)
+      else:
+        data = self.data.assign(t.data)
       return Tensor(
           data,
           DataInfo(self.data_info.info),

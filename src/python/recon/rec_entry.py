@@ -44,6 +44,8 @@ def dist_init(job, task):
 
 #     # load the effciency map
 #     effmap = np.load(root + 'map.npy')
+#     effmap = 1/effmap
+#     effmap[np.array([np.where(effmap == np.nan)])] = 0
 #     # load the lors from file
 #     lors = np.load(root + 'lors.npy')
 #     lors = lors[:, :6]
@@ -60,14 +62,19 @@ def dist_init(job, task):
 #     gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
 #     return gg
 
+# for siddon 
 def init_global(hmi):
     # load the effciency map
     effmap = np.load(root + 'effmaps/siddon_1_4.npy')
+    effmap = 1/effmap
+    effmap[np.array([np.where(effmap == np.nan)])] = 0
     # load the lors from file
     lors = np.load(root + 'events.npy')
     lors = lors[:int(5e7), :7]
+    lors[:,6] = 0
     # intialize the image to be reconstructed
     x_value = (lors.shape)[0]/effmap.size
+
     x = np.ones(effmap.shape)*x_value
     
     grid = [416, 195, 195]
@@ -195,15 +202,16 @@ def main(job, task):
     # time.sleep(5)
     # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
     start_time = time.time()
-    for i in range(20):
+    for i in range(30):
         full_step_run(m_op, w_ops, global_graph, local_graphs, i)
         end_time = time.time()
         delta_time = end_time - start_time
         msg = "the step running time is:{}".format(delta_time/(i+1))
         print(msg)
         if ThisHost.is_master():
-            res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-            np.save(root +'/rec_test/siddon_recon_{}.npy'.format(i), res)
+            if( i%2 == 0):
+                res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
+                np.save(root +'/rec_test/siddon_recon_{}.npy'.format(i), res)
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)

@@ -112,7 +112,10 @@ class GlobalGraph(Graph):
         sm = Summation('summation', self.graph_info.update(name=None))
         TK = self.KEYS.TENSOR
         x_s = sm(self.tensor(TK.X_BUFFER))
-        x_u = self.tensor(TK.X).assign(x_s)
+        x0_sum = tf.reduce_sum(self.tensor(TK.X).data)
+        x1_sum = tf.reduce_sum(x_s.data)
+        x_new = x_s.data * x0_sum / x1_sum
+        x_u = self.tensor(TK.X).assign(x_new)        
         self.tensors[TK.X_UPDATE] = x_u
         return x_u
 

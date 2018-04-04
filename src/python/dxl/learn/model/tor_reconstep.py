@@ -209,7 +209,7 @@ class TorStep(Model):
         model=model)
     bpyt = tf.transpose(bpy, perm=[1, 0, 2])
 
-    result = imgz / (effmap + 1e-8) * (bpxt + bpyt + bpz)
+    result = imgz * effmap * (bpxt + bpyt + bpz)
     # result = imgz / (effmap+1e-8) * bpz
     return Tensor(result, None, self.graph_info.update(name=None))
 

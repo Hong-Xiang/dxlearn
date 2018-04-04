@@ -1,5 +1,6 @@
 import numpy as np
 from preprocess import cut_lors
+root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
 
 
 def test_cut_lors():
@@ -14,19 +15,20 @@ def test_cut_lors():
 
 
 def bin_to_npy(file_name):
-    root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
+    # root = '/home/chengaoyu/code/Python/gitRepository/dxlearn/develop-cgy/'
     bin_file = root +file_name
     npyfile = root + 'mouse_data.npy'
     lors = np.fromfile(bin_file, dtype=np.float32).reshape((-1, 7))  
     np.save(npyfile, lors)
 
 if __name__ == "__main__":
-    test_cut_lors()
+    # test_cut_lors()
+    effmap = np.load(root+'effmaps/siddon_1_4.npy')
+    print(np.min(effmap))
+    effmap = 1/effmap
+    print(np.max(effmap))
+    # effmap[np.array([np.where(effmap == np.nan)])]
+    # print()
+    # print(map)
     # bin_to_npy('mouse_data.s')
-# a = np.ones((2, 6))
-# b = 0 - a
-# c = np.square(b)
-# d = np.sum(c, 0)
-# print(b)
-# print(c)
-# print(d)
+

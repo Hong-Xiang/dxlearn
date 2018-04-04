@@ -243,6 +243,33 @@ def make_lors(block_pairs):
         lors.append(list(itertools.product(m0, m1)))
     return np.array(lors).reshape(-1, 6)
 
+
+def make_siddon_maps(start, end):
+    rpet = RingPET(400.0, 420.0, 0.0, 540, 48, Vec3(20., 51.3, 3.42), Vec3(1, 15, 1))
+    r1 = rpet.rings(0)
+    total_time = 0
+    for ir in range(start, end):
+        print("start compute the {} th map.".format(ir))
+        st = time.time()
+        # ir = 6
+        r2 = rpet.rings(ir)
+        bs = make_block_pairs([r1,r2])
+        lors = make_lors(bs)
+        grid = [540, 195, 195]  
+        # origin = [-711.36, -333.45, -333.45]
+        center = [0., 0., 0.]
+        size = [1846.8, 666.9, 666.9]
+        
+        effmap = SiddonMap(grid, voxsize, origin, lors)
+        np.save(root+'effmap_{}.npy'.format(ir), effmap)
+        et = time.time()
+        tdiff = et-st
+        print("{} th map use: {} seconds".format(ir, tdiff))
+        total_time += tdiff
+        print("total time: {} seconds".format(total_time))
+        print("time remain: {} seconds".format(total_time/(ir-start + 1)*(end - ir - 1)))
+        
+
 def make_maps(start, end):
     # rpet = RingPET(400.0, 420.0, 0.0, 432, 20, Vec3(20, 122.4, 3.4), Vec3(5, 36, 1))
     # rpet = RingPET(400, 420, 0.0, 540, 48, Vec3(20, 51.3, 3.42),Vec3(1, 15, 1))
@@ -265,7 +292,6 @@ def make_maps(start, end):
         # origin = [-711.36, -333.45, -333.45]
         center = [0., 0., 0.]
         size = [1846.8, 666.9, 666.9]
-        
         # voxsize = [3.42, 3.42, 3.42]
         # et = time.time()
         # subnum = 3

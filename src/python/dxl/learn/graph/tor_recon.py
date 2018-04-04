@@ -133,12 +133,11 @@ class GlobalGraph(Graph):
     def x_update_by_merge(self):
         sm = Summation('summation', self.graph_info.update(name=None))
         TK = self.KEYS.TENSOR
-        # op_copy_back = []
-        # for b, bt in zip(self.tensor(TK.X_BUFFER), self.tensor(TK.X_BUFFER_TARGET)):
-        # op_copy_back.append(b.assign(bt))
-        # with tf.control_dependencies(map_data(op_copy_back)):
         x_s = sm(self.tensor(TK.X_BUFFER))
-        x_u = self.tensor(TK.X).assign(x_s)
+        x0_sum = tf.reduce_sum(self.tensor(TK.X).data)
+        x1_sum = tf.reduce_sum(x_s.data)
+        x_new = x_s.data * x0_sum / x1_sum
+        x_u = self.tensor(TK.X).assign(x_new)        
         self.tensors[TK.X_UPDATE] = x_u
         return x_u
 
@@ -210,7 +209,7 @@ class LocalGraph(Graph):
         return x_cp
 
     def recon_local(self):
-        x_n = ReconStep('recon_step_{}'.format(self.tid),
+        x_n = TorStep('recon_step_{}'.format(self.tid),
                         self.tensor(self.KEYS.TENSOR.X_COPY_FROM_GLOBAL),
                         # self.tensor(self.KEYS.TENSOR.Y),
                         self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP),
