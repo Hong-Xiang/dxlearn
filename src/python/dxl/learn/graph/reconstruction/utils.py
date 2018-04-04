@@ -79,3 +79,58 @@ def print_tensor(t, name=None):
 
 def print_info(*msg):
   print('INFO', *msg)
+
+
+sample_cluster_config = {
+    "master": ["localhost:2221"],
+    "worker": ["localhost:2333", "localhost:2334"]
+}
+
+
+def cluster_configs_generator(master_ip, workers_ips, nb_process_per_worker):
+  workers = []
+  for worker in WORKERS_IO_SUFFIX:
+    for p in range(2333, 2333 + NB_PROCESS_PER_WORKER):
+      workers.append("192.168.1.{}:{}".format(worker, p))
+  return {
+      "master": ["192.168.1.{}:2221".format(MASTER_IP_SUFFIX)],
+      "worker": workers
+  }
+
+
+def load_cluster_configs(config=None):
+  if config is None:
+    return sample_cluster_config
+  elif isinstance(config, str):
+    with open(config, 'r') as fin:
+      return json.load(fin)
+  else:
+    return config
+
+
+sample_reconstruction_config = {
+    'grid': [150, 150, 150],
+    'center': [0., 0., 0.],
+    'size': [150., 150., 150.],
+    'map_file': './debug/map.npy',
+    'x_lor_files': './debug/xlors.npy',
+    'y_lor_files': './deubg/ylors.npy',
+    'z_lor_files': './deubg/zlors.npy',
+    'lor_ranges': None,
+    'lor_steps': None,
+}
+
+
+def load_reconstruction_configs(config=None):
+  if config is None:
+    c = sample_cluster_config
+  elif isinstance(config, str):
+    with open(config, 'r') as fin:
+      c = json.load(fin)
+  else:
+    c = config
+  image_info = ImageInfo(c['grid'], c['center'], c['size'])
+  data_info = DataInfo(c['map_file'],
+                       {a: c['{}_lor_files']
+                        for a in ['x', 'y', 'z']}, lor_ranges, lor_steps)
+  return image_info, data_info

@@ -294,6 +294,9 @@ class DistributeTask:
     self.worker_graph_infos = [
         DistributeGraphInfo(None, None, None, h) for h in self.hosts
     ]
+  
+  def nb_workers(self):
+    return len(self.hosts)
 
   def add_master_graph(self, g):
     self.master_graph = g

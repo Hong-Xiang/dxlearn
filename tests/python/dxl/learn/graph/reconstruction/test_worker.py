@@ -9,7 +9,6 @@ from dxl.learn.graph.reconstruction.utils import ImageInfo
 from dxl.learn.core import Constant, Host, Master
 
 
-
 class TestWorkerGraphBase(tf.test.TestCase):
   def test_copy_global(self):
     x = np.array([1.0, 2.0, 3.0], np.float32)
@@ -20,11 +19,11 @@ class TestWorkerGraphBase(tf.test.TestCase):
       self.assertAllEqual(m.tensor(m.KEYS.TENSOR.X).eval(), [1.0, 2.0, 3.0])
       self.assertAllEqual(w.tensor(w.KEYS.TENSOR.X).eval(), [1.0, 2.0, 3.0])
 
+
 dummyReconStep = MagicMock()
 
 
 class TestWorkerGraphLOR(tf.test.TestCase):
-  # @patch('dxl.learn.model.tor_recon.recon_step.ReconStep')
   def test_basic(self):
     x = np.arange(27, dtype=np.float32).reshape([3, 3, 3])
     m = MasterGraph(x, 2)

@@ -1,18 +1,15 @@
 import numpy as np
 import click
 import tensorflow as tf
-from dxl.learn.core import TensorNumpyNDArray, TensorVariable, Tensor, VariableInfo, DistributeGraphInfo, ThisSession, Session, Host, ThisHost, DistributeTask
-from dxl.learn.core import make_distribute_host, make_distribute_session, Master, Barrier, Server
+from dxl.learn.core import make_distribute_host, make_distribute_session, Master, Barrier, DistributeTask
 from typing import Iterable
 import pdb
 import time
 
 from dxl.learn.model.tor_recon import ReconStep, ProjectionSplitter, EfficiencyMap
-from dxl.learn.graph.tor_recon import GlobalGraph, LocalGraph
 
-
-from .global_graph import GlobalGraph
-from .local_graph import LocalGraph
+from .master import MasterGraph
+from .worker import WorkerGraphLOR
 from .utils import ImageInfo, print_tensor, DataInfo, load_data, print_info, constant_tensor
 from .preprocess import preprocess as preprocess_tor
 
@@ -26,7 +23,7 @@ MODEL = 'TOR'
 
 # Load configs
 
-def load_dist_configs(config=None):
+def load_cluster_configs(config=None):
   if config is None:
     workers = []
     for worker in WORKERS_IO_SUFFIX:
@@ -40,7 +37,7 @@ def load_dist_configs(config=None):
     with open(config,'r') as fin:
       return json.load(fin)
   
-def load_recon_configs(config=None):
+def load_reconstruction_configs(config=None):
   if config is not None:
     with open('config', 'r') as fin:
       c = json.load(fin)
@@ -61,10 +58,11 @@ def load_recon_configs(config=None):
   return image_info, data_info
 
 def task_init(job, task, config_file=None):
-  task = DistributeTask(load_dist_configs(config_file))
+  task = DistributeTask(load_cluster_configs(config_file))
   return task
 
-def create_global_graph(task, image_info, x_value=1.0):
+def create_master_graph(task, x):
+  mg = MasterGraph(x, task.nb_workers(), task.)
   x = np.ones(image_info.grid) * x_value
   gg = GlobalGraph(x, image_info, task.)
   print_info("Global graph created.")
