@@ -15,7 +15,8 @@ sample code :: python
   @click.command()
   @click.option('--job', '-j', help='Job')
   @click.option('--task', '-t', help='task', type=int, default=0)
-  def cli(job, task):
+  @click.option('--config', '-c', help='config file')
+  def cli(job, task, config):
     main(job, task)
 
 
@@ -298,11 +299,13 @@ def run_and_save_if_is_master(x, path):
 # np.save('recon.npy', res)
 
 
-def main(job, task_index):
+def main(job, task_index, config=None):
+  if config is None:
+    config = './recon.json'
   logger.info("Start reconstruction job: {}, task_index: {}.".format(
       job, task_index))
   task = task_init(job, task_index)
-  image_info, data_info = load_reconstruction_configs('./recon.json')
+  image_info, data_info = load_reconstruction_configs(config_path)
   logger.info("Local data_info:\n" + str(data_info))
   create_master_graph(task, np.ones(image_info.grid, dtype=np.float32))
   create_worker_graphs(task, image_info, data_info)
@@ -324,14 +327,3 @@ def main(job, task_index):
         './debug/mem_lim_result_{}.npy'.format(i))
   logger.info('Recon {} steps done.'.format(nb_steps))
   time.sleep(5)
-
-
-@click.command()
-@click.option('--job', '-j', help='Job')
-@click.option('--task', '-t', help='task', type=int, default=0)
-def cli(job, task):
-  main(job, task)
-
-
-if __name__ == "__main__":
-  cli()
