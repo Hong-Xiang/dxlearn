@@ -1,17 +1,17 @@
 import numpy as np
 import click
 import tensorflow as tf
-from dxl.learn.core import make_distribute_session, Master, Barrier, ThisHost
+from dxl.learn.core import make_distribute_session, Master, Barrier, ThisHost, ThisSession
 from typing import Iterable
 import pdb
 import time
 
 from .master import MasterGraph
 from .worker import WorkerGraphLOR
-from .utils import ImageInfo, print_tensor, DataInfo, load_data, logger, constant_tensor, load_reconstruction_configs
+from .utils import ImageInfo, print_tensor, DataInfo, load_data, logger, constant_tensor, load_reconstruction_configs, load_local_data
+from .utils import debug_tensor
 from .preprocess import preprocess as preprocess_tor
 from .distribute import DistributeTask, load_cluster_configs
-
 import json
 
 
@@ -31,9 +31,7 @@ def create_master_graph(task: DistributeTask, x):
 def create_worker_graphs(task: DistributeTask, image_info,
                          data_info: DataInfo):
   for i in range(task.nb_workers()):
-    logger.info("Creating local graph for worker {}...".format(
-        ThisHost.host().task_index))
-    # emap, lors = load_local_data(data_info)
+    logger.info("Creating local graph for worker {}...".format(i))
     task.add_worker_graph(
         WorkerGraphLOR(
             task.master_graph,
@@ -47,8 +45,21 @@ def create_worker_graphs(task: DistributeTask, image_info,
   return task.worker_graphs
 
 
+def bind_local_data(data_info, task: DistributeTask, task_index=None):
+  if task_index is None:
+    task_index = ThisHost.host().task_index
+  if ThisHost.is_master():
+    logger.info("On Master node, skip bind local data.")
+    return
+  else:
+    logger.info("On Worker node, local data for worker {}.".format(task_index))
+    emap, lors = load_local_data(data_info, task_index)
+    task.worker_graphs[task_index].assign_efficiency_map_and_lors(emap, lors)
+
+
 def init_step(task: DistributeTask):
-  init_barrier = Barrier('init', task.hosts, task.master_host,
+  logger.debug(task.worker_graphs[0].tensor('init'))
+  init_barrier = Barrier('init', task.hosts, [task.master_host],
                          [[g.tensor(g.KEYS.TENSOR.INIT)]
                           for g in task.worker_graphs])
   master_op = init_barrier.barrier(task.master_host)
@@ -255,9 +266,24 @@ def main(job, task_index):
   logger.info("Start reconstruction job: {}, task_index: {}.".format(
       job, task_index))
   t = task_init(job, task_index)
-  image_info, data_info = load_reconstruction_configs()
+  image_info, data_info = load_reconstruction_configs('./recon.json')
+  logger.info("Local data_info:\n" + str(data_info))
   create_master_graph(t, np.ones(image_info.grid, dtype=np.float32))
   create_worker_graphs(t, image_info, data_info)
+  bind_local_data(data_info, t)
+  master_op, worker_ops = init_step(t)
+  make_distribute_session()
+  if ThisHost.is_master():
+    ThisSession.run(master_op)
+  else:
+    ThisSession.run(worker_ops[ThisHost.host().task_index])
+  logger.info('Init ip done.')
+  debug_tensor(t.worker_graphs[0].tensor('lors')['x'], 'worker 0')
+  debug_tensor(t.worker_graphs[0].tensor('lors')['y'], 'worker 0')
+  debug_tensor(t.worker_graphs[1].tensor('lors')['x'], 'worker 1')
+  debug_tensor(t.worker_graphs[1].tensor('lors')['y'], 'worker 1')
+  time.sleep(100)
+  
 
 
 @click.command()

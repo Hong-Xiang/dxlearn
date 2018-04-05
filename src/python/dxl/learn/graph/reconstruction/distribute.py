@@ -94,15 +94,3 @@ class DistributeTask:
 from .utils import DataInfo
 
 
-# Load datas
-def load_local_data(data_info: DataInfo):
-  logger.info("Loading efficiency map from file: {}...".format(
-      data_info.map_file()))
-  emap = load_data(data_info.map_file())
-  lors = {}
-  for a in ['x', 'y', 'z']:
-    msg = "Loading {} LORs from file: {}, with range: {}..."
-    logger.info(msg.format(data_info.map_file(), data_info.lor_range()))
-    lors[a] = load_data(data_info.lor_file(a, data_info.lor_range()))
-  logger.info('Loading local data done.')
-  return emap, lors

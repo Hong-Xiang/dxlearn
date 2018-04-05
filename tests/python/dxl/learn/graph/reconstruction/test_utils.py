@@ -14,3 +14,8 @@ class TestDataInfo(unittest.TestCase):
     self.assertEqual(data_info.lor_shape('x', 0), [100, 6])
     self.assertEqual(data_info.lor_shape('y', 0), [200, 6])
     self.assertEqual(data_info.lor_shape('z', 0), [300, 6])
+  
+  def test_efficiency_map_file(self):
+    _, data_info = utils.load_reconstruction_configs()
+    self.assertEqual(data_info.map_file(0), './debug/map.npy')
+ 

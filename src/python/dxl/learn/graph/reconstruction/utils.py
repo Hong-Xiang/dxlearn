@@ -2,7 +2,7 @@ import numpy as np
 import h5py
 import tensorflow as tf
 from ...core import ThisHost
-
+import json
 import logging
 
 logging.basicConfig(
@@ -32,13 +32,15 @@ class DataInfo:
     self._lor_ranges = lor_ranges
     self._lor_step = lor_step
 
-  def map_file(self):
+  def map_file(self, task_index=None):
+    if task_index is None:
+      task_index = ThisHost.host().task_index
     if isinstance(self._map_file, str):
       return self._map_file
     else:
-      return self._map_file[ThisHost.host().task_index]
+      return self._map_file[task_index]
 
-  def lor_file(self, axis, task_index):
+  def lor_file(self, axis, task_index=None):
     if task_index is None:
       task_index = ThisHost().host().task_index
     if isinstance(self._lor_files[axis], str):
@@ -46,7 +48,7 @@ class DataInfo:
     else:
       return self._lor_files[axis][task_index]
 
-  def lor_range(self, task_index=None):
+  def lor_range(self, axis, task_index=None):
     if task_index is None:
       task_index = ThisHost.host().task_index
     if self._lor_ranges is not None:
@@ -64,6 +66,15 @@ class DataInfo:
     else:
       return self._lor_shapes[axis][task_index]
 
+  def __str__(self):
+    result = {}
+    axis = ['x', 'y', 'z']
+    result['map_file'] = self.map_file()
+    result['lor_file'] = {a: self.lor_file(a) for a in axis}
+    result['lor_range'] = {a: self.lor_range(a) for a in axis}
+    result['lor_shape'] = {a: self.lor_shape(a) for a in axis}
+    return json.dumps(result, indent=4, separators=(',', ': '))
+
 
 def load_data(file_name, lor_range=None):
   if file_name.endswith('.npy'):
@@ -77,6 +88,20 @@ def load_data(file_name, lor_range=None):
       else:
         data = np.array(fin['data'])
   return data
+
+
+# Load datas
+def load_local_data(data_info: DataInfo, task_index):
+  logger.info("Loading efficiency map from file: {}...".format(
+      data_info.map_file()))
+  emap = load_data(data_info.map_file())
+  lors = {}
+  for a in ['x', 'y', 'z']:
+    msg = "Loading {} LORs from file: {}, with range: {}..."
+    logger.info(msg.format(a, data_info.lor_file(a), data_info.lor_range(a)))
+    lors[a] = load_data(data_info.lor_file(a), data_info.lor_range(a))
+  logger.info('Loading local data done.')
+  return emap, lors
 
 
 def ensure_float32(x):
@@ -100,6 +125,10 @@ def variable_tensor(x, name, ginfo):
 def print_tensor(t, name=None):
   print("[DEBUG] name: {}, tensor: {}, value:\n{}".format(
       name, t.data, t.run()))
+
+
+def debug_tensor(t, msg):
+  logger.debug("Debug {}, tensor: {}, (.data: {}):\n{}".format(msg, t, t.data, t.run()))
 
 
 def print_info(*msg):

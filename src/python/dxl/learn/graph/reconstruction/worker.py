@@ -79,6 +79,8 @@ class WorkerGraphLOR(WorkerGraphBase):
             tf.float32)
         for a in self.lors_shape
     }
+    self.tensors[KT.INIT] = Tensor(
+        tf.no_op(), None, self.graph_info.update(name='init_no_op'))
 
   def assign_efficiency_map_and_lors(self, efficiency_map, lors):
     map_assign = self.tensor(
@@ -94,7 +96,6 @@ class WorkerGraphLOR(WorkerGraphBase):
 
   def _construct_x_result(self):
     self._construct_inputs()
-    print(self.tensor('lors')['x'].data)
     KT = self.KEYS.TENSOR
     from ...model.tor_recon.recon_step import ReconStep
     x_res = ReconStep(
