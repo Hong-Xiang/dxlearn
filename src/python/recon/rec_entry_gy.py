@@ -17,32 +17,21 @@ from dxl.learn.preprocess import preprocess
 
 import time
 
-root = './debug/'
+root = './'
 
 NB_WORKERS = 2
-MASTER_IP_SUFFIX = '110'
-WORKERS_IO_SUFFIX = ['118', '116', '111']
-NB_PROCESS_PER_WORKER = 2
-MODEL = 'TOR'
 
 def ptensor(t, name=None):
     print("|DEBUG| name: {} | data: {} | run() {} |.".format(name, t.data, t.run()))
 
 
 def dist_init(job, task):
-    # cfg = {"master": ["192.168.1.110:2221"],
-    #        "worker": ["192.168.1.110:2337",
-    #                   "192.168.1.110:2338",
-    #                 #   "192.168.1.110:2333",
-    #                 #   "192.168.1.110:2334",
-    #                  ]}
-    cfg = {"master": ["192.168.1.{}:2221".format(MASTER_IP_SUFFIX)]}
-    workers = []
-    for worker in WORKERS_IO_SUFFIX:
-      for p in range(2333, 2333 + NB_PROCESS_PER_WORKER):
-        workers.append("192.168.1.{}:{}".format(worker, p))
-    cfg.update({'worker': workers})
-
+    cfg = {"master": ["192.168.1.118:2221"],
+           "worker": ["192.168.1.118:2337",
+                      "192.168.1.118:2338",
+                    #   "192.168.1.110:2333",
+                    #   "192.168.1.110:2334",
+                     ]}
     make_distribute_host(cfg, job, task, None, 'master', 0)
     master_host = Master.master_host()
     hosts = [Host('worker', i) for i in range(NB_WORKERS)]
@@ -55,6 +44,8 @@ def dist_init(job, task):
 
 #     # load the effciency map
 #     effmap = np.load(root + 'map.npy')
+#     effmap = 1/effmap
+#     effmap[np.array([np.where(effmap == np.nan)])] = 0
 #     # load the lors from file
 #     lors = np.load(root + 'lors.npy')
 #     lors = lors[:, :6]
@@ -71,14 +62,19 @@ def dist_init(job, task):
 #     gg = GlobalGraph(x, grid, center, size, xlors, ylors, zlors, effmap, hmi)
 #     return gg
 
+# for siddon 
 def init_global(hmi):
     # load the effciency map
-    effmap = np.load(root + 'effmaps/siddon_1_4.npy')
+    effmap = np.load(root + 'siddon_1_4.npy')
+    effmap = 1/effmap
+    effmap[np.array([np.where(effmap == np.nan)])] = 0
     # load the lors from file
     lors = np.load(root + 'events.npy')
     lors = lors[:int(5e7), :7]
+    lors[:,6] = 0
     # intialize the image to be reconstructed
     x_value = (lors.shape)[0]/effmap.size
+
     x = np.ones(effmap.shape)*x_value
     
     grid = [416, 195, 195]
@@ -206,15 +202,16 @@ def main(job, task):
     # time.sleep(5)
     # recon_run(m_op_rec, w_ops_rec, global_graph, local_graphs)
     start_time = time.time()
-    for i in range(20):
+    for i in range(10):
         full_step_run(m_op, w_ops, global_graph, local_graphs, i)
         end_time = time.time()
         delta_time = end_time - start_time
         msg = "the step running time is:{}".format(delta_time/(i+1))
         print(msg)
         if ThisHost.is_master():
-            res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
-            np.save(root +'rec_test/siddon_recon_{}.npy'.format(i), res)
+            if( i%2 == 0):
+                res = global_graph.tensor(global_graph.KEYS.TENSOR.X).run()
+                np.save(root +'/result/cgy_siddon_recon_{}.npy'.format(i), res)
     ptensor(global_graph.tensor(global_graph.KEYS.TENSOR.X))
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 1)
     # full_step_run(m_op, w_ops, global_graph, local_graphs, 2)
@@ -233,9 +230,6 @@ def main(job, task):
     delta_time = end_time - start_time
     msg = "the total running time is:{}".format(delta_time)
     print(msg)
-    if ThisHost.is_master():
-        with open('time_cost.txt', 'w') as fout:
-            print(msg, file=fout)
     # import imageio
 
     # img = np.load('recon.npy')
