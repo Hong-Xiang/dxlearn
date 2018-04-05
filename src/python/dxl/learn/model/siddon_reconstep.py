@@ -17,8 +17,6 @@ class SiddonStep(Model):
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             IMAGE = 'image'
-            # PROJECTION = 'projection'
-            # SYSTEM_MATRIX = 'system_matrix'
             EFFICIENCY_MAP = 'efficiency_map'
             LORS = 'lors'
 
@@ -63,7 +61,7 @@ class SiddonStep(Model):
 
         
         # z-dominant, no transpose        
-        print("this is the time_res:",time_res)        
+        # print("this is the time_res:",time_res)        
         p = projection(
             lors=lors,
             image=image,
@@ -84,6 +82,8 @@ class SiddonStep(Model):
             tof_bin = tof_bin,
             time_resolution = time_res,
             model=model)
-
-        result = image / (effmap + 1e-8) * bp
+        # image_summation = tf.reduce_sum(image)
+        result = image * effmap  * bp
+        # result_summation = tf.reduce_sum(result)
+        # result = result * image_summation / result_summation
         return Tensor(result, None, self.graph_info.update(name=None))

@@ -1,6 +1,6 @@
 import numpy as np
 from dxl.learn.core import TensorNumpyNDArray, GraphInfo, ThisSession, make_session
-from dxl.learn.model.tor_reconstep import ReconStep
+from dxl.learn.model.tor_step import TorStep
 from typing import List
 
 def recon_step(efficiency_map: np.ndarray, lors: List[np.ndarray],
