@@ -1,4 +1,4 @@
-from ...core import make_distribute_host, DistributeGraphInfo, Host, Master
+from ...core import make_distribute_host, DistributeGraphInfo, Host, Master, ThisHost, ThisSession
 
 
 def cluster_configs_generator(master_ip, workers_ips, nb_process_per_worker):
@@ -40,6 +40,7 @@ class DistributeTask:
     self.master_host = None
     self.hosts = []
     self.master_graph_info = None
+    self.steps = {}
 
   def cluster_init(self, job, task, nb_workers=None):
     if nb_workers is None:
@@ -59,6 +60,15 @@ class DistributeTask:
 
   def add_master_graph(self, g):
     self.master_graph = g
+
+  def add_step(self, name, master_op, worker_ops):
+    self.steps[name] = {'master': master_op, 'worker': worker_ops}
+
+  def run_step_of_this_host(self, name):
+    if ThisHost.is_master():
+      ThisSession.run(self.steps[name]['master'])
+    else:
+      ThisSession.run(self.steps[name]['worker'][ThisHost.host().task_index])
 
   def add_worker_graph(self, g):
     self.worker_graphs.append(g)
@@ -92,5 +102,3 @@ class DistributeTask:
 
 
 from .utils import DataInfo
-
-

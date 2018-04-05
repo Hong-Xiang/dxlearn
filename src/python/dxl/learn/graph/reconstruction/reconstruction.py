@@ -1,7 +1,7 @@
 import numpy as np
 import click
 import tensorflow as tf
-from dxl.learn.core import make_distribute_session, Master, Barrier, ThisHost, ThisSession
+from dxl.learn.core import make_distribute_session, Master, Barrier, ThisHost, ThisSession, Tensor
 from typing import Iterable
 import pdb
 import time
@@ -13,6 +13,8 @@ from .utils import debug_tensor
 from .preprocess import preprocess as preprocess_tor
 from .distribute import DistributeTask, load_cluster_configs
 import json
+
+from tqdm import tqdm
 
 
 def task_init(job, task, config=None):
@@ -57,35 +59,44 @@ def bind_local_data(data_info, task: DistributeTask, task_index=None):
     task.worker_graphs[task_index].assign_efficiency_map_and_lors(emap, lors)
 
 
-def init_step(task: DistributeTask):
-  logger.debug(task.worker_graphs[0].tensor('init'))
-  init_barrier = Barrier('init', task.hosts, [task.master_host],
+def make_init_step(task: DistributeTask, name='init'):
+  init_barrier = Barrier(name, task.hosts, [task.master_host],
                          [[g.tensor(g.KEYS.TENSOR.INIT)]
                           for g in task.worker_graphs])
   master_op = init_barrier.barrier(task.master_host)
-  workers_op = [init_barrier.barrier(h) for h in task.hosts]
-  return master_op, workers_op
+  worker_ops = [init_barrier.barrier(h) for h in task.hosts]
+  task.add_step(name, master_op, worker_ops)
+  return name
 
 
-# def recon_step(global_graph: GlobalGraph, local_graphs: Iterable[LocalGraph]):
-#   recon_local = [[g.tensor(g.KEYS.TENSOR.X_UPDATE)] for g in local_graphs]
-#   worker_hosts = [g.host for g in local_graphs]
-#   master_host = Master.master_host()
-#   calculate_barrier = Barrier(
-#       'calculate', worker_hosts, [master_host], task_lists=recon_local)
-#   TK = global_graph.KEYS.TENSOR
-#   master_barrier = calculate_barrier.barrier(master_host)
-#   worker_barriers = [calculate_barrier.barrier(h) for h in worker_hosts]
-#   return master_barrier, worker_barriers
+def make_recon_step(task: DistributeTask, name='recon'):
+  recons = [[g.tensor(g.KEYS.TENSOR.UPDATE)] for g in task.worker_graphs]
+  calculate_barrier = Barrier(
+      name, task.hosts, [task.master_host], task_lists=recons)
+  master_op = calculate_barrier.barrier(task.master_host)
+  worker_ops = [calculate_barrier.barrier(h) for h in task.hosts]
+  task.add_step(name, master_op, worker_ops)
+  return name
 
-# def merge_step(global_graph, worker_hosts):
-#   """
-#   """
-#   merge_barrier = Barrier('merge', [Master.master_host()], worker_hosts,
-#                           [[self.merge_local_x()]])
-#   master_op = merge_barrier.barrier(Master.master_host())
-#   workers_ops = [merge_barrier.barrier(h) for h in worker_hosts]
-#   return master_op, workers_ops
+
+def make_merge_step(task: DistributeTask, name='merge'):
+  """
+  """
+  merge_op = task.master_graph.tensor(task.master_graph.KEYS.TENSOR.UPDATE)
+  merge_barrier = Barrier(name, [task.master_host], task.hosts, [[merge_op]])
+  master_op = merge_barrier.barrier(task.master_host)
+  worker_ops = [merge_barrier.barrier(h) for h in task.hosts]
+  task.add_step(name, master_op, worker_ops)
+  return name
+
+
+def run_and_save_if_is_master(x, path):
+  if ThisHost.is_master():
+    if isinstance(x, Tensor):
+      x = x.data
+    result = ThisSession.run(x)
+    np.save(path, result)
+
 
 # def make_recon_local(global_graph, local_graphs):
 #   for g in local_graphs:
@@ -265,25 +276,29 @@ def init_step(task: DistributeTask):
 def main(job, task_index):
   logger.info("Start reconstruction job: {}, task_index: {}.".format(
       job, task_index))
-  t = task_init(job, task_index)
+  task = task_init(job, task_index)
   image_info, data_info = load_reconstruction_configs('./recon.json')
   logger.info("Local data_info:\n" + str(data_info))
-  create_master_graph(t, np.ones(image_info.grid, dtype=np.float32))
-  create_worker_graphs(t, image_info, data_info)
-  bind_local_data(data_info, t)
-  master_op, worker_ops = init_step(t)
+  create_master_graph(task, np.ones(image_info.grid, dtype=np.float32))
+  create_worker_graphs(task, image_info, data_info)
+  bind_local_data(data_info, task)
+  init_step = make_init_step(task)
+  recon_step = make_recon_step(task)
+  merge_step = make_merge_step(task)
   make_distribute_session()
-  if ThisHost.is_master():
-    ThisSession.run(master_op)
-  else:
-    ThisSession.run(worker_ops[ThisHost.host().task_index])
-  logger.info('Init ip done.')
-  debug_tensor(t.worker_graphs[0].tensor('lors')['x'], 'worker 0')
-  debug_tensor(t.worker_graphs[0].tensor('lors')['y'], 'worker 0')
-  debug_tensor(t.worker_graphs[1].tensor('lors')['x'], 'worker 1')
-  debug_tensor(t.worker_graphs[1].tensor('lors')['y'], 'worker 1')
-  time.sleep(100)
-  
+  task.run_step_of_this_host(init_step)
+  logger.info('STEP: {} done.'.format(init_step))
+  nb_steps = 10
+  for i in tqdm(range(nb_steps), ascii=True):
+    task.run_step_of_this_host(recon_step)
+    logger.info('STEP: {} done.'.format(recon_step))
+    task.run_step_of_this_host(merge_step)
+    logger.info('STEP: {} done.'.format(merge_step))
+    run_and_save_if_is_master(
+        task.master_graph.tensor('x'),
+        './debug/mem_lim_result_{}.npy'.format(i))
+  logger.info('Recon {} steps done.'.format(nb_steps))
+  time.sleep(5)
 
 
 @click.command()

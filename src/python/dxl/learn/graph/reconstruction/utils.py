@@ -32,6 +32,17 @@ class DataInfo:
     self._lor_ranges = lor_ranges
     self._lor_step = lor_step
 
+  def _maybe_broadcast_value(self,
+                             value,
+                             task_index=None,
+                             valid_type=(list, tuple)):
+    if task_index is None:
+      task_index = ThisHos
+    if isinstance(value, valid_type):
+      return value[task_index]
+    else:
+      return value
+
   def map_file(self, task_index=None):
     if task_index is None:
       task_index = ThisHost.host().task_index
@@ -52,9 +63,10 @@ class DataInfo:
     if task_index is None:
       task_index = ThisHost.host().task_index
     if self._lor_ranges is not None:
-      return self._lor_ranges[task_index]
+      return self._maybe_broadcast_value(self._lor_ranges[axis], task_index)
     elif self._lor_step is not None:
-      return [task_index * self._lor_step, (task_index + 1) * self._lor_step]
+      step = self._maybe_broadcast_value(self._lor_step[axis], task_index)
+      return [task_index * step, (task_index + 1) * step]
     else:
       return None
 
@@ -128,7 +140,8 @@ def print_tensor(t, name=None):
 
 
 def debug_tensor(t, msg):
-  logger.debug("Debug {}, tensor: {}, (.data: {}):\n{}".format(msg, t, t.data, t.run()))
+  logger.debug("Debug {}, tensor: {}, (.data: {}):\n{}".format(
+      msg, t, t.data, t.run()))
 
 
 def print_info(*msg):
