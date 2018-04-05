@@ -12,11 +12,15 @@ using namespace tensorflow;
 REGISTER_OP("ProjectionGpu")
     .Input("lors: float")
     .Input("image: float")
+
     .Input("grid: int32")
-    .Input("center: float")
+    .Input("position: float")
     .Input("size: float")
+
     .Output("line_integral: float")
     .Attr("kernel_width: float")
+    .Attr("tof_bin: float")
+    .Attr("sigma2: float")
     .Attr("model: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext *c) {
         c->set_output(0, c->Matrix(c->Dim(c->input(0), 1), 1));
@@ -25,12 +29,16 @@ REGISTER_OP("ProjectionGpu")
 
 REGISTER_OP("BackprojectionGpu")
     .Input("image: float")
-    .Input("grid: int32")
-    .Input("center: float")
-    .Input("size: float")
     .Input("lors: float")
-    .Input("line_integral: float")
+    .Input("lor_values: float")
+
+    .Input("grid: int32")
+    .Input("position: float")
+    .Input("size: float")
+
     .Output("backpro_image: float")
+    .Attr("tof_bin: float")
+    .Attr("sigma2: float")
     .Attr("kernel_width: float")
     .Attr("model: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext *c) {

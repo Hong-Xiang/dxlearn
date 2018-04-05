@@ -1,7 +1,7 @@
 import numpy as np
 import click
 import tensorflow as tf
-from dxl.learn.core import TensorNumpyNDArray, TensorVariable, Tensor, VariableInfo, DistributeGraphInfo, ThisSession, Session, Host, ThisHost
+from dxl.learn.core import TensorNumpyNDArray, TensorVariable, Tensor, VariableInfo, DistributeGraphInfo, ThisSession, Session, Host, ThisHost, DistributeTask
 from dxl.learn.core import make_distribute_host, make_distribute_session, Master, Barrier, Server
 from typing import Iterable
 import pdb
@@ -60,16 +60,13 @@ def load_recon_configs(config=None):
   data_info = DataInfo(c['map_file'], {a: c['{}_lor_files'] for a in ['x', 'y', 'z']}, lor_ranges, lor_steps)
   return image_info, data_info
 
-def dist_init(job, task):
-  make_distribute_host(cfg, job, task, None, 'master', 0)
-  master_host = Master.master_host()
-  hosts = [Host('worker', i) for i in range(NB_WORKERS)]
-  hmi = DistributeGraphInfo(None, None, None, master_host)
-  return hosts, hmi
+def task_init(job, task, config_file=None):
+  task = DistributeTask(load_dist_configs(config_file))
+  return task
 
-def create_global_graph(hmi, image_info, x_value=1.0):
+def create_global_graph(task, image_info, x_value=1.0):
   x = np.ones(image_info.grid) * x_value
-  gg = GlobalGraph(x, image_info, hmi)
+  gg = GlobalGraph(x, image_info, task.)
   print_info("Global graph created.")
   return gg
 

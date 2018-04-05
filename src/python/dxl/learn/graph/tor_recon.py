@@ -29,8 +29,7 @@ class GlobalGraph(Graph):
             INIT_OP = 'init_op'
             X_UPDATE = 'x_update'
 
-    def make_tensors(self, x: np.ndarray,
-                     xlors: np.ndarray, ylors: np.ndarray,
+    def make_tensors(self, x: np.ndarray, xlors: np.ndarray, ylors: np.ndarray,
                      zlors: np.ndarray, em: np.ndarray,
                      graph_info: DistributeGraphInfo):
         x = x.astype(np.float32)
@@ -41,16 +40,16 @@ class GlobalGraph(Graph):
         em = em.astype(np.float32)
         x_var_info = VariableInfo(None, x.shape, tf.float32)
         x_t = TensorVariable(x_var_info, graph_info.update(name='x_t'))
-        x_init = x_t.assign(TensorNumpyNDArray(x, None,
-                                               x_t.graph_info.update(name='x_init')))
-        em_t = TensorNumpyNDArray(em, None,
-                                  x_t.graph_info.update(name='effmap'))
-        xlors_t = TensorNumpyNDArray(xlors, None,
-                                     x_t.graph_info.update(name='xlors'))
-        ylors_t = TensorNumpyNDArray(ylors, None,
-                                     x_t.graph_info.update(name='ylors'))
-        zlors_t = TensorNumpyNDArray(zlors, None,
-                                     x_t.graph_info.update(name='zlors'))
+        x_init = x_t.assign(
+            TensorNumpyNDArray(x, None, x_t.graph_info.update(name='x_init')))
+        em_t = TensorNumpyNDArray(
+            em, None, x_t.graph_info.update(name='effmap'))
+        xlors_t = TensorNumpyNDArray(
+            xlors, None, x_t.graph_info.update(name='xlors'))
+        ylors_t = TensorNumpyNDArray(
+            ylors, None, x_t.graph_info.update(name='ylors'))
+        zlors_t = TensorNumpyNDArray(
+            zlors, None, x_t.graph_info.update(name='zlors'))
         return {
             self.KEYS.TENSOR.X: x_t,
             self.KEYS.TENSOR.X_INIT: x_init,
@@ -63,22 +62,20 @@ class GlobalGraph(Graph):
             self.KEYS.TENSOR.LOCAL_INIT_OPS: [],
         }
 
-    def __init__(self, x: np.ndarray, grid: np.ndarray,
-                 center: np.ndarray, size: np.ndarray,
-                 xlors: np.ndarray, ylors: np.ndarray,
+    def __init__(self, x: np.ndarray, grid: np.ndarray, center: np.ndarray,
+                 size: np.ndarray, xlors: np.ndarray, ylors: np.ndarray,
                  zlors: np.ndarray, em: np.ndarray, graph_info):
         self.grid = grid
         self.center = center
         self.size = size
-        super().__init__('global_graph',
-                         self.make_tensors(
-                             x, xlors, ylors, zlors,
-                             em, graph_info),
-                         graph_info=graph_info)
+        super().__init__(
+            'global_graph',
+            self.make_tensors(x, xlors, ylors, zlors, em, graph_info),
+            graph_info=graph_info)
 
     def split(self, nb_workers):
-        spt = ProjectionSplitter('splitter', nb_workers,
-                                 self.graph_info.update(name=None))
+        spt = ProjectionSplitter(
+            'splitter', nb_workers, self.graph_info.update(name=None))
 
         xlors_ts = spt(self.tensor(self.KEYS.TENSOR.XLORS))
         ylors_ts = spt(self.tensor(self.KEYS.TENSOR.YLORS))
@@ -110,12 +107,12 @@ class GlobalGraph(Graph):
             host, True)
         em_cp, em_l = self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP).copy_to(
             host, True)
-        self.tensors[self.KEYS.TENSOR.LOCAL_INIT_OPS] += [x_cp,
-                                                          xlors_cp, ylors_cp,
-                                                          zlors_cp, em_cp]
-        return LocalGraph(tid, x_l, em_l, self.grid, self.center,
-                          self.size, xlors_l, ylors_l, zlors_l,
-                          x_cp, self.graph_info.update(name=None, host=host))
+        self.tensors[self.KEYS.TENSOR.LOCAL_INIT_OPS] += [
+            x_cp, xlors_cp, ylors_cp, zlors_cp, em_cp
+        ]
+        return LocalGraph(tid, x_l, em_l, self.grid, self.center, self.size,
+                          xlors_l, ylors_l, zlors_l, x_cp,
+                          self.graph_info.update(name=None, host=host))
 
     def init_op(self, local_graphs: Iterable['LocalGraph']):
         master_host = Master.master_host()
@@ -133,19 +130,22 @@ class GlobalGraph(Graph):
     def x_update_by_merge(self):
         sm = Summation('summation', self.graph_info.update(name=None))
         TK = self.KEYS.TENSOR
+        # op_copy_back = []
+        # for b, bt in zip(self.tensor(TK.X_BUFFER), self.tensor(TK.X_BUFFER_TARGET)):
+        # op_copy_back.append(b.assign(bt))
+        # with tf.control_dependencies(map_data(op_copy_back)):
         x_s = sm(self.tensor(TK.X_BUFFER))
-        x0_sum = tf.reduce_sum(self.tensor(TK.X).data)
-        x1_sum = tf.reduce_sum(x_s.data)
-        x_new = x_s.data * x0_sum / x1_sum
-        x_u = self.tensor(TK.X).assign(x_new)        
+        x_u = self.tensor(TK.X).assign(x_s)
         self.tensors[TK.X_UPDATE] = x_u
         return x_u
 
     def recon_step(self, local_graphs: Iterable['LocalGraph'], worker_hosts):
         recon_local = [g.tensor(g.KEYS.TENSOR.X_UPDATE) for g in local_graphs]
         master_host = Master.master_host()
-        calculate_barrier = Barrier('calculate', worker_hosts, [master_host],
-                                    task_lists=[[r] for r in recon_local])
+        calculate_barrier = Barrier(
+            'calculate',
+            worker_hosts, [master_host],
+            task_lists=[[r] for r in recon_local])
         # import pdb
         # pdb.set_trace()
         TK = self.KEYS.TENSOR
@@ -155,11 +155,11 @@ class GlobalGraph(Graph):
             _op = self.x_update_by_merge()
         return _op.data, worker_barriers
 
-    def merge_step(self, master_recon_op, worker_recon_ops,  worker_hosts):
+    def merge_step(self, master_recon_op, worker_recon_ops, worker_hosts):
         """
-        """
-        merge_barrier = Barrier('merge', [Master.master_host()],
-                                worker_hosts, [[master_recon_op]])
+            """
+        merge_barrier = Barrier('merge', [Master.master_host()], worker_hosts,
+                                [[master_recon_op]])
         master_op = merge_barrier.barrier(Master.master_host())
         workers_ops = []
         for op, h in zip(worker_recon_ops, worker_hosts):
@@ -182,21 +182,23 @@ class LocalGraph(Graph):
             X_RESULT = 'x_result'
             X_GLOBAL_BUFFER = 'x_global_buffer'
 
-    def __init__(self, tid, x, em, grid, center, size,
-                 xlors, ylors, zlors, x_copy, graph_info):
+    def __init__(self, tid, x, em, grid, center, size, xlors, ylors, zlors,
+                 x_copy, graph_info):
         self.tid = tid
         self.grid = grid
         self.center = center
         self.size = size
         name = 'local_graph_{}'.format(tid)
-        super().__init__(name, {
-            self.KEYS.TENSOR.X: x,
-            self.KEYS.TENSOR.EFFICIENCY_MAP: em,
-            self.KEYS.TENSOR.XLORS: xlors,
-            self.KEYS.TENSOR.YLORS: ylors,
-            self.KEYS.TENSOR.ZLORS: zlors,
-            self.KEYS.TENSOR.X_COPY_FROM_GLOBAL: x_copy
-        }, graph_info=graph_info)
+        super().__init__(
+            name, {
+                self.KEYS.TENSOR.X: x,
+                self.KEYS.TENSOR.EFFICIENCY_MAP: em,
+                self.KEYS.TENSOR.XLORS: xlors,
+                self.KEYS.TENSOR.YLORS: ylors,
+                self.KEYS.TENSOR.ZLORS: zlors,
+                self.KEYS.TENSOR.X_COPY_FROM_GLOBAL: x_copy
+            },
+            graph_info=graph_info)
 
     def copy_to_global(self, global_graph: GlobalGraph):
         gg = global_graph
@@ -209,18 +211,19 @@ class LocalGraph(Graph):
         return x_cp
 
     def recon_local(self):
-        x_n = TorStep('recon_step_{}'.format(self.tid),
-                        self.tensor(self.KEYS.TENSOR.X_COPY_FROM_GLOBAL),
-                        # self.tensor(self.KEYS.TENSOR.Y),
-                        self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP),
-                        self.grid,
-                        self.center,
-                        self.size,
-                        self.tensor(self.KEYS.TENSOR.XLORS),
-                        self.tensor(self.KEYS.TENSOR.YLORS),
-                        self.tensor(self.KEYS.TENSOR.ZLORS),
-                        # self.tensor(self.KEYS.TENSOR.SYSTEM_MATRIX),
-                        self.graph_info.update(name=None))()
+        x_n = TorStep(
+            'recon_step_{}'.format(self.tid),
+            self.tensor(self.KEYS.TENSOR.X_COPY_FROM_GLOBAL),
+            # self.tensor(self.KEYS.TENSOR.Y),
+            self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP),
+            self.grid,
+            self.center,
+            self.size,
+            self.tensor(self.KEYS.TENSOR.XLORS),
+            self.tensor(self.KEYS.TENSOR.YLORS),
+            self.tensor(self.KEYS.TENSOR.ZLORS),
+            # self.tensor(self.KEYS.TENSOR.SYSTEM_MATRIX),
+            self.graph_info.update(name=None))()
         self.tensors[self.KEYS.TENSOR.X_RESULT] = x_n
         x_u = self.tensor(self.KEYS.TENSOR.X_GLOBAL_BUFFER).assign(x_n)
         # x_u = self.tensor(self.KEYS.TENSOR.X).assign(x_n)
