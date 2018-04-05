@@ -5,7 +5,7 @@ import tensorflow as tf
 from ..core import VariableInfo, TensorVariable, TensorNumpyNDArray, DistributeGraphInfo, Host, Master, Barrier
 from ..core import ThisHost
 from ..model.splitter import ProjectionSplitter
-from ..model.tor_reconstep import TorStep
+from ..model.tor_step import TorStep
 from ..model.on_collections import Summation
 from ..core.utils import map_data
 
