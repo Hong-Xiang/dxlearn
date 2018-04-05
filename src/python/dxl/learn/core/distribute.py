@@ -272,52 +272,5 @@ class Barrier:
     ThisSession.run(self.barrier(ThisHost.host()))
 
 
-class DistributeTask:
-  """
-  Helper class of managing distribute run.
-  """
 
-  def __init__(self, distribute_configs):
-    self.cfg = distribute_configs
-    self.master_graph = None
-    self.worker_graphs = []
-    self.master_host = None
-    self.hosts = []
-    self.master_graph_info = None
-
-  def dist_init(self, job, task):
-    from .graph_info import DistributeGraphInfo
-    make_distribute_host(self.cfg, job, task, None, 'master', 0)
-    self.master_host = Master.master_host()
-    self.hosts = [Host('worker', i) for i in range(NB_WORKERS)]
-    self.master_graph_info = DistributeGraphInfo(None, None, None, master_host)
-
-  def add_master_graph(self, g):
-    self.master_graph = g
-
-  def add_worker_graph(self, g):
-    self.worker_graphs.append(g)
-
-  def add_host(self, h):
-    self.hosts.append(h)
-
-  def worker_graph_on(self, host: Host):
-    return self.worker_graphs[host.task_index]
-
-  def graph_on_this_host(self):
-    host = ThisHost.host()
-    if ThisHost.is_master():
-      return self.master_graph
-    else:
-      for g in local_graphs:
-        if g.graph_info.host == host:
-          return g
-    raise KeyError("No local graph for {}.{} found".format(
-        host.job, host.task_index))
-
-  def ginfo_master(self):
-    return self.master_graph_info
-
-  def ginfo_this(self):
-    from .graph_info import DistributeGraphInfo
-    return DistributeGraphInfo(None, None, None, ThisHost.host())
+    
