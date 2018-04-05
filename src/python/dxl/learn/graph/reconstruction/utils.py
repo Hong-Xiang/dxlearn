@@ -38,26 +38,31 @@ class DataInfo:
     else:
       return self._map_file[ThisHost.host().task_index]
 
-  def lor_file(self, axis):
+  def lor_file(self, axis, task_index):
+    if task_index is None:
+      task_index = ThisHost().host().task_index
     if isinstance(self._lor_files[axis], str):
       return self._lor_files[axis]
     else:
-      return self._lor_files[axis][ThisHost.host().task_index]
+      return self._lor_files[axis][task_index]
 
-  def lor_range(self):
-    tid = ThisHost.host().task_index
+  def lor_range(self, task_index=None):
+    if task_index is None:
+      task_index = ThisHost.host().task_index
     if self._lor_ranges is not None:
-      return self._lor_ranges[tid]
+      return self._lor_ranges[task_index]
     elif self._lor_step is not None:
-      return [tid * self._lor_step, (tid + 1) * self._lor_step]
+      return [task_index * self._lor_step, (task_index + 1) * self._lor_step]
     else:
       return None
 
-  def lor_shape(self, axis):
-    if isinstance(self._lor_shapes, (list, tuple)):
+  def lor_shape(self, axis, task_index=None):
+    if task_index is None:
+      task_index = ThisHost().host().task_index
+    if isinstance(self._lor_shapes[axis], (list, tuple)):
       return self._lor_shapes[axis]
     else:
-      return self._lor_shapes[axis]
+      return self._lor_shapes[axis][task_index]
 
 
 def load_data(file_name, lor_range=None):
@@ -101,44 +106,17 @@ def print_info(*msg):
   print('INFO', *msg)
 
 
-sample_cluster_config = {
-    "master": ["localhost:2221"],
-    "worker": ["localhost:2333", "localhost:2334"]
-}
-
-
-def cluster_configs_generator(master_ip, workers_ips, nb_process_per_worker):
-  workers = []
-  for worker in WORKERS_IO_SUFFIX:
-    for p in range(2333, 2333 + NB_PROCESS_PER_WORKER):
-      workers.append("192.168.1.{}:{}".format(worker, p))
-  return {
-      "master": ["192.168.1.{}:2221".format(MASTER_IP_SUFFIX)],
-      "worker": workers
-  }
-
-
-def load_cluster_configs(config=None):
-  if config is None:
-    return sample_cluster_config
-  elif isinstance(config, str):
-    with open(config, 'r') as fin:
-      return json.load(fin)
-  else:
-    return config
-
-
 sample_reconstruction_config = {
     'grid': [150, 150, 150],
     'center': [0., 0., 0.],
     'size': [150., 150., 150.],
     'map_file': './debug/map.npy',
     'x_lor_files': './debug/xlors.npy',
-    'y_lor_files': './deubg/ylors.npy',
-    'z_lor_files': './deubg/zlors.npy',
-    'x_lor_shape': [100, 6],
-    'y_lor_shape': [100, 6],
-    'z_lor_shape': [100, 6],
+    'y_lor_files': './debug/ylors.npy',
+    'z_lor_files': './debug/zlors.npy',
+    'x_lor_shapes': [100, 6],
+    'y_lor_shapes': [200, 6],
+    'z_lor_shapes': [300, 6],
     'lor_ranges': None,
     'lor_steps': None,
 }
@@ -146,16 +124,16 @@ sample_reconstruction_config = {
 
 def load_reconstruction_configs(config=None):
   if config is None:
-    c = sample_cluster_config
+    c = sample_reconstruction_config
   elif isinstance(config, str):
     with open(config, 'r') as fin:
       c = json.load(fin)
   else:
     c = config
   image_info = ImageInfo(c['grid'], c['center'], c['size'])
-  data_info = DataInfo(c['map_file'],
-                       {a: c['{}_lor_files']
-                        for a in ['x', 'y', 'z']},
-                       {a: c['{}_lor_shapes']
-                        for a in ['x', 'y', 'z']}, lor_ranges, lor_steps)
+  data_info = DataInfo(
+      c['map_file'], {a: c['{}_lor_files'.format(a)]
+                      for a in ['x', 'y', 'z']},
+      {a: c['{}_lor_shapes'.format(a)]
+       for a in ['x', 'y', 'z']}, c['lor_ranges'], c['lor_steps'])
   return image_info, data_info

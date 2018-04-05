@@ -1,5 +1,5 @@
 from .config import ConfigurableWithName, ConfigurableWithClass
-from .distribute import make_distribute_host, Master, ThisHost, Host, Server, Barrier, DistributeTask
+from .distribute import make_distribute_host, Master, ThisHost, Host, Server, Barrier
 from .session import make_distribute_session, make_session, ThisSession, Session
 from .graph_info import GraphInfo, DistributeGraphInfo
 from .tensor import Tensor, TensorNumpyNDArray, TensorVariable, DataInfo, VariableInfo, tf_tensor, Variable, variable, Constant

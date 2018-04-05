@@ -94,6 +94,7 @@ class WorkerGraphLOR(WorkerGraphBase):
 
   def _construct_x_result(self):
     self._construct_inputs()
+    print(self.tensor('lors')['x'].data)
     KT = self.KEYS.TENSOR
     from ...model.tor_recon.recon_step import ReconStep
     x_res = ReconStep(

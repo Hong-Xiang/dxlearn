@@ -38,9 +38,8 @@ class MasterGraph(Graph):
     self.tensors[self.KEYS.TENSOR.BUFFER] = buffer
 
   def _construct_summation(self):
-    sm = self.get_subgraph(
-        self.KEYS.SUBGRAPH.SUMMATION,
-        lambda s: Summation('summation', s.graph_info.update(name=None)))
+    sm = self.subgraphs[self.KEYS.SUBGRAPH.SUMMATION] = Summation(
+        'summation', self.graph_info.update(name=None))
     x_s = sm(self.tensor(self.KEYS.TENSOR.BUFFER))
     x_u = self.tensor(self.KEYS.TENSOR.X).assign(x_s)
     self.tensors[self.KEYS.TENSOR.UPDATE] = x_u
