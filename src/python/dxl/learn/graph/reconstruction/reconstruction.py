@@ -1,3 +1,28 @@
+"""
+Reconstruction with memory optimized:
+
+sample code :: python
+
+  import click
+  import logging
+  from dxl.learn.graph.reconstruction.reconstruction import main
+
+  logger = logging.getLogger('dxl.learn.graph.reconstruction')
+  logger.setLevel(logging.DEBUG)
+
+
+
+  @click.command()
+  @click.option('--job', '-j', help='Job')
+  @click.option('--task', '-t', help='task', type=int, default=0)
+  def cli(job, task):
+    main(job, task)
+
+
+  if __name__ == "__main__":
+    cli()
+
+"""
 import numpy as np
 import click
 import tensorflow as tf
