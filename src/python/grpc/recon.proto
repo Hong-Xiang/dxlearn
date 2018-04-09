@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+service Reconstruction {
+  rpc ReconStep (stream ReconPayload) returns (stream Image) {}
+}
+
+message ReconPayload {
+  string efficiency_map_file = 1;
+  repeated string lor_files = 2;
+  repeated int32 lor_range = 3;
+  repeated float image = 4;
+  repeated int32 grid = 5;
+  repeated float center = 6;
+  repeated float size = 7;
+}
+
+message Image {
+  repeated float image = 1;
+  repeated int32 grid = 2;
+  repeated float center = 3;
+  repeated float size = 4;
+}

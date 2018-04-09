@@ -115,3 +115,10 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# develop test files
+*.npy
+*.png
+develop-cgy/
+*.txt
+*.ls
