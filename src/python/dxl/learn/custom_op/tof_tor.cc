@@ -12,7 +12,6 @@ using namespace tensorflow;
 REGISTER_OP("ProjectionGpu")
     .Input("lors: float")
     .Input("image: float")
-
     .Input("grid: int32")
     .Input("position: float")
     .Input("size: float")
@@ -20,7 +19,7 @@ REGISTER_OP("ProjectionGpu")
     .Output("line_integral: float")
     .Attr("kernel_width: float")
     .Attr("tof_bin: float")
-    .Attr("sigma2: float")
+    .Attr("tof_sigma2: float")
     .Attr("model: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext *c) {
         c->set_output(0, c->Matrix(c->Dim(c->input(0), 1), 1));
@@ -31,14 +30,13 @@ REGISTER_OP("BackprojectionGpu")
     .Input("image: float")
     .Input("lors: float")
     .Input("lor_values: float")
-
     .Input("grid: int32")
     .Input("position: float")
     .Input("size: float")
 
     .Output("backpro_image: float")
     .Attr("tof_bin: float")
-    .Attr("sigma2: float")
+    .Attr("tof_sigma2: float")
     .Attr("kernel_width: float")
     .Attr("model: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext *c) {
@@ -168,13 +166,14 @@ class Backprojection : public OpKernel
 
         // Grab the geometries of an image.
         const Tensor &image = context->input(0);
-        const Tensor &grid = context->input(1);
-        const Tensor &center = context->input(2);
-        const Tensor &size = context->input(3);
-        // Grab the input lors.
-        const Tensor &lors = context->input(4);
+        const Tensor &lors = context->input(1);
         //grab the input projection values(line integral)
-        const Tensor &projection_value = context->input(5);
+        const Tensor &projection_value = context->input(2);
+        const Tensor &grid = context->input(3);
+        const Tensor &center = context->input(4);
+        const Tensor &size = context->input(5);
+
+
 
         // Create an output backprojected image
         Tensor *backpro_image = NULL;

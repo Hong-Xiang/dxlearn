@@ -4,8 +4,9 @@
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "cuda.h"
 #include "cuda_runtime.h"
+#include <cmath>
 
-
+// const float LN2 = M_LN2;
 ///
 /// calculate the cross point 
 __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
@@ -26,7 +27,7 @@ __device__ bool CalculateCrossPoint(float pos1_x, float pos1_y, float pos1_z,
     //direction cosine of lor.
     dcos_x = d0 / dis;
     dcos_y = d1 / dis;
-    //printf("calculate points: %f \n",s_center);
+    // printf("calculate points: %f \n",s_center);
     return true;
 }
 
@@ -52,28 +53,29 @@ __device__ void LoopPatch(const unsigned patch_size, const unsigned int offset,
     // auto image_flat = image.flat<float>();
     // int l0 = image.dim_size(0);
     // int l1 = image.dim_size(1);
-    //the start mesh of
-    int index_x = (int)((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
-    int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
+    //the start mesh of this current patch
+    int index_x = std::round((cross_x - l_bound) / inter_x) - (int)(patch_size / 2);
+    int index_y = std::round((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
     for (int j = 0; j < patch_size; j++)
     {
+        int index1 = index_y + j;
+        if ( index1 < 0 || index1 >= l1 ) //y axis index is out of slice range
+            continue;    
         for (int i = 0; i < patch_size; i++)
         {
             int index0 = index_x + i;
-            int index1 = index_y + j;
-            if (index0 < 0 || index1 < 0 || index0 >= l0 || index1 >= l1)
-            {
+            if (index0 < 0 || index0 >= l0 ) // x axis index is out of slice range
                 continue;
-            }
             else
             {
                 int index = index0 + index1 * l0;
                 float value = 0.0;
                 // compute the system matrix value.
                 CalculateSMV(cross_x, cross_y,
-                             inter_x * (index0 + 0.5) + l_bound,
-                             inter_y * (index1 + 0.5) + b_bound,
+                             inter_x * (float)(0.5 + index0) + l_bound,
+                             inter_y * (float)(0.5 + index1) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
+                // printf("SMV value: %f \n", value);
                 atomicAdd(projection_value,image_data[offset +index]* value);
             }
         }
@@ -94,26 +96,26 @@ __device__ void BackLoopPatch(const unsigned patch_size, const unsigned int offs
     int index_y = (int)((cross_y - b_bound) / inter_y ) - (int)(patch_size / 2 );
     for (int j = 0; j < patch_size; j++)
     {
+        int index1 = index_y + j;
+        if ( index1 < 0 || index1 >= l1) //y axis index is out of slice range
+            continue;    
         for (int i = 0; i < patch_size; i++)
         {
             int index0 = index_x + i;
-            int index1 = index_y + j;
-            if (index0 < 0 || index1 < 0 || index0 >= l0 || index1 >= l1)
-            {
+            if (index0 < 0 || index0 >= l0) // x axis index is out of slice range
                 continue;
-            }
             else
             {
                 int index = index0 + index1 * l0;
                 float value = 0.0;
                 // compute the system matrix value.
                 CalculateSMV(cross_x, cross_y,
-                             inter_x * (index0 + 0.5) + l_bound,
-                             inter_y * (index1 + 0.5) + b_bound,
+                             inter_x * (float)(0.5 + index0) + l_bound,
+                             inter_y * (float)(0.5 + index1) + b_bound,
                             //  inter_x * (index0 ) + l_bound,
                             //  inter_y * (index1 ) + b_bound,
                              dcos_x, dcos_y, sigma2, value);
-                if (projection_value > 1e-5)
+                if (projection_value > 1e-7)
                     atomicAdd(image_data + offset + index, value / projection_value);
             }
         }
@@ -156,7 +158,7 @@ __global__ void ComputeSlice(const float *x1, const float *y1, const float *z1,
 }
 
 ///
-///back
+///backprojection
 ///
 __global__ void BackComputeSlice(const float *x1, const float *y1, const float *z1,
                                 const float *x2, const float *y2, const float *z2,
@@ -217,18 +219,17 @@ void projection(const float *x1, const float *y1, const float *z1,
 
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
-
-    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
-    float sigma2 = kernel_width * kernel_width / 9;
+    // float kernel_width = 6*std::sqrt(sigma2);
+    float sigma2 = kernel_width*kernel_width/36;
+    int patch_size = std::ceil((std::sqrt(2)*kernel_width + lz / gz)/(lx / gx));
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
     // float dcos_x, dcos_y;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
         int offset = iSlice * slice_mesh_num;
         float slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
-        // float cross_x, cross_y;
         ComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
                                   patch_size, offset, slice_z,
                                   l_bound, b_bound, sigma2,
@@ -264,28 +265,21 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     float center_x = center_cpu[0], center_y = center_cpu[1], center_z = center_cpu[2]; // position of center
     float lx = size_cpu[0], ly = size_cpu[1], lz = size_cpu[2];                         // length of bounds
     unsigned int slice_mesh_num = gx * gy;                                              // number of meshes in a slice.
- 
 
-    // float inter_x = lx / gx, inter_y = lx / gy, inter_z = lz / gz;  // intervals
     float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz;  // intervals
-    // std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
-    //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    // int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1 ;
-    // std :: cout << "PATHC SIZE " << patch_size << std::endl;
+
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
-    float sigma2 = kernel_width * kernel_width / 9;
-    // float dcos_x, dcos_y;
-    std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
+    float sigma2 = kernel_width*kernel_width/36;
+    int patch_size = std::ceil((std::sqrt(2)*kernel_width + lz / gz)/(lx / gx));
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+
+    std::cout<<"number of events: "<<num_events<<std::endl;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {
         int offset = iSlice * slice_mesh_num;
-        // int slice_z = center_z - (lz - inter_z) / 2 + iSlice * inter_z;
         float slice_z = center_z - (lz - inter_z) / 2.0 + iSlice * inter_z;
-        // std :: cout << "slice_z" << slice_z << std::endl;
-        // float cross_x, cross_y;
         BackComputeSlice<<<32, 1024>>>(x1, y1, z1, x2, y2, z2,
                                       patch_size, offset, slice_z,
                                       l_bound, b_bound, sigma2,

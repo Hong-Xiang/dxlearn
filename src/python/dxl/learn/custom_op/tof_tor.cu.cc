@@ -44,7 +44,7 @@ __device__ void CalculateSMV(const float xc, const float yc, const float zc,
     value = (d2 < 9.0 * sigma2) ? std::exp(-0.5 * d2 / sigma2) : 0.0;
     // the distance square between mesh to the tof center.
     float d2_tof = ((xc - cross_x) * (xc - cross_x) + (yc - cross_y) * (yc - cross_y) + (zc - slice_z) * (zc - slice_z) - d2);
-     float tof_sigma2_expand = tof_sigma2 + (tof_bin * tof_bin) / 12;
+    float tof_sigma2_expand = tof_sigma2 + (tof_bin * tof_bin) / 12;
     float t2 = d2_tof / tof_sigma2_expand;
     value *= tof_bin * exp(-0.5 * t2) / sqrt(2.0 * M_PI * sigma2);
 }
@@ -66,14 +66,14 @@ __device__ void LoopPatch(const float xc, const float yc, const float zc,
     int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
     for (int j = 0; j < patch_size; j++)
     {
+        int index1 = index_y + j;
+        if ( index1 < 0 || index1 >= l1) //y axis index is out of slice range
+            continue;    
         for (int i = 0; i < patch_size; i++)
         {
             int index0 = index_x + i;
-            int index1 = index_y + j;
-            if (index0 < 0 || index1 < 0 || index0 >= l0 || index1 >= l1)
-            {
+            if (index0 < 0 || index0 >= l0) // x axis index is out of slice range
                 continue;
-            }
             else
             {
                 int index = index0 + index1 * l0;
@@ -106,14 +106,14 @@ __device__ void BackLoopPatch(const float xc, const float yc, const float zc,
     int index_y = (int)((cross_y - b_bound) / inter_y) - (int)(patch_size / 2);
     for (int j = 0; j < patch_size; j++)
     {
+        int index1 = index_y + j;
+        if ( index1 < 0 || index1 >= l1) //y axis index is out of slice range
+            continue;    
         for (int i = 0; i < patch_size; i++)
         {
             int index0 = index_x + i;
-            int index1 = index_y + j;
-            if (index0 < 0 || index1 < 0 || index0 >= l0 || index1 >= l1)
-            {
+            if (index0 < 0 || index0 >= l0) // x axis index is out of slice range
                 continue;
-            }
             else
             {
                 int index = index0 + index1 * l0;
@@ -236,11 +236,12 @@ void projection(const float *x1, const float *y1, const float *z1,
 
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
     //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
 
-    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
     //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
-    float sigma2 = kernel_width * kernel_width / 9;
+    float sigma2 = kernel_width*kernel_width/36;
+    int patch_size = std::ceil((std::sqrt(2)*kernel_width + lz / gz)/(lx / gx));
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
     // float dcos_x, dcos_y;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
@@ -290,14 +291,12 @@ void backprojection(const float *x1, const float *y1, const float *z1,
     float inter_x = lx / gx, inter_y = ly / gy, inter_z = lz / gz; // intervals
     // std::cout << "Pixel Size: " << inter_x << " " << inter_y << " " << inter_z <<std::endl;
     float l_bound = center_x - lx / 2, b_bound = center_y - ly / 2; // left and bottom bound of the slice.
-    //float kernel_width = 3;                                         //this->app->get_kernel_width();
-    // int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
-    int patch_size = (kernel_width * 2 * std::sqrt(2) + inter_z) / inter_x + 1;
-    // std :: cout << "PATHC SIZE " << patch_size << std::endl;
-    //sigma2 indicate the bound of a gaussian kernel with the relationship: 3*sigma = kernel_width.
-    float sigma2 = kernel_width * kernel_width / 9;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 10;
+    float sigma2 = kernel_width*kernel_width/36;
+    // int patch_size = (kernel_width * 2 * std::sqrt(2) + (lz / gz)) / (lx / gx) + 1;
+    int patch_size = std::ceil((std::sqrt(2)*kernel_width + lz / gz)/(lx / gx));
     // float dcos_x, dcos_y;
-    // std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
+    std::cout<<"number of events:!!!!!!"<<num_events<<std::endl;
 
     for (unsigned int iSlice = 0; iSlice < gz; iSlice++)
     {

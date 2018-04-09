@@ -5,7 +5,7 @@ import tensorflow as tf
 from ..core import VariableInfo, Variable, TensorNumpyNDArray, DistributeGraphInfo, Host, Master, Barrier
 from ..core import ThisHost
 from ..model.splitter import ProjectionSplitter
-from ..model.tor_step import TorStep
+from ..model.tof_step import TorStep
 from ..model.on_collections import Summation
 from ..core.utils import map_data
 
@@ -63,14 +63,16 @@ class GlobalGraph(Graph):
         }
 
     def __init__(self, x: np.ndarray,
-                 grid: np.ndarray, center: np.ndarray, size: np.ndarray,
-                 kernel_width,
+                 grid: np.ndarray, position: np.ndarray, size: np.ndarray,
+                 kernel_width, tof_bin, tof_sigma2,
                  xlors: np.ndarray, ylors: np.ndarray, zlors: np.ndarray,
                  em: np.ndarray, graph_info):
         self.grid = grid
-        self.center = center
+        self.position = position
         self.size = size
         self.kernel_width = kernel_width
+        self.tof_bin = tof_bin
+        self.tof_sigma2 = tof_sigma2
         super().__init__(
             'global_graph',
             self.make_tensors(x, xlors, ylors, zlors, em, graph_info),
@@ -114,8 +116,8 @@ class GlobalGraph(Graph):
             x_cp, xlors_cp, ylors_cp, zlors_cp, em_cp
         ]
         return LocalGraph(tid, x_l, em_l,
-                          self.grid, self.center, self.size,
-                          self.kernel_width,
+                          self.grid, self.position, self.size,
+                          self.kernel_width, self.tof_bin, self.tof_sigma2,
                           xlors_l, ylors_l, zlors_l, x_cp,
                           self.graph_info.update(name=None, host=host))
 
@@ -188,15 +190,17 @@ class LocalGraph(Graph):
             X_GLOBAL_BUFFER = 'x_global_buffer'
 
     def __init__(self, tid, x, em,
-                 grid, center, size,
-                 kernel_width,
+                 grid, position, size,
+                 kernel_width, tof_bin, tof_sigma2,
                  xlors, ylors, zlors,
                  x_copy, graph_info):
         self.tid = tid
         self.grid = grid
-        self.center = center
+        self.position = position
         self.size = size
         self.kernel_width = kernel_width
+        self.tof_bin = tof_bin
+        self.tof_sigma2 = tof_sigma2
         name = 'local_graph_{}'.format(tid)
         super().__init__(
             name, {
@@ -225,8 +229,8 @@ class LocalGraph(Graph):
             self.tensor(self.KEYS.TENSOR.X_COPY_FROM_GLOBAL),
             # self.tensor(self.KEYS.TENSOR.Y),
             self.tensor(self.KEYS.TENSOR.EFFICIENCY_MAP),
-            self.grid, self.center, self.size,
-            self.kernel_width,
+            self.grid, self.position, self.size,
+            self.kernel_width, self.tof_bin, self.tof_sigma2,
             self.tensor(self.KEYS.TENSOR.XLORS),
             self.tensor(self.KEYS.TENSOR.YLORS),
             self.tensor(self.KEYS.TENSOR.ZLORS),

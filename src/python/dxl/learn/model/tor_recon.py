@@ -428,5 +428,6 @@ class ImageRotation:
       Y = 'ylors'
       Z = 'zlors'
   
-  def __init__(self, source, source_rotation)
+  def __init__(self, source, source_rotation):
+    pass
   
