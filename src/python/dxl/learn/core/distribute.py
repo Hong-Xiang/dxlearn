@@ -1,4 +1,5 @@
 import tensorflow as tf
+import json
 from typing import Dict
 
 
@@ -200,10 +201,24 @@ def make_distribute_host(cluster_config,
   return ThisHost.host()
 
 
+sample_cluster_config = {
+    "master": ["localhost:2221"],
+    "worker": ["localhost:2333", "localhost:2334"]
+}
+
+def load_cluster_configs(config=None):
+    if config is None:
+        return sample_cluster_config
+    elif isinstance(config, str):
+        with open(config, 'r') as fin:
+            return json.load(fin)
+    else:
+        return config
+
 class Barrier:
   def __init__(self, name, signal_hosts, join_hosts, task_lists=()):
     """
-        `task_lists`: tasks to be run on signal_hosts, which is a list of taks list,
+        `task_lists`: tasks to be run on signal_hosts, which is a list of task list,
         as shown below:
         [
             [t0_of_signal_host_0, t1_of_signal_host_0,...],
