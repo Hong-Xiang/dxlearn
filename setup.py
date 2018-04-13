@@ -7,7 +7,7 @@ setup(
     author='Hong Xiang',
     author_email='hx.hongxiang@gmail.com',
     license='MIT',
-    namespace_packages=['dx'],
+    namespace_packages=['dxl'],
     packages=find_packages('src/python'),
     package_dir={'': 'src/python'},
     install_requires=['dxl-fs', 'click', 'dxl-shape'],
