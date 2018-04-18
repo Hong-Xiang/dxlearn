@@ -63,9 +63,10 @@ class Graph(ConfigurableWithName):
                  name: Path,
                  tensors: Dict[str, Tensor] = None,
                  subgraphs: Dict[str, 'Graph'] = None,
-                 graph_info: GraphInfo = None):
+                 graph_info: GraphInfo = None,
+                 config: Dict[str, 'Config'] = None):
 
-        super().__init__(name)
+        super().__init__(name, config=config)
         if subgraphs is None:
             subgraphs = dict()
         self.subgraphs = subgraphs

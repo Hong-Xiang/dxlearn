@@ -22,8 +22,9 @@ class Model(Graph):
 
     def __init__(self, name: Path, inputs: Dict[str, Tensor]=None,
                  submodels: Dict[str, 'Model']=None,
-                 graph_info: GraphInfo=None):
-        super().__init__(name, tensors=inputs, subgraphs=submodels, graph_info=graph_info)
+                 graph_info: GraphInfo=None,
+                 config: Dict[str, 'Config']=None):
+        super().__init__(name, tensors=inputs, subgraphs=submodels, graph_info=graph_info, config=config)
         self.inputs = {}
         self.outputs = {}
         self.construct(inputs, True)
