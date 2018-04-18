@@ -122,3 +122,6 @@ ENV/
 develop-cgy/
 *.txt
 *.ls
+
+# vscode
+.vscode/*
