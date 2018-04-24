@@ -206,14 +206,27 @@ sample_cluster_config = {
     "worker": ["localhost:2333", "localhost:2334"]
 }
 
+
 def load_cluster_configs(config=None):
-    if config is None:
-        return sample_cluster_config
-    elif isinstance(config, str):
-        with open(config, 'r') as fin:
-            return json.load(fin)
-    else:
-        return config
+  if config is None:
+    return sample_cluster_config
+  elif isinstance(config, str):
+    with open(config, 'r') as fin:
+      return json.load(fin)
+  else:
+    return config
+
+
+class ClusterSpec:
+  def __init__(self, config):
+    config = load_cluster_configs(config)
+    self.master = config.get('master')
+    self.worker = config.get('worker')
+
+  @property
+  def nb_workers(self):
+    return len(self.worker)
+
 
 class Barrier:
   def __init__(self, name, signal_hosts, join_hosts, task_lists=()):
@@ -285,7 +298,3 @@ class Barrier:
   def run(self):
     from .session import ThisSession
     ThisSession.run(self.barrier(ThisHost.host()))
-
-
-
-    
