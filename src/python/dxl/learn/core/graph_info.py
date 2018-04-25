@@ -29,6 +29,7 @@ class GraphInfo:
       if isinstance(scope, Path):
         scope = scope.n
       with tf.variable_scope(scope, reuse=reuse) as scope:
+        self.scope = scope
         yield scope
 
   @classmethod
