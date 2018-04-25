@@ -44,17 +44,6 @@ class Model(Graph):
         """
     return self.construct(inputs, False)
 
-<<<<<<< HEAD
-  def construct(self, inputs, is_create):
-    if inputs is None:
-      inputs = {}
-    inputs = self.pre_kernel(inputs, is_create)
-    with self.graph_info.variable_scope():
-      inputs = self.pre_kernel_in_scope(inputs, is_create)
-      results = self.kernel(inputs)
-      results = self.post_kernel_in_scope(results, is_create)
-    return self.post_kernel(results, is_create)
-=======
     def construct(self, inputs, is_create):
         if inputs is None:
             inputs = {}
@@ -64,7 +53,6 @@ class Model(Graph):
             results = self.kernel(inputs)
             results = self.post_kernel_in_scope(results, is_create)
         return self.post_kernel(results, is_create)
->>>>>>> master
 
   def kernel(self, inputs):
     return {}
