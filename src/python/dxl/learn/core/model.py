@@ -40,7 +40,7 @@ class Model(Graph):
         if inputs is None:
             inputs = {}
         inputs = self.pre_kernel(inputs, is_create)
-        with self.graph_info.variable_scope():
+        with self.graph_info.variable_scope(reuse=not is_create):
             inputs = self.pre_kernel_in_scope(inputs, is_create)
             results = self.kernel(inputs)
             results = self.post_kernel_in_scope(results, is_create)
