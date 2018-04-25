@@ -1,3 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .models import Conv2D, StackedConv2D, InceptionBlock
+from .blocks import Conv2D, StackedConv2D, InceptionBlock, UnitBlock
+from .residual import ResidualIncept, ResidualStackedConv
+from .residual import StackedResidualIncept, StackedResidualConv

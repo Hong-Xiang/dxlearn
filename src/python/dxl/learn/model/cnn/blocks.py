@@ -4,11 +4,13 @@ import tensorflow as tf
 from ...core import Model
 from .. import activation
 
+
 __all__ = [
     # 'Conv1D',
     'Conv2D',
     'StackedConv2D',
     'InceptionBlock',
+    'UnitBlock',
     # 'Conv3D',
     # 'DeConv2D',
     # 'DeConv3D',
@@ -47,13 +49,13 @@ class Conv2D(Model):
             ACTIVATION = 'activation'
 
     def __init__(self, name='conv2d',
-                input_tensor=None,
-                filters=None,
-                kernel_size=None,
-                strides=None,
-                padding=None,
-                activation=None,
-                graph_info=None):
+                 input_tensor=None,
+                 filters=None,
+                 kernel_size=None,
+                 strides=None,
+                 padding=None,
+                 activation=None,
+                 graph_info=None):
         super().__init__(
             name, 
             inputs={
@@ -108,14 +110,14 @@ class StackedConv2D(Model):
             ACTIVATION = 'activation'
     
     def __init__(self, name,
-                input_tensor=None,
-                nb_layers=None,
-                filters=None,
-                kernel_size=None,
-                strides=None,
-                padding=None,
-                activation=None,
-                graph_info=None):
+                 input_tensor=None,
+                 nb_layers=None,
+                 filters=None,
+                 kernel_size=None,
+                 strides=None,
+                 padding=None,
+                 activation=None,
+                 graph_info=None):
         super().__init__(
             name, 
             inputs={
@@ -163,10 +165,10 @@ class InceptionBlock(Model):
             ACTIVATION = 'activation'
 
     def __init__(self, name='incept',
-                input_tensor=None,
-                paths=None,
-                activation=None,
-                graph_info=None):
+                 input_tensor=None,
+                 paths=None,
+                 activation=None,
+                 graph_info=None):
         super().__init__(
             name, 
             inputs={
@@ -220,8 +222,34 @@ class InceptionBlock(Model):
         return x
 
 
+class UnitBlock(Model):
+    """UnitBlock block for test use.
+    Arguments:
+        name: Path := dxl.fs.
+        input_tensor: Tensor input.
+        graph_info: GraphInfo or DistributeGraphInfo
+    Return:
+        input_tensor
+    """
+    class KEYS(Model.KEYS):
+        class TENSOR(Model.KEYS.TENSOR):
+            pass
+        class CONFIG:
+            pass
 
-        
+    def __init__(self, name='UnitBlock',
+                 input_tensor=None,
+                 graph_info=None):
+        super().__init__(
+            name, 
+            inputs={
+                self.KEYS.TENSOR.INPUT: input_tensor
+            }, 
+            graph_info=graph_info)
+
+    def kernel(self, inputs):
+        x = inputs[self.KEYS.TENSOR.INPUT]
+        return x
 
         
     
