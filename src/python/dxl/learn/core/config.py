@@ -33,11 +33,14 @@ class Configurable(metaclass=ABCMeta):
 
 
 class ConfigurableWithName(Configurable):
-    def __init__(self, name: Path, config: Dict[str, 'Config']=None):
+    def __init__(self, name: Path, config: Dict[str, 'Config'] = None):
         super().__init__()
-        if isinstance(config, dict):
-            for key, value in config.items():
-                self.update_config(key, value)
+        # if config is not none, update it.
+        if config is None:
+            config = {}
+        for key, value in config.items():
+            if value:
+                self._config.update({key: value})
         self.name = Path(name)
 
 
