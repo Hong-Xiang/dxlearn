@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf 
+import tensorflow as tf
+import numpy as np
+from fs import path as fp
 from .blocks import Conv2D, StackedConv2D, InceptionBlock, UnitBlock
 from ...core import Model
 from ...core import Tensor
@@ -50,6 +52,7 @@ class ResidualIncept(Model):
         if not isinstance(sub_block, (UnitBlock, InceptionBlock)):
             sub_block = InceptionBlock(
                 name='incept',
+                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
                 paths=3,
                 activation='incept')
             self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
@@ -111,13 +114,14 @@ class ResidualStackedConv(Model):
         sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
         if not isinstance(sub_block, (UnitBlock, StackedConv2D)):
             sub_block = StackedConv2D(
-                name='convs',
+                name='conv',
+                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
                 nb_layers=2,
                 filters=1,
                 kernel_size=(1,1),
                 strides=(1,1),
                 padding='same',
-                activation='relu')
+                activation='basic')
             self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
 
         if is_create:
@@ -178,6 +182,7 @@ class StackedResidualIncept(Model):
         if not isinstance(sub_block, (UnitBlock, ResidualIncept)):
             sub_block = ResidualIncept(
                 name='incept',
+                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
                 ratio=0.3)
             self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
 
@@ -238,7 +243,8 @@ class StackedResidualConv(Model):
         if not isinstance(sub_block, (UnitBlock, ResidualStackedConv)):
             sub_block = ResidualStackedConv(
                 name='stacked_conv',
-                ration=0.1)
+                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
+                ratio=0.1)
             self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
 
         if is_create:

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf 
-from ...core import Model
+import tensorflow as tf
+from fs import path as fp 
+from ...core import Model, Tensor
 from .. import activation
 
 
@@ -189,7 +190,7 @@ class InceptionBlock(Model):
         for i_path in range(self.config(self.KEYS.CONFIG.PATHS)):
             with tf.variable_scope('path_{}'.format(i_path)):
                 h = Conv2D(
-                    name='conv2d_0',
+                    name='conv_0',
                     input_tensor=x, 
                     filters=filters, 
                     kernel_size=1,
