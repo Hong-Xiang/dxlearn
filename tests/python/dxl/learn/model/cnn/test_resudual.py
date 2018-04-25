@@ -86,5 +86,60 @@ class ResudualTestUniBlok(tf.test.TestCase):
             self.assertAllEqual(y, y_)
     
 
+class ResidualTestDefaultBlock(tf.test.TestCase):
+    def test_ResidualInceptDef(self):
+        x = np.ones([1, 10, 10, 3], dtype="float32")
+        ratio = 0.5
+        residualincept_ins = ResidualIncept(
+            name='ResidualInceptDef_testd',
+            input_tensor=tf.constant(x),
+            ratio=ratio)
+        y = residualincept_ins.outputs['main']
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            y = sess.run(y)
+            self.assertAllEqual(y.shape, (1,10,10,3))
+
+    def test_ResidualStackedConvDef(self):
+        x = np.ones([1, 10, 10, 3], dtype="float32")
+        ratio = 0.5
+        residualstackedconv_ins = ResidualStackedConv(
+            name='ResidualStackedConvDef_test',
+            input_tensor=tf.constant(x),
+            ratio=ratio)
+        y = residualstackedconv_ins.outputs['main']
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            y = sess.run(y)
+            self.assertAllEqual(y.shape, (1,10,10,3))
+
+    def test_StackedResidualInceptDef(self):
+        x = np.ones([1, 10, 10, 3], dtype="float32")
+        nb_layers = 2
+        # default ResidualIncept ratio=0.3
+        stackedResidualincept_ins = StackedResidualIncept(
+            name='StackedResidualInceptDef_test',
+            input_tensor=tf.constant(x),
+            nb_layers=nb_layers)
+        y = stackedResidualincept_ins.outputs['main']
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            y = sess.run(y)
+            self.assertAllEqual(y.shape, (1,10,10,3))
+
+    def test_StackedResidualConvDef(self):
+        x = np.ones([1, 10, 10, 3], dtype="float32")
+        nb_layers = 2
+        # default ResidualIncept ratio=0.1
+        stackedresidualconv_ins = StackedResidualConv(
+            name='StackedResidualConvDef_test',
+            input_tensor=tf.constant(x),
+            nb_layers=nb_layers)
+        y = stackedresidualconv_ins.outputs['main']
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            y = sess.run(y)
+            self.assertAllEqual(y.shape, (1,10,10,3))
+
 if __name__ == "__main__":
     tf.test.main()
