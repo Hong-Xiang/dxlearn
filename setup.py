@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='dxl-learn',
-    version='0.0.8',
+    version='0.0.9',
     description='Machine learn library.',
     url='https://github.com/Hong-Xiang/dxlearn',
     author='Hong Xiang',

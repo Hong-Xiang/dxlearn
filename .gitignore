@@ -125,3 +125,7 @@ develop-cgy/
 
 # vscode
 .vscode/*
+
+# vs
+.vs/*
+/.vs
