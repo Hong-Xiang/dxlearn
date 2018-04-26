@@ -37,7 +37,7 @@ class ConfigurableWithName(Configurable):
         super().__init__()
         if isinstance(config, Dict): 
             for key, value in config.items():
-                if value:
+                if value is not None:
                     self.update_config(key, value)
         self.name = Path(name)
 

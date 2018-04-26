@@ -15,8 +15,8 @@ __all__ = [
     # 'Conv3D',
     # 'DeConv2D',
     # 'DeConv3D',
-    # 'UpSampling2D',
-    # 'DownSampling2D',
+    'UpSampling2D',
+    'DownSampling2D',
     # 'DeformableConv2D',
     # 'AtrousConv1D',
     # 'AtrousConv2D',
@@ -252,5 +252,160 @@ class UnitBlock(Model):
         x = inputs[self.KEYS.TENSOR.INPUT]
         return x
 
+
+class DownSampling2D(Model):
+    """DownSampling2D Block
+    Arguments:
+        name: Path := dxl.fs.
+            A unique block name.
+        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        size: tuple of int/float
+            (height, width) scale factor or new size of height and width.
+        is_scale: boolean
+            If True (default), the `size` is the scale factor; otherwise, the `size` are numbers of pixels of height and width.
+        method: int
+            - Index 0 is ResizeMethod.BILINEAR, Bilinear interpolation.
+            - Index 1 is ResizeMethod.NEAREST_NEIGHBOR, Nearest neighbor interpolation.
+            - Index 2 is ResizeMethod.BICUBIC, Bicubic interpolation.
+            - Index 3 ResizeMethod.AREA, Area interpolation.
+        align_corners: boolean
+            If True, exactly align all 4 corners of the input and output. Default is False.
+        graph_info: GraphInfo or DistributeGraphInfo
+    """
+    class KEYS(Model.KEYS):
+        class TENSOR(Model.KEYS.TENSOR):
+            pass
+        class CONFIG:
+            SIZE = 'size'
+            IS_SCALE = 'is_scale'
+            METHOD = 'method'
+            ALIGN_CORNERS = 'align_corners'
         
+    def __init__(self, name='downsample2d',
+                 input_tensor=None,
+                 size=None,
+                 is_scale=True,
+                 method=0,
+                 align_corners=False,
+                 graph_info=None):
+        super().__init__(
+            name,
+            inputs={
+                self.KEYS.TENSOR.INPUT: input_tensor
+            },
+            graph_info=graph_info,
+            config={
+                self.KEYS.CONFIG.SIZE: size,
+                self.KEYS.CONFIG.IS_SCALE: is_scale,
+                self.KEYS.CONFIG.METHOD: method,
+                self.KEYS.CONFIG.ALIGN_CORNERS: align_corners
+            })
+
+    def kernel(self, inputs):
+        x = inputs[self.KEYS.TENSOR.INPUT]
+        x_shape = x.shape
+        tag_size = self.config(self.KEYS.CONFIG.SIZE)
+        if len(x_shape) == 3:
+            if self.config(self.KEYS.CONFIG.IS_SCALE):
+                ratio_size = self.config(self.KEYS.CONFIG.SIZE)
+                size_h = ratio_size[0] * int(x_shape[0])
+                size_w = ratio_size[1] * int(x_shape[1])
+                tag_size = [int(size_h), int(size_w)]
+        elif len(x_shape) == 4:
+            if self.config(self.KEYS.CONFIG.IS_SCALE):
+                ratio_size = self.config(self.KEYS.CONFIG.SIZE)
+                size_h = ratio_size[0] * int(x_shape[1])
+                size_w = ratio_size[1] * int(x_shape[2])
+                tag_size = [int(size_h), int(size_w)]
+        else:
+            raise Exception("Donot support shape {}".format(x_shape))
+        
+        with tf.name_scope('down_sample'):
+            h = tf.image.resize_images(
+                images=x,
+                size=tag_size,
+                method=self.config(self.KEYS.CONFIG.METHOD),
+                align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
+        
+        return h
+
+
+class UpSampling2D(Model):
+    """UpSampling2D block
+    Arguments:
+        Arguments:
+        name: Path := dxl.fs.
+            A unique block name.
+        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        size: tuple of int/float
+            (height, width) scale factor or new size of height and width.
+        is_scale: boolean
+            If True (default), the `size` is the scale factor; otherwise, the `size` are numbers of pixels of height and width.
+        method: int
+            - Index 0 is ResizeMethod.BILINEAR, Bilinear interpolation.
+            - Index 1 is ResizeMethod.NEAREST_NEIGHBOR, Nearest neighbor interpolation.
+            - Index 2 is ResizeMethod.BICUBIC, Bicubic interpolation.
+            - Index 3 ResizeMethod.AREA, Area interpolation.
+        align_corners: boolean
+            If True, align the corners of the input and output. Default is False.
+        graph_info: GraphInfo or DistributeGraphInfo
+    """
+    class KEYS(Model.KEYS):
+        class TENSOR(Model.KEYS.TENSOR):
+            pass
+        class CONFIG:
+            SIZE = 'size'
+            IS_SCALE = 'is_scale'
+            METHOD = 'method'
+            ALIGN_CORNERS = 'align_corners'
+        
+    def __init__(self, name='upsample2d',
+                 input_tensor=None,
+                 size=None,
+                 is_scale=True,
+                 method=0,
+                 align_corners=False,
+                 graph_info=None):
+        super().__init__(
+            name,
+            inputs={
+                self.KEYS.TENSOR.INPUT: input_tensor
+            },
+            graph_info=graph_info,
+            config={
+                self.KEYS.CONFIG.SIZE: size,
+                self.KEYS.CONFIG.IS_SCALE: is_scale,
+                self.KEYS.CONFIG.METHOD: method,
+                self.KEYS.CONFIG.ALIGN_CORNERS: align_corners
+            })
+
+    def kernel(self, inputs):
+        x = inputs[self.KEYS.TENSOR.INPUT]
+        x_shape = x.shape
+        tag_size = self.config(self.KEYS.CONFIG.SIZE)
+        if len(x_shape) == 3:
+            if self.config(self.KEYS.CONFIG.IS_SCALE):
+                ratio_size = self.config(self.KEYS.CONFIG.SIZE)
+                size_h = ratio_size[0] * int(x_shape[0])
+                size_w = ratio_size[1] * int(x_shape[1])
+                tag_size = [int(size_h), int(size_w)]
+        elif len(x_shape) == 4:
+            if self.config(self.KEYS.CONFIG.IS_SCALE):
+                ratio_size = self.config(self.KEYS.CONFIG.SIZE)
+                size_h = ratio_size[0] * int(x_shape[1])
+                size_w = ratio_size[1] * int(x_shape[2])
+                tag_size = [int(size_h), int(size_w)]
+        else:
+            raise Exception("Donot support shape {}".format(x_shape))
+        
+        with tf.name_scope('up_sample'):
+            h = tf.image.resize_images(
+                images=x,
+                size=tag_size,
+                method=self.config(self.KEYS.CONFIG.METHOD),
+                align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
+        
+        return h
+
+
     
