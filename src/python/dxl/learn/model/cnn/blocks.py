@@ -320,12 +320,11 @@ class DownSampling2D(Model):
         else:
             raise Exception("Donot support shape {}".format(x_shape))
         
-        with tf.name_scope('down_sample'):
-            h = tf.image.resize_images(
-                images=x,
-                size=tag_size,
-                method=self.config(self.KEYS.CONFIG.METHOD),
-                align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
+        h = tf.image.resize_images(
+            images=x,
+            size=tag_size,
+            method=self.config(self.KEYS.CONFIG.METHOD),
+            align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
         
         return h
 
@@ -396,14 +395,13 @@ class UpSampling2D(Model):
                 size_w = ratio_size[1] * int(x_shape[2])
                 tag_size = [int(size_h), int(size_w)]
         else:
-            raise Exception("Donot support shape {}".format(x_shape))
-        
-        with tf.name_scope('up_sample'):
-            h = tf.image.resize_images(
-                images=x,
-                size=tag_size,
-                method=self.config(self.KEYS.CONFIG.METHOD),
-                align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
+            raise Exception("Donot support shape {}".format(x_shape))     
+
+        h = tf.image.resize_images(
+            images=x,
+            size=tag_size,
+            method=self.config(self.KEYS.CONFIG.METHOD),
+            align_corners=self.config(self.KEYS.CONFIG.ALIGN_CORNERS))
         
         return h
 
