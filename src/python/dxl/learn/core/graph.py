@@ -45,8 +45,20 @@ class Graph(ConfigurableWithName):
 
       - tensor(key): -> Tensor
 
+    
+    Provide The following methods:
+    
+    - `g.tensor(key)`
+    - `g.subgraph(key)`
+    - `g.config(key)`
 
-      """
+    Some graphs may support:
+
+    - `g.tensors.key`
+    - `g.subgraph.key`
+    - `g.config.key`
+
+    """
 
     class KEYS:
         class DOMAIN:
@@ -135,7 +147,8 @@ class Graph(ConfigurableWithName):
             self.subgraphs[key] = subgraph_maker(self)
         return self.subgraphs[key]
 
-    def get_tensor(self, key, tensor_maker: Callable[['Graph'], Tensor] = None):
+    def get_tensor(self, key,
+                   tensor_maker: Callable[['Graph'], Tensor] = None):
         """
             """
         tensor = self.tensor(key)
@@ -143,7 +156,7 @@ class Graph(ConfigurableWithName):
             self.tensors[key] = tensor_maker(self)
         return self.tensors[key]
 
-    def run(self, fetches=None, inputs=None):
+    def run(self, fetches=None, inputs=None, configs=None):
         """
         run graph with given fetches and inputs.
         if fetches is None, use self.KEYS.TENSOR.MAIN.
@@ -152,8 +165,10 @@ class Graph(ConfigurableWithName):
         if fetches is None:
             fetches = self.tensor(self.KEYS.TENSOR.MAIN)
         if inputs is not None:
-            valid_inputs = {k: inputs[k]
-                            for k in inputs if k in self.tensor_keys()}
+            valid_inputs = {
+                k: inputs[k]
+                for k in inputs if k in self.tensor_keys()
+            }
         else:
             valid_inputs = dict()
         from .session import ThisSession
