@@ -141,8 +141,8 @@ class Cluster:
     @classmethod
     def dumps(cls):
         """
-    Dumps current cluster 
-    """
+        Dumps current cluster 
+        """
         if cls._cluster_spec is None:
             return ""
         import json
