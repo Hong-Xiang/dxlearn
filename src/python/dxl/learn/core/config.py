@@ -2,57 +2,75 @@ import json
 from typing import Iterable, Dict
 from abc import ABCMeta, abstractmethod
 from dxl.fs import Path
+import dxl.core.config as dcc
 
 
 class DefaultConfig:
-    _default_config = dict()
+    _root = dcc.CNode()
 
-    def add(self, key):
-        raise NotImplementedError
+    @classmethod
+    def root(cls):
+        return cls._root
 
 
-class Configurable(metaclass=ABCMeta):
-    def __init__(self):
-        self._config = dict()
+class _Config:
+    def __init__(self, node, view):
+        self._cnode = node
+        self._cview = view
 
-    def _find_config(self, key):
-        return self._config.get(key)
-
-    def config(self, key, is_required=False):
+    def __call__(self, key: str, value=None):
         """
-        Returns config by key. If no config is found, return None when `is_required` is not True.
+        Returns config by key. If no config is None, return value.
         """
-        value = self._find_config(key)
-        if is_required and value is None:
-            raise KeyError("Key {} not found.".format(key))
-        return value
+        return self._cview.get(key, value)
 
-    def update_config(self, key, value, force=False):
-        if force or value is not None:
-            self._config[key] = value
+    def update(self, key, value):
+        self._cnode.update(key, value)
+
+
+class Configurable:
+    def _create_config(self, cnode):
+        return None
+
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.config = self._create_config(config)
 
 
 class ConfigurableWithName(Configurable):
-    def __init__(self, name: Path, config: Dict[str, 'Config'] = None):
-        super().__init__()
-        if isinstance(config, Dict): 
-            for key, value in config.items():
-                if value is not None:
-                    self.update_config(key, value)
+    def __init__(self, name: Path, config=None):
+        """
+        `config`: Dict[str, 'Config'] | dict | None
+        """
         self.name = Path(name)
+        super().__init__(config)
+
+    def _create_config(self, config):
+        DefaultConfig.root().update(str(self.name), config)
+        node = DefaultConfig.root().get(str(self.name))
+        view = dcc.create_view(DefaultConfig.root(), str(self.name))
+        return _Config(node, view)
 
 
 class ConfigurableWithClass(Configurable):
-    def __init__(self, cls):
+    def __init__(self, cls, config=None):
         self.cls = cls
+        super().__init__()
+
+    def _create_config(self, cnode):
+        DefaultConfig.root().update(str(self.cls), config)
+        node = DefaultConfig.root().get(str(self.cls))
+        view = dcc.create_view(DefaultConfig.root(), str(self.cls))
+        return _Config(node, view)
 
 
-class ConfigurableJoint(Configurable):
-    def __init__(self, configs: Iterable[Configurable]):
-        self._configurable_configs = configs
+# class ConfigurableJoint(Configurable):
+#     def __init__(self, configs: Iterable[Configurable]):
+#         self._configurable_configs = configs
 
-    def _find_config(self, key):
-        for c in self._configurable_configs:
-            if c.config(key) is not None:
-                return c.config(key)
-        return None
+#     def _find_config(self, key):
+#         for c in self._configurable_configs:
+#             if c.config(key) is not None:
+#                 return c.config(key)
+#         return None

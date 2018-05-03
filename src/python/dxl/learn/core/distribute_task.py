@@ -2,13 +2,18 @@ from .distribute import Host, Master, ThisHost, make_distribute_host, load_clust
 from .session import ThisSession
 from .graph_info import DistributeGraphInfo
 
+
 class DistributeTask:
+    """
+    Helper class of managing distribute task with Master-Multiple Worker model.
+    """
+
     class KEYS:
         class STEPS:
+            """
+            Names of steps.
+            """
             pass
-    """
-    Helper class of managing distribute run.
-    """
 
     def __init__(self, distribute_configs):
         self.cfg = load_cluster_configs(distribute_configs)
@@ -19,10 +24,11 @@ class DistributeTask:
         self.master_graph_info = None
         self.steps = {}
 
-
-
-
     def cluster_init(self, job, task, nb_workers=None):
+        """
+        Create cluster to run this task, this function should be called before:
+        - self.nb_workers()
+        """
         if nb_workers is None:
             nb_workers = len(self.cfg['worker'])
         make_distribute_host(self.cfg, job, task, None, 'master', 0)
@@ -41,14 +47,18 @@ class DistributeTask:
         self.master_graph = g
 
     def add_step(self, name, master_op, worker_ops):
+        """
+        Add step to run, add a step dict with
+        {'mater': mater_op, 'worker': [worker_ops]}
+        """
         self.steps[name] = {'master': master_op, 'worker': worker_ops}
 
     def run_step_of_this_host(self, name):
         if ThisHost.is_master():
             ThisSession.run(self.steps[name]['master'])
         else:
-            ThisSession.run(self.steps[name]['worker']
-                            [ThisHost.host().task_index])
+            ThisSession.run(
+                self.steps[name]['worker'][ThisHost.host().task_index])
 
     def add_worker_graph(self, g):
         self.worker_graphs.append(g)
@@ -77,5 +87,8 @@ class DistributeTask:
         return self.worker_graph_infos[task_index]
 
     def ginfo_this(self):
+        """
+        Helper function to provide graph_info of ThisHost.host()
+        """
         from .graph_info import DistributeGraphInfo
         return DistributeGraphInfo(None, None, None, ThisHost.host())
