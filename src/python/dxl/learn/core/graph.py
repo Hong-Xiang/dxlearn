@@ -67,6 +67,9 @@ class Graph(ConfigurableWithName):
 
         class TENSOR:
             MAIN = 'main'
+            INFERENCE = 'inference'
+            LABEL = 'label'
+            LOSS = 'loss'
 
         class SUBGRAPH:
             pass
@@ -125,27 +128,18 @@ class Graph(ConfigurableWithName):
             raise ValueError("Key {} is required but not found.".format(key))
         return self.tensors.get(key)
 
-    def subgraph(self, key):
-        return self.subgraphs.get(key)
-
-    def get_subgraph(self,
-                     key,
-                     subgraph_maker: Callable[['Graph'], 'Graph']
-                     or 'Graph' = None):
-        """
-            Get or create subgraph. Useful when defining graph which is intend to be reused.
-
-            Since one may use ::
-
-                g = Graph('name1')
-                reused_subgraphs = select_part_of(g.subgraphs)
-                g2 = Graph('name2', subgraphs=reused_subgraphs)
-
-            """
-        subgraph = self.subgraph(key)
+    def subgraph(self,
+                 key:str=None,
+                 subgraph_maker: Callable[['ParentGraph'], 'subGraph']=None):       
+        subgraph = self.subgraphs.get(key)
         if subgraph is None:
-            self.subgraphs[key] = subgraph_maker(self)
-        return self.subgraphs[key]
+            try:
+                self.subgraphs[key] = subgraph_maker(self, key)
+            except:
+                raise ValueError('Invalid subgraph_maker {}'.format(subgraph_maker))
+            subgraph = self.subgraphs.get(key)
+        
+        return subgraph
 
     def get_tensor(self, key,
                    tensor_maker: Callable[['Graph'], Tensor] = None):

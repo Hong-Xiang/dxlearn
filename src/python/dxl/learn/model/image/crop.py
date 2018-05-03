@@ -23,7 +23,7 @@ def random_crop_offset(input_shape, target_shape):
             offset.append(0)
         else:
             offset.append(np.random.randint(0, s))
-    return offset
+    return np.array(offset)
     
 
 def random_crop(input_, target_shape, name='random_crop'):
@@ -38,7 +38,8 @@ def random_crop(input_, target_shape, name='random_crop'):
     '''
     with tf.name_scope(name):
         input_shape = tf_tensor(input_).shape.as_list()
-        random_offset = random_crop_offset(input_shape, target_shape)
+        random_offset = tf.py_func(random_crop_offset,
+                                   [input_shape, target_shape], tf.int64)
         
         return tf.slice(input_, random_offset, target_shape)
 
