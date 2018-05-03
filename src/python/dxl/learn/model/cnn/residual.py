@@ -29,7 +29,8 @@ class ResidualIncept(Model):
             pass
         class CONFIG:
             RATIO = 'ratio'
-            SUB_BLOCK = 'sub_block'
+        class SUB_BLOCK:
+            INCEPTION = 'InceptionBlock'
 
     def __init__(self, name,
                  input_tensor=None,
@@ -42,36 +43,28 @@ class ResidualIncept(Model):
                 self.KEYS.TENSOR.INPUT: input_tensor
             },
             graph_info=graph_info,
+            submodels={
+                self.KEYS.SUB_BLOCK.INCEPTION: sub_block
+            },
             config={
                 self.KEYS.CONFIG.RATIO: ratio,
-                self.KEYS.CONFIG.SUB_BLOCK: sub_block
             })
     
-    def pre_kernel(self, inputs, is_create):
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
-        if not isinstance(sub_block, (UnitBlock, InceptionBlock)):
-            sub_block = InceptionBlock(
-                name='incept',
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                paths=3,
-                activation='incept')
-            self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
+    @classmethod
+    def sub_block_maker(cls, preblock, subkey, input_tensor):
+        sub_block = InceptionBlock(
+            name=preblock.name/subkey,
+            input_tensor=input_tensor,
+            paths=3,
+            activation='incept')
 
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
-        return inputs
+        return sub_block
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
+        sub_block = self.subgraph(
+            self.KEYS.SUB_BLOCK.INCEPTION,
+            lambda p, k: ResidualIncept.sub_block_maker(p, k, x))
         h = sub_block(inputs)
         with tf.name_scope('add'):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
@@ -92,7 +85,8 @@ class ResidualStackedConv(Model):
             pass
         class CONFIG:
             RATIO = 'ratio'
-            SUB_BLOCK = 'sub_block'
+        class SUB_BLOCK:
+            STK_CONV2D = 'StackedConv2D'
 
     def __init__(self, name,
                  input_tensor=None,
@@ -105,40 +99,32 @@ class ResidualStackedConv(Model):
                 self.KEYS.TENSOR.INPUT: input_tensor
             },   
             graph_info=graph_info,
+            submodels={
+                self.KEYS.SUB_BLOCK.STK_CONV2D: sub_block
+            },
             config={
-                self.KEYS.CONFIG.RATIO: ratio,
-                self.KEYS.CONFIG.SUB_BLOCK: sub_block
+                self.KEYS.CONFIG.RATIO: ratio
             })
 
-    def pre_kernel(self, inputs, is_create):
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
-        if not isinstance(sub_block, (UnitBlock, StackedConv2D)):
-            sub_block = StackedConv2D(
-                name='conv',
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                nb_layers=2,
-                filters=1,
-                kernel_size=(1,1),
-                strides=(1,1),
-                padding='same',
-                activation='basic')
-            self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
-
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
-        return inputs
+    @classmethod
+    def sub_block_maker(cls, preblock, subkey, input_tensor):
+        sub_block = StackedConv2D(
+            name=preblock.name/subkey,
+            input_tensor=input_tensor,
+            nb_layers=2,
+            filters=1,
+            kernel_size=(1,1),
+            strides=(1,1),
+            padding='same',
+            activation='basic')
+       
+        return sub_block
         
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
+        sub_block = self.subgraph(
+            self.KEYS.SUB_BLOCK.STK_CONV2D,
+            lambda p, k: ResidualStackedConv.sub_block_maker(p, k, x))
         h = sub_block(inputs)
         with tf.name_scope('add'):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
@@ -159,7 +145,8 @@ class StackedResidualIncept(Model):
             pass
         class CONFIG:
             NB_LAYERS = 'nb_layers'
-            SUB_BLOCK = 'sub_block'
+        class SUB_BLOCK:
+            RES_INCEPT= 'ResidualIncept'
     
     def __init__(self, name,
                  input_tensor=None,
@@ -172,35 +159,28 @@ class StackedResidualIncept(Model):
                 self.KEYS.TENSOR.INPUT: input_tensor
             },
             graph_info=graph_info,
+            submodels={
+                self.KEYS.SUB_BLOCK.RES_INCEPT: sub_block
+            },
             config={
-                self.KEYS.CONFIG.NB_LAYERS: nb_layers,
-                self.KEYS.CONFIG.SUB_BLOCK: sub_block
+                self.KEYS.CONFIG.NB_LAYERS: nb_layers
             })
 
-    def pre_kernel(self, inputs, is_create):
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
-        if not isinstance(sub_block, (UnitBlock, ResidualIncept)):
-            sub_block = ResidualIncept(
-                name='incept',
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                ratio=0.3)
-            self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
-
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
-        return inputs
+    @classmethod
+    def sub_block_maker(cls, preblock, subkey, input_tensor):
+        sub_block = ResidualIncept(
+            name=preblock.name/subkey,
+            input_tensor=input_tensor,
+            ratio=0.3)
+    
+        return sub_block
     
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
+        sub_block = self.subgraph(
+            self.KEYS.SUB_BLOCK.RES_INCEPT,
+            lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x)
+        )
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             x = sub_block(inputs)
         return x
@@ -220,7 +200,8 @@ class StackedResidualConv(Model):
             pass
         class CONFIG:
             NB_LAYERS = 'nb_layers'
-            SUB_BLOCK = 'sub_block'
+        class SUB_BLOCK:
+            RES_STACKEDCONV= 'ResidualStackedConv'
     
     def __init__(self, name,
                  input_tensor=None,
@@ -232,36 +213,28 @@ class StackedResidualConv(Model):
             inputs={
                 self.KEYS.TENSOR.INPUT: input_tensor
             },
+            submodels={
+                self.KEYS.SUB_BLOCK.RES_STACKEDCONV: sub_block
+            },
             graph_info=graph_info,
             config={
-                self.KEYS.CONFIG.NB_LAYERS: nb_layers,
-                self.KEYS.CONFIG.SUB_BLOCK: sub_block
+                self.KEYS.CONFIG.NB_LAYERS: nb_layers
             })
 
-    def pre_kernel(self, inputs, is_create):
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
-        if not isinstance(sub_block, (UnitBlock, ResidualStackedConv)):
-            sub_block = ResidualStackedConv(
-                name='stacked_conv',
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                ratio=0.1)
-            self.update_config(self.KEYS.CONFIG.SUB_BLOCK, sub_block)
+    @classmethod
+    def sub_block_maker(cls, preblock, subkey, input_tensor):
+        sub_block = ResidualStackedConv(
+            name=preblock.name/subkey,
+            input_tensor=input_tensor,
+            ratio=0.1)
 
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
-        return inputs
+        return sub_block
     
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.config(self.KEYS.CONFIG.SUB_BLOCK)
+        sub_block = self.subgraph(
+            self.KEYS.SUB_BLOCK.RES_STACKEDCONV,
+            lambda p, k: StackedResidualConv.sub_block_maker(p, k, x))
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             x = sub_block(inputs)
         return x
