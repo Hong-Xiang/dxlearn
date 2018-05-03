@@ -56,7 +56,8 @@ class ResidualIncept(Model):
             name=preblock.name/subkey,
             input_tensor=input_tensor,
             paths=3,
-            activation='incept')
+            activation='incept',
+            graph_info=preblock.graph_info.update(name=None))
 
         return sub_block
 
@@ -116,7 +117,8 @@ class ResidualStackedConv(Model):
             kernel_size=(1,1),
             strides=(1,1),
             padding='same',
-            activation='basic')
+            activation='basic',
+            graph_info=preblock.graph_info.update(name=None))
        
         return sub_block
         
@@ -226,7 +228,8 @@ class StackedResidualConv(Model):
         sub_block = ResidualStackedConv(
             name=preblock.name/subkey,
             input_tensor=input_tensor,
-            ratio=0.1)
+            ratio=0.1,
+            graph_info=preblock.graph_info.update(name=None))
 
         return sub_block
     
