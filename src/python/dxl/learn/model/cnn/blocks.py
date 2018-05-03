@@ -144,8 +144,7 @@ class StackedConv2D(Model):
                 kernel_size=self.config(self.KEYS.CONFIG.KERNEL_SIZE),
                 strides=self.config(self.KEYS.CONFIG.STRIDES),
                 padding=self.config(self.KEYS.CONFIG.PADDING),
-                activation=self.config(self.KEYS.CONFIG.ACTIVATION))
-            x = x.outputs[self.KEYS.TENSOR.MAIN]
+                activation=self.config(self.KEYS.CONFIG.ACTIVATION))()
         return x
 
 
@@ -196,8 +195,7 @@ class InceptionBlock(Model):
                     kernel_size=1,
                     strides=(1,1),
                     padding='same',
-                    activation='linear')
-                h = h.outputs[self.KEYS.TENSOR.MAIN]
+                    activation='linear')()
                 for j in range(i_path):
                     h = Conv2D(
                         name='conv2d_{}'.format(j + 1),
@@ -206,8 +204,7 @@ class InceptionBlock(Model):
                         kernel_size=3,
                         strides=(1,1),
                         padding='same',
-                        activation='pre')
-                    h = h.outputs[self.KEYS.TENSOR.MAIN]
+                        activation='pre')()
                 paths.append(h)
         with tf.name_scope('concat'):
             x = tf.concat(paths, axis=-1)
@@ -218,8 +215,7 @@ class InceptionBlock(Model):
             kernel_size=1,
             strides=(1,1),
             padding='same',
-            activation='pre')
-        x = x.outputs[self.KEYS.TENSOR.MAIN]
+            activation='pre')()
         return x
 
 
