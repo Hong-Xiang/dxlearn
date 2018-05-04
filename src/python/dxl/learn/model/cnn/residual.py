@@ -34,7 +34,7 @@ class ResidualIncept(Model):
 
     def __init__(self, name,
                  input_tensor=None,
-                 ratio=0.3,
+                 ratio=None,
                  sub_block: InceptionBlock=None,
                  graph_info=None):       
         super().__init__(
@@ -50,6 +50,11 @@ class ResidualIncept(Model):
                 self.KEYS.CONFIG.RATIO: ratio,
             })
     
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.RATIO: 0.3}
+
     @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor):
         sub_block = InceptionBlock(
@@ -91,7 +96,7 @@ class ResidualStackedConv(Model):
 
     def __init__(self, name,
                  input_tensor=None,
-                 ratio=0.1,
+                 ratio=None,
                  sub_block: StackedConv2D=None,
                  graph_info=None):
         super().__init__(
@@ -106,6 +111,11 @@ class ResidualStackedConv(Model):
             config={
                 self.KEYS.CONFIG.RATIO: ratio
             })
+
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.RATIO: 0.1}
 
     @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor):
@@ -169,6 +179,11 @@ class StackedResidualIncept(Model):
             })
 
     @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.NB_LAYERS: 2}
+
+    @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor):
         sub_block = ResidualIncept(
             name=preblock.name/subkey,
@@ -222,6 +237,11 @@ class StackedResidualConv(Model):
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers
             })
+
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor):
