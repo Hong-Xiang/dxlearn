@@ -1,5 +1,5 @@
 import tensorflow as tf
-from ...core import Model
+from ..core import Model
 import warnings
 
 
@@ -89,5 +89,5 @@ class CombinedSupervisedLoss(Model):
         result = {self.KEYS.TENSOR.OUTPUT : loss}
         for i, n in enumerate(self.config(self.KEYS.CONFIG.LOSS_NAME)):
             result.update({'loss/' + n: losses[i]})
-            
+
         return result
