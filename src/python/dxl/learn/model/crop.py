@@ -1,6 +1,23 @@
+# _*_ coding: utf-8 _*_
 import tensorflow as tf
 import numpy as np
-from ...core import tf_tensor
+from typing import List
+from ..core import Tensor
+
+
+def shape_as_list(input_) -> List[int]:
+    '''shape as list
+    Args:
+        input_: Tensor/tf.Tensor/tf.Variable/np.ndarray
+    Return: shape of input_ as list.
+        if input_ is a list, then return it directly
+    '''
+    if isinstance(input_, (Tensor, tf.Tensor, tf.Variable)):
+        return list(input_.shape.as_list())
+    if isinstance(input_, np.ndarray):
+        return list(input_.shape)
+    if isinstance(input_, (tuple, list)):
+        return list(input_)
 
 
 def random_crop_offset(input_shape, target_shape):
@@ -26,18 +43,19 @@ def random_crop_offset(input_shape, target_shape):
     return np.array(offset)
     
 
-def random_crop(input_, target_shape, name='random_crop'):
+def random_crop(input_, target, name='random_crop'):
     '''random crop
     Args:
         input_: input tensor/Tensor/numpy.
-        target_shape: list/tuple. 
+        target: list/tuple/Tensor/numpy/tf.Tensor contains: 
             (batch, width, height, channel) or (width, height, channel)
         name: a name for this operation
     Ｒeturns:
         A cropped tensor of the same rank as input_ and shape target_shape
     '''
     with tf.name_scope(name):
-        input_shape = tf_tensor(input_).shape.as_list()
+        input_shape = shape_as_list(input_)
+        target_shape = shape_as_list(target)
         random_offset = tf.py_func(random_crop_offset,
                                    [input_shape, target_shape], tf.int64)
         
@@ -48,7 +66,7 @@ def align_crop(input_, target, offset=None, name='align_crop'):
     '''align crop
     Args:
         input_: A input tensor/Tensor/numpy.
-        target: A list/tuple. 
+        target: A list/tuple/Tensor/numpy/tf.Tensor contains: 
             (batch, width, height, channel) or (width, height, channel)
         offset: A list.
         name: A name for this operation
@@ -56,11 +74,13 @@ def align_crop(input_, target, offset=None, name='align_crop'):
         A cropped tensor of the same rank as input_ and shape target_shape
     '''
     with tf.name_scope(name):
-        shape_input =  tf_tensor(input_).shape.as_list()
-        shape_output = target
+        shape_input =  shape_as_list(input_)
+        shape_output = shape_as_list(target)
         if offset is None:
-            offset = [0] + [(shape_input[i] - shape_output[i]) // 2
+            offset = [0] + [(shape_input[i] - shape_output[i]) // 2 
                             for i in range(1, 3)] + [0]
+        shape_output[3] = shape_input[3]
+
         return tf.slice(input_, offset, shape_output)
 
 
@@ -75,7 +95,7 @@ def boundary_crop(input_, offset=None, name="boundary_crop"):
         A cropped tensor of the same rank as input_ and shape target_shape
     '''
     with tf.name_scope(name):
-        shape = tf_tensor(input_).shape.as_list()
+        shape = shape_as_list(input_)
         if len(offset) == 2:
             offset = [0] + list(offset) + [0]
         shape_output = [s - 2 * o for s, o in zip(shape, offset)]

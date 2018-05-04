@@ -1,15 +1,28 @@
 import tensorflow as tf
 
 
+def l2norm(data):
+    with tf.name_scope('l2_norm'):
+        return tf.sqrt(tf.reduce_mean(tf.square(data)))
+
+
+def l1norm(data):
+    with tf.name_scope('l1_norm'):
+        return tf.reduce_mean(tf.abs(data))
+
+
 def mean_square_error(label, data):
-    with tf.name_scope('mean_squared_error'):
-        return tf.sqrt(tf.reduce_mean(tf.square(label - data)))
+    with tf.name_scope('mse'):
+        return l2norm(label - data)
+
+
+def mse(label, data):
+    return mean_square_error(label, data)
 
 
 def rmse(label, data):
     with tf.name_scope('rmse'):
-        rmse = tf.sqrt(tf.reduce_mean(tf.square(label - data)))
-    return rmse
+        return mse(label, data) / l2norm(label)
 
 
 def psnr(label, data):

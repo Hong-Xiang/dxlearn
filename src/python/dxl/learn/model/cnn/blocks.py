@@ -71,6 +71,14 @@ class Conv2D(Model):
                 self.KEYS.CONFIG.ACTIVATION: activation
             })
 
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.FILTERS: 5,
+            cls.KEYS.CONFIG.STRIDES: (1,1),
+            cls.KEYS.CONFIG.PADDING: 'valid',
+            cls.KEYS.CONFIG.ACTIVATION: 'linear'}
+
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         acc = activation.unified_config(self.config(self.KEYS.CONFIG.ACTIVATION))
@@ -134,6 +142,15 @@ class StackedConv2D(Model):
                 self.KEYS.CONFIG.ACTIVATION: activation
             })
 
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.NB_LAYERS: 2,
+            cls.KEYS.CONFIG.FILTERS: 5,
+            cls.KEYS.CONFIG.STRIDES: (1,1),
+            cls.KEYS.CONFIG.PADDING: 'valid',
+            cls.KEYS.CONFIG.ACTIVATION: 'linear'}
+
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
@@ -179,6 +196,12 @@ class InceptionBlock(Model):
                 self.KEYS.CONFIG.PATHS: paths,
                 self.KEYS.CONFIG.ACTIVATION: activation
             })
+
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.PATHS: 2,
+            cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]

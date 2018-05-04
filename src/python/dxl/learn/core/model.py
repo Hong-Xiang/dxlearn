@@ -20,6 +20,7 @@ class Model(Graph):
     class KEYS(Graph.KEYS):
         class TENSOR(Graph.KEYS.TENSOR):
             INPUT = 'input'
+            OUTPUT = 'output'
 
     def __init__(self,
                  name: Path,
