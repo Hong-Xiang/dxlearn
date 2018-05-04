@@ -86,9 +86,8 @@ class MasterHost:
     @classmethod
     def set_master(cls, job_name: str = None, task_index: int = None):
         warnings.warn(
-            DeprecationWarning(
-                "MasterHost.set_master is going to be deprecated, use Master.set instead."
-            ))
+            "MasterHost.set_master is going to be deprecated, use Master.set instead.",
+            DeprecationWarning)
         set(job_name, task_index)
 
     @classmethod
@@ -97,9 +96,8 @@ class MasterHost:
         Alias to master host.
         """
         warnings.warn(
-            DeprecationWarning(
-                "MasterHost.master_host() is going to be deprecated, use MasterHost.host() instead."
-            ))
+            "MasterHost.master_host() is going to be deprecated, use MasterHost.host() instead.",
+            DeprecationWarning)
         return cls.host()
 
     @classmethod
@@ -133,9 +131,8 @@ class ThisHost:
                  ip: str = None,
                  port: int = None):
         warnings.warn(
-            DeprecationWarning(
-                "ThisHost.set_host is going to be deprecated, use ThisHost.set instead."
-            ))
+            "ThisHost.set_host is going to be deprecated, use ThisHost.set instead.",
+            DeprecationWarning)
         return cls.set(job, task, ip, port)
 
     @classmethod
@@ -167,10 +164,8 @@ class ClusterSpec(UserDict):
     class KEYS:
         NB_WORKERS = 'nb_workers'
 
-    def __init__(self, config=None):
+    def __init__(self, config):
         from pathlib import Path
-        if config is None:
-            config = DEFAULT_CLUSTER_CONFIG
         if isinstance(config, (str, Path)):
             with open(config, 'r') as fin:
                 self.data = json.load(fin)
@@ -248,9 +243,8 @@ class Cluster:
     @classmethod
     def set_cluster(cls, config):
         warnings.warn(
-            DeprecationWarning(
-                "Cluster.set_cluster is going to be deprecated, use Cluste.set instead"
-            ))
+            "Cluster.set_cluster is going to be deprecated, use Cluste.set instead",
+            DeprecationWarning)
         return cls.set(config)
 
     @classmethod
@@ -282,9 +276,8 @@ class Server:
     @classmethod
     def set_server(cls, config=None):
         warnings.warn(
-            DeprecationWarning(
-                "Server.set_server is going to be deprecated, use Server.set instead."
-            ))
+            "Server.set_server is going to be deprecated, use Server.set instead.",
+            DeprecationWarning)
         return cls.set()
 
     @classmethod
@@ -357,9 +350,8 @@ def make_distribute_host(cluster_config: dict,
     - `Server.server()`
     """
     warnings.warn(
-        DeprecationWarning(
-            "make_distribute_host is going to be deprecated, use make_cluster instead."
-        ))
+        "make_distribute_host is going to be deprecated, use make_cluster instead.",
+        DeprecationWarning)
     Cluster.set(cluster_config)
     ThisHost.set(job, task)
     Server.set()

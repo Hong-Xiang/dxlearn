@@ -1,6 +1,8 @@
 import unittest
 from dxl.learn.core.distribute import Host, Cluster, ClusterSpec
 from dxl.learn.core import distribute as dlcd
+import pytest
+import tensorflow as tf
 
 
 class TestHost(unittest.TestCase):
@@ -18,7 +20,7 @@ class TestHost(unittest.TestCase):
 
 class TestClusterSpec(unittest.TestCase):
     def test_basic(self):
-        cspec = ClusterSpec()
+        cspec = ClusterSpec(dlcd.DEFAULT_CLUSTER_CONFIG)
 
 
 class TestCluster(unittest.TestCase):
@@ -35,12 +37,17 @@ class TestCluster(unittest.TestCase):
         Cluster.reset()
 
 
-class TestHelperFunction(unittest.TestCase):
-    def test_make_cluster(self):
-        dlcd.make_distribute_host(dlcd.ClusterSpec(), dlcd.JOB_NAME.WORKER, 1)
-        self.assertEqual(dlcd.ThisHost.host().task_index, 1)
-        self.assertEqual(dlcd.ThisHost.host().job, dlcd.JOB_NAME.WORKER)
-        dlcd.Cluster.reset()
-        dlcd.Server.reset()
-        dlcd.ThisHost.reset()
-        dlcd.MasterHost.reset()
+class DoNothing:
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+def test_make_cluster(monkeypatch):
+    monkeypatch.setattr(tf.train, 'Server', DoNothing)
+    dlcd.make_distribute_host(dlcd.ClusterSpec(dlcd.DEFAULT_CLUSTER_CONFIG), dlcd.JOB_NAME.WORKER, 1)
+    assert dlcd.ThisHost.host().task_index == 1
+    assert dlcd.ThisHost.host().job == dlcd.JOB_NAME.WORKER
+    dlcd.Cluster.reset()
+    dlcd.Server.reset()
+    dlcd.ThisHost.reset()
+    dlcd.MasterHost.reset()
