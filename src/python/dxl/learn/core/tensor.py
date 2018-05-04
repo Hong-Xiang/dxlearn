@@ -92,6 +92,9 @@ class Tensor:
                 return assigned, variable
             return assigned
 
+    def transpose(self, perm=None, name='transpose', conjugate=False):
+        return Tensor(tf.transpose(self.data, perm, name, conjugate))
+
     @classmethod
     def from_(cls, t: 'Tensor'):
         # with t.graph_info.variable_scope() as scope:
@@ -110,15 +113,20 @@ class TensorNumpyNDArray(Tensor):
 Constant = TensorNumpyNDArray
 
 
-class SparseMatrix(Tensor):
+class SparseTensor(Tensor):
     """
-    data is required to be scipy.sparse.coo_matrix
+    data is required to be scipy.sparse.coo_matrix or a 2-D array.
+    If data is a 2-D array, it should has shape [N, ndim+1], data[:, :-1] are coordinates and data[:, -1] are values.
     """
 
     def _process_input_data(self, data):
+        import scipy.sparse
         with self.graph_info.variable_scope():
-            data = tf.SparseTensor(
-                np.array([data.row, data.col]).T, data.data, data.shape)
+            if isinstance(data, scipy.sparse.coo.coo_matrix):
+                data = tf.SparseTensor(
+                    np.array([data.row, data.col]).T, data.data, data.shape)
+            else:
+                data = tf.SparseTensor(data[:, :-1], data[:, -1], data.shape)
         return data
 
     def matmul(self, m, constructor=None):
@@ -126,6 +134,9 @@ class SparseMatrix(Tensor):
             constructor = lambda d: Tensor(d, self.data_info, self.graph_info.update(name=None))
         d = tf.sparse_tensor_dense_matmul(self.data, m.data)
         return constructor(d)
+
+
+SparseMatrix = SparseTensor
 
 
 class VariableInfo(DataInfo):
