@@ -135,8 +135,8 @@ class Graph(ConfigurableWithName):
         if subgraph is None:
             try:
                 self.subgraphs[key] = subgraph_maker(self, key)
-            except:
-                raise ValueError('Invalid subgraph_maker {}'.format(subgraph_maker))
+            except Exception as e:
+                raise e
             subgraph = self.subgraphs.get(key)
         
         return subgraph
