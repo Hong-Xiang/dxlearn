@@ -64,6 +64,7 @@ class Graph(ConfigurableWithName):
         class DOMAIN:
             TENSOR = 'tensor'
             SUBGRAPH = 'subgraph'
+            CONFIG = 'config'
 
         class TENSOR:
             MAIN = 'main'
@@ -72,6 +73,9 @@ class Graph(ConfigurableWithName):
             LOSS = 'loss'
 
         class SUBGRAPH:
+            pass
+
+        class CONFIG:
             pass
 
     def __init__(self,
@@ -129,16 +133,17 @@ class Graph(ConfigurableWithName):
         return self.tensors.get(key)
 
     def subgraph(self,
-                 key:str=None,
-                 subgraph_maker: Callable[['ParentGraph'], 'subGraph']=None):       
+                 key: str = None,
+                 subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
         subgraph = self.subgraphs.get(key)
         if subgraph is None:
             try:
                 self.subgraphs[key] = subgraph_maker(self, key)
             except:
-                raise ValueError('Invalid subgraph_maker {}'.format(subgraph_maker))
+                raise ValueError(
+                    'Invalid subgraph_maker {}'.format(subgraph_maker))
             subgraph = self.subgraphs.get(key)
-        
+
         return subgraph
 
     def get_tensor(self, key,
@@ -171,6 +176,10 @@ class Graph(ConfigurableWithName):
             if k in valid_inputs:
                 feed_dict.update(self.tensor(k), inputs[k])
         return ThisSession.run(feed_dict=feed_dict)
+
+    @property
+    def info(self):
+        return self.graph_info
 
     @classmethod
     def tensorflow_tensor(cls, t):
