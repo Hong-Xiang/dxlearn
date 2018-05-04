@@ -6,11 +6,17 @@ import dxl.core.config as dcc
 
 
 class DefaultConfig:
-    _root = dcc.CNode()
+    _root = None
 
     @classmethod
     def root(cls):
+        if cls._root is None:
+            cls.reset()
         return cls._root
+
+    @classmethod
+    def reset(cls):
+        cls._root = dcc.CNode()
 
 
 class _Config:
@@ -32,10 +38,17 @@ class Configurable:
     def _create_config(self, cnode):
         return None
 
+    @classmethod
+    def default_config(cls):
+        return {}
+
     def __init__(self, config=None):
         if config is None:
             config = {}
         self.config = self._create_config(config)
+        for k, v in self.default_config().items():
+            if self.config(k) is None:
+                self.config.update(k, v)
 
 
 class ConfigurableWithName(Configurable):
