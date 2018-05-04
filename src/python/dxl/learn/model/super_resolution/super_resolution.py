@@ -223,7 +223,6 @@ class SuperResolutionBlock(Model):
         sub_block = StackedConv2D(
             name=preblock.name/subkey,
             input_tensor=input_tensor,
-            nb_layers=preblock.config(preblock.KEYS.CONFIG.NB_LAYERS),
             filters=preblock.config(preblock.KEYS.CONFIG.FILTERS),
             kernel_size=(1,1),
             strides=(1,1),
@@ -236,9 +235,9 @@ class SuperResolutionBlock(Model):
     def _input(self, inputs):
         with tf.variable_scope('input'):
             u = UpSampling2D(
-                name=self.name/'upsampling_u',
+                name='upsampling_u',
                 input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))
+                size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
 
             if self.KEYS.TENSOR.LABEL in inputs:
                 l = inputs[self.KEYS.TENSOR.LABEL]
@@ -250,9 +249,9 @@ class SuperResolutionBlock(Model):
 
             if SRKeys.REPRESENTS in inputs:
                 r = UpSampling2D(
-                    name=self.name/'upsampling_r',
+                    name='upsampling_r',
                     input_tensor=inputs[SRKeys.REPRESENTS],
-                    size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))
+                    size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
                 r = align_crop(r, u)
             else:
                 r = tf.layers.conv2d(
@@ -260,7 +259,7 @@ class SuperResolutionBlock(Model):
                     filters=self.config(self.KEYS.CONFIG.FILTERS),
                     kernel_size=5,
                     padding='same',
-                    name=self.name/'stem')
+                    name='stem')
             
             return u, r, l
 
@@ -327,10 +326,10 @@ class SuperResolutionBlock(Model):
         upsampled, represents, label = self._input(inputs)
         if self.config(self.KEYS.CONFIG.INTERP):
             return upsampled
-        
+
         sub_block = self.subgraph(
             self.KEYS.SUB_BLOCK.BUILDING,
-            lambda p, k: SuperResolution2x.sub_block_maker(p, k, represents))
+            lambda p, k: SuperResolutionBlock.sub_block_maker(p, k, represents))
         x = sub_block({SRKeys.REPRESENTS: represents})
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
