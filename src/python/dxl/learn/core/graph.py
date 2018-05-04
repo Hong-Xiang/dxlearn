@@ -139,9 +139,10 @@ class Graph(ConfigurableWithName):
         if subgraph is None:
             try:
                 self.subgraphs[key] = subgraph_maker(self, key)
-            except:
-                raise ValueError(
-                    'Invalid subgraph_maker {}'.format(subgraph_maker))
+            except Exception as e:
+                raise e
+                # raise ValueError(
+                    # 'Invalid subgraph_maker {}'.format(subgraph_maker))
             subgraph = self.subgraphs.get(key)
 
         return subgraph
@@ -184,9 +185,8 @@ class Graph(ConfigurableWithName):
     @classmethod
     def tensorflow_tensor(cls, t):
         warnings.warn(
-            DeprecationWarning(
-                "Graph.tensorflow_tensor will be deprecated, use dxl.learn.core.tf_tensor instead."
-            ))
+            "Graph.tensorflow_tensor will be deprecated, use dxl.learn.core.tf_tensor instead.",
+            DeprecationWarning)
         import tensorflow as tf
         if isinstance(t, tf.Tensor):
             return t
@@ -195,3 +195,11 @@ class Graph(ConfigurableWithName):
         else:
             raise TypeError("Can not convert {} to tensorflow_tensor.".format(
                 type(t)))
+
+
+class GraphV2(Graph):
+    def __init__(self, info, tensors=None, subgraphs=None, config=None):
+        if isinstance(info, str):
+            info = GraphInfo(info, info, None)
+        super().__init__(
+            info.name, tensors, subgraphs, config, graph_info=info)

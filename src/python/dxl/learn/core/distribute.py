@@ -176,7 +176,7 @@ class ClusterSpec(UserDict):
 
     @property
     def nb_workers(self):
-        return len(self.data[JOB_NAME.WORKER])
+        return len(self.data.get(JOB_NAME.WORKER, []))
 
     @property
     def jobs(self):
@@ -199,6 +199,7 @@ class ClusterSpec(UserDict):
         """
         Convert to tensorflow ClusterSpec
         """
+        print(self.data)
         return tf.train.ClusterSpec(self.data)
 
 

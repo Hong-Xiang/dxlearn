@@ -103,14 +103,25 @@ class Tensor:
         return cls(data=t.data, data_info=t.data_info, graph_info=t.graph_info)
 
 
-class TensorNumpyNDArray(Tensor):
+class NoOp(Tensor):
+    def __init__(self):
+        self.data = tf.no_op()
+
+
+class Constant(Tensor):
     def _process_input_data(self, data):
         with self.graph_info.variable_scope():
             data = tf.constant(np.array(data), name=self.graph_info.name)
         return data
 
+    @classmethod
+    def from_config(cls, ndarray_spec, graph_info):
+        from dxl.data.io import load_array
+        data = load_array(ndarray_spec)
+        return cls(data, None, graph_info)
 
-Constant = TensorNumpyNDArray
+
+TensorNumpyNDArray = Constant
 
 
 class SparseTensor(Tensor):
@@ -160,26 +171,31 @@ class Variable(Tensor):
 
     def _process_input_data(self, data):
         with self.graph_info.variable_scope():
-            name = self.graph_info.name
             if self._is_constant_initializer():
-                return tf.get_variable(
-                    name, initializer=self.data_info.initializer)
-            return tf.get_variable(
-                name,
-                dtype=self.data_info.dtype,
-                shape=self.data_info.shape,
-                initializer=tf.initializers.zeros)
+                kw = {'initializer': self.data_info.initializer}
+            else:
+                kw = {
+                    'dtype': self.data_info.dtype,
+                    'shape': self.data_info.shape,
+                    'initializer': tf.initializers.zeros
+                }
+            return tf.get_variable(self.graph_info.relatevie_name(), **kw)
 
-    def assign(self, t: Tensor):
-        with self.graph_info.variable_scope() as scope:
+    def assign(self, t: Tensor, info=None):
+        if info is None:
+            info = self.graph_info
+        if isinstance(info, str):
+            info = self.graph_info.update(name=info)
+        with info.variable_scope() as scope:
+            new_name = info.name if not info is self.graph_info else None
             if isinstance(t, (np.ndarray, tf.Tensor)):
                 data = self.data.assign(t)
             else:
                 data = self.data.assign(t.data)
-            return Tensor(
-                data,
-                DataInfo(self.data_info.info),
-                self.graph_info.update(name=None))
+            return Tensor(data, None, info)
+
+    def init(self):
+        return Tensor(self.data.initializer, None, self.graph_info)
 
 
 class TensorVariable:

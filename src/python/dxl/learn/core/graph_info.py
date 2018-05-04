@@ -2,12 +2,16 @@ from .distribute import Host
 import tensorflow as tf
 from contextlib import contextmanager
 from dxl.fs import Path
+import pathlib
+import json
 
 
 class GraphInfo:
     def __init__(self, name=None, variable_scope=None, reuse=None):
         self._name = name
         self.scope = variable_scope
+        if self.scope is None:
+            self.scope = str(self.name)
         self.reuse = reuse
 
     @property
@@ -19,6 +23,26 @@ class GraphInfo:
     def set_name(self, name):
         self._name = name
 
+    def __str__(self):
+        return json.dumps({
+            'name': self.name,
+            'scope': str(self.scope),
+            'reuse': self.reuse
+        })
+
+    def relative_scope(self, scope):
+        if isinstance(scope, Path):
+            scope = scope.n
+            current_scope = tf.get_variable_scope().name
+            if scope.startswith(current_scope):
+                scope = str(pathlib.Path(scope).relative_to(scope))
+                if scope == '.':
+                    scope = ''
+        return scope
+
+    def relatevie_name(self):
+        return self.relative_scope(self.name)
+
     @contextmanager
     def variable_scope(self, scope=None, reuse=None):
         if scope is None:
@@ -26,11 +50,13 @@ class GraphInfo:
         if scope is None:
             yield
         else:
-            if isinstance(scope, Path):
-                scope = scope.n
-            with tf.variable_scope(scope, reuse=reuse) as scope:
-                self.scope = scope
+            scope = self.relative_scope(scope)
+            if scope is tf.get_variable_scope():
                 yield scope
+            else:
+                with tf.variable_scope(scope, reuse=reuse) as scope:
+                    self.scope = scope
+                    yield scope
 
     @classmethod
     def from_dict(cls, dct):
@@ -57,6 +83,9 @@ class GraphInfo:
     def update(self, name=None, variable_scope=None,
                reuse=None) -> 'GraphInfo':
         return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
+
+    def child(self, name):
+        return self.update(Path(self.name) / name)
 
     def copy_without_name(self):
         return self.from_dict({
