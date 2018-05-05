@@ -1,5 +1,5 @@
 from ..core import (DistributeGraphInfo, Graph, Host, MasterHost, ThisHost,
-                    ThisSession, make_cluster)
+                    ThisSession, make_cluster, make_distribute_session)
 
 from ..core.distribute import JOB_NAME
 
@@ -115,6 +115,9 @@ class MasterWorkerTaskBase(Graph):
         User might want to overwrite this function.
         """
         pass
+
+    def make_session(self):
+        make_distribute_session()
 
     # def run_step_of_this_host(self, name):
     #     if ThisHost.is_master():
