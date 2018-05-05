@@ -128,7 +128,7 @@ class ResidualStackedConv(Model):
             strides=(1,1),
             padding='same',
             activation='basic',
-            graph_info=preblock.graph_info.update(name=None))
+            graph_info=preblock.info.update(name=None))
        
         return sub_block
         
@@ -184,21 +184,22 @@ class StackedResidualIncept(Model):
             cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
-    def sub_block_maker(cls, preblock, subkey, input_tensor):
+    def sub_block_maker(cls, preblock, subkey, input_tensor, id_block):
         sub_block = ResidualIncept(
-            name=preblock.name/subkey,
+            name=preblock.name/"{}_{}".format(subkey, id_block),
             input_tensor=input_tensor,
+            graph_info=preblock.info.update(name=None),
             ratio=0.3)
     
         return sub_block
     
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.RES_INCEPT,
-            lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x)
-        )
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
+            sub_block = self.subgraph(
+                self.KEYS.SUB_BLOCK.RES_INCEPT,
+                lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x, i)
+            )
             x = sub_block(inputs)
         return x
 
@@ -244,22 +245,22 @@ class StackedResidualConv(Model):
             cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
-    def sub_block_maker(cls, preblock, subkey, input_tensor):
+    def sub_block_maker(cls, preblock, subkey, input_tensor, id_block):
         sub_block = ResidualStackedConv(
-            name=preblock.name/subkey,
+            name=preblock.name/"{}_{}".format(subkey, id_block),
             input_tensor=input_tensor,
             ratio=0.1,
-            graph_info=preblock.graph_info.update(name=None))
+            graph_info=preblock.info.update(name=None))
 
         return sub_block
     
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.RES_STACKEDCONV,
-            lambda p, k: StackedResidualConv.sub_block_maker(p, k, x))
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = sub_block(inputs)
+            sub_block = self.subgraph(
+                self.KEYS.SUB_BLOCK.RES_STACKEDCONV,
+                lambda p, k: StackedResidualConv.sub_block_maker(p, k, x, i))
+            x = sub_block(x)
         return x
     
 

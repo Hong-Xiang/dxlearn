@@ -2,120 +2,165 @@ from .distribute import Host
 import tensorflow as tf
 from contextlib import contextmanager
 from dxl.fs import Path
+import pathlib
+import json
 
 
 class GraphInfo:
-  def __init__(self, name=None, variable_scope=None, reuse=None):
-    self._name = name
-    self.scope = variable_scope
-    self.reuse = reuse
+    def __init__(self, name=None, variable_scope=None, reuse=None):
+        self._name = name
+        if isinstance(variable_scope, (Path, pathlib.Path)):
+            variable_scope = str(variable_scope)
+        self.scope = variable_scope
+        if self.scope is None:
+            self.scope = str(self.name)
+        self.reuse = reuse
 
-  @property
-  def name(self):
-    if isinstance(self._name, Path):
-      return self._name.n
-    return self._name
+    @property
+    def name(self):
+        if isinstance(self._name, Path):
+            return self._name.n
+        return self._name
 
-  def set_name(self, name):
-    self._name = name
+    def set_name(self, name):
+        self._name = name
 
-  @contextmanager
-  def variable_scope(self, scope=None, reuse=None):
-    if scope is None:
-      scope = self.scope
-    if scope is None:
-      yield
-    else:
-      if isinstance(scope, Path):
-        scope = scope.n
-      with tf.variable_scope(scope, reuse=reuse) as scope:
-        self.scope = scope
-        yield scope
+    def __str__(self):
+        return json.dumps({
+            'name': self.name,
+            'scope': str(self.scope),
+            'reuse': self.reuse
+        })
 
-  @classmethod
-  def from_dict(cls, dct):
-    return cls(**dct)
+    def relative_scope(self, scope):
+        if isinstance(scope, Path):
+            scope = scope.n
+            current_scope = tf.get_variable_scope().name
+            if scope.startswith(current_scope):
+                scope = str(pathlib.Path(scope).relative_to(scope))
+                if scope == '.':
+                    scope = ''
+        return scope
 
-  @classmethod
-  def from_graph_info(cls,
-                      graph_info: 'GraphInfo',
-                      name=None,
-                      variable_scope=None,
-                      reuse=None):
-    return cls.from_dict(
-        graph_info.update_to_dict(name, variable_scope, reuse))
+    def relatevie_name(self):
+        return self.relative_scope(self.name)
 
-  def update_to_dict(self, name=None, variable_scope=None, reuse=None):
-    if name is None:
-      name = self.name
-    if variable_scope is None:
-      variable_scope = self.scope
-    if reuse is None:
-      reuse = self.reuse
-    return {'name': name, 'variable_scope': variable_scope, 'reuse': reuse}
+    @contextmanager
+    def variable_scope(self, scope=None, reuse=None):
+        if scope is None:
+            scope = self.scope
+        if scope is None:
+            yield
+        else:
+            scope = self.relative_scope(scope)
+            if scope is tf.get_variable_scope():
+                yield scope
+            else:
+                with tf.variable_scope(scope, reuse=reuse) as scope:
+                    self.scope = scope
+                    yield scope
 
-  def update(self, name=None, variable_scope=None, reuse=None) -> 'GraphInfo':
-    return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(**dct)
+
+    @classmethod
+    def from_graph_info(cls,
+                        graph_info: 'GraphInfo',
+                        name=None,
+                        variable_scope=None,
+                        reuse=None):
+        return cls.from_dict(
+            graph_info.update_to_dict(name, variable_scope, reuse))
+
+    def update_to_dict(self, name=None, variable_scope=None, reuse=None):
+        if name is None:
+            name = self.name
+        if variable_scope is None:
+            variable_scope = self.scope
+        if reuse is None:
+            reuse = self.reuse
+        return {'name': name, 'variable_scope': variable_scope, 'reuse': reuse}
+
+    def update(self, name=None, variable_scope=None,
+               reuse=None) -> 'GraphInfo':
+        return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
+
+    def child(self, name):
+        return self.update(Path(self.name) / name)
+
+    def copy_without_name(self):
+        return self.from_dict({
+            'variable_scope': self.variable_scope,
+            'reuse': self.reuse
+        })
 
 
 class DistributeGraphInfo(GraphInfo):
-  def __init__(self,
-               name=None,
-               variable_scope=None,
-               reuse=None,
-               host: Host = None):
-    super().__init__(name, variable_scope, reuse)
-    self.host = host
+    def __init__(self,
+                 name=None,
+                 variable_scope=None,
+                 reuse=None,
+                 host: Host = None):
+        super().__init__(name, variable_scope, reuse)
+        self.host = host
 
-  @contextmanager
-  def device_scope(self, host=None):
-    """
+    @contextmanager
+    def device_scope(self, host=None):
+        """
     In most cases, do not use this function directly, use variable_scope instead.
     """
-    if host is None:
-      host = self.host
-    if host is None:
-      yield
-    else:
-      with tf.device(host.device_prefix()):
-        yield
+        if host is None:
+            host = self.host
+        if host is None:
+            yield
+        else:
+            with tf.device(host.device_prefix()):
+                yield
 
-  @contextmanager
-  def variable_scope(self, scope=None, reuse=None, *, host=None):
-    """
+    @contextmanager
+    def variable_scope(self, scope=None, reuse=None, *, host=None):
+        """
     Providing variable scope (with device scope) inferenced from host and name
     information.
     """
-    with self.device_scope(host):
-      with GraphInfo.variable_scope(self, scope, reuse) as scope:
-        yield scope
+        with self.device_scope(host):
+            with GraphInfo.variable_scope(self, scope, reuse) as scope:
+                yield scope
 
-  @classmethod
-  def from_graph_info(cls,
-                      distribute_graph_info: 'DistributeGraphInfo',
-                      name=None,
-                      variable_scope=None,
-                      reuse=None,
-                      host=None):
-    return cls.from_dict(
-        distribute_graph_info.update_to_dict(name, variable_scope, reuse,
-                                             host))
+    @classmethod
+    def from_graph_info(cls,
+                        distribute_graph_info: 'DistributeGraphInfo',
+                        name=None,
+                        variable_scope=None,
+                        reuse=None,
+                        host=None):
+        return cls.from_dict(
+            distribute_graph_info.update_to_dict(name, variable_scope, reuse,
+                                                 host))
 
-  def update_to_dict(self,
-                     name=None,
-                     variable_scope=None,
-                     reuse=None,
-                     host=None):
-    result = super().update_to_dict(name, variable_scope, reuse)
-    if host is None:
-      host = self.host
-    result.update({'host': host})
-    return result
+    def update_to_dict(self,
+                       name=None,
+                       variable_scope=None,
+                       reuse=None,
+                       host=None):
+        result = super().update_to_dict(name, variable_scope, reuse)
+        if host is None:
+            host = self.host
+        result.update({'host': host})
+        return result
 
-  def update(self, name=None, variable_scope=None, reuse=None,
-             host=None) -> 'GraphInfo':
-    return self.from_dict(
-        self.update_to_dict(name, variable_scope, reuse, host))
+    def update(self, name=None, variable_scope=None, reuse=None,
+               host=None) -> 'GraphInfo':
+        return self.from_dict(
+            self.update_to_dict(name, variable_scope, reuse, host))
+
+    def copy_without_name(self):
+        return self.from_dict({
+            'variable_scope': self.variable_scope,
+            'reuse': self.reuse,
+            'host': self.host
+        })
 
 
 __all__ = [GraphInfo, DistributeGraphInfo]

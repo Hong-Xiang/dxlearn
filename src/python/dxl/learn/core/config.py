@@ -19,6 +19,10 @@ class DefaultConfig:
         cls._root = dcc.CNode()
 
 
+def set_global_config(dct):
+    DefaultConfig.root().update([], dct)
+
+
 class _Config:
     def __init__(self, node, view):
         self._cnode = node
