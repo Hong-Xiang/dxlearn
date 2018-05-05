@@ -69,6 +69,34 @@ class Tensor:
     def __matmul__(self, m):
         return self.matmul(m)
 
+    def __add__(self, x):
+        if isinstance(x, Tensor):
+            result = self.data + x.data
+        else:
+            result = self.data + x
+        return Tensor(result, None, self.graph_info.update(name=None))
+
+    def __sub__(self, x):
+        if isinstance(x, Tensor):
+            result = self.data - x.data
+        else:
+            result = self.data - x
+        return Tensor(result, None, self.graph_info.update(name=None))
+
+    def __truediv__(self, x):
+        if isinstance(x, Tensor):
+            result = self.data / x.data
+        else:
+            result = self.data / x
+        return Tensor(result, None, self.graph_info.update(name=None))
+
+    def __mod__(self, x):
+        if isinstance(x, Tensor):
+            result = self.data % x.data
+        else:
+            result = self.data % x
+        return Tensor(result, None, self.graph_info.update(name=None))
+
     def eval(self):
         return self.data.eval()
 
