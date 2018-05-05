@@ -71,13 +71,13 @@ class MasterHost:
 
     @classmethod
     def set(cls, job: str, task_index: int = None, ip=None, port=None):
-        if job_name is None:
-            job_name = JOB_NAME.MASTER
+        if job is None:
+            job = JOB_NAME.MASTER
         if task_index is None:
             task_index = 0
-        if cls._master_host is not None:
+        if cls._host is not None:
             raise TypeError("Maset host is already set.")
-        cls._host = Host(job_name, task_index, ip, port)
+        cls._host = Host(job, task_index, ip, port)
 
     @classmethod
     def reset(cls):
@@ -102,7 +102,7 @@ class MasterHost:
 
     @classmethod
     def host(cls):
-        return cls._master_host
+        return cls._host
 
     @classmethod
     def is_master(cls, host: Host):
@@ -165,14 +165,18 @@ class ClusterSpec(UserDict):
         NB_WORKERS = 'nb_workers'
 
     def __init__(self, config):
+        super().__init__({})
         from pathlib import Path
         if isinstance(config, (str, Path)):
             with open(config, 'r') as fin:
-                self.data = json.load(fin)
+                self.data.update(json.load(fin))
         elif isinstance(config, dict):
-            self.data = config
+            self.data.update(config)
         elif isinstance(config, ClusterSpec):
-            self.data = config.data
+            self.data.update(config.data)
+        else:
+            for k, v in config.items():
+                self.data[k] = v
 
     @property
     def nb_workers(self):
@@ -199,7 +203,6 @@ class ClusterSpec(UserDict):
         """
         Convert to tensorflow ClusterSpec
         """
-        print(self.data)
         return tf.train.ClusterSpec(self.data)
 
 

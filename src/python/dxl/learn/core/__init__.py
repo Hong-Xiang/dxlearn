@@ -1,4 +1,4 @@
-from .config import ConfigurableWithName, ConfigurableWithClass
+from .config import ConfigurableWithName, ConfigurableWithClass, set_global_config
 from .distribute import make_distribute_host, Master, ThisHost, Host, Server, Barrier
 from .distribute import ClusterSpec, MasterHost, make_cluster
 from .session import make_distribute_session, make_session, ThisSession, Session

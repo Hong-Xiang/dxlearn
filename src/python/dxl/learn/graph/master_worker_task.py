@@ -1,123 +1,143 @@
-from ..core import (DEFAULT_CLUSTER_CONFIG, JOB_NAME, DistributeGraphInfo,
-                    Graph, Host, MasterHost, ThisHost, ThisSession,
-                    make_cluster)
+from ..core import (DistributeGraphInfo, Graph, Host, MasterHost, ThisHost,
+                    ThisSession, make_cluster)
+
+from ..core.distribute import JOB_NAME
 
 
-class MasterWorkerTask(Graph):
+class MasterWorkerTaskBase(Graph):
     """
     Helper class of managing distribute task with Master-Multiple Worker model.
+
+    `self.config(KC.CLUSTER)` a ClusterSpec Object.
     """
 
-    class KEYS:
-        class STEPS:
-            """
-            Names of steps.
-            """
+    class KEYS(Graph.KEYS):
+        class TENSOR(Graph.KEYS.TENSOR):
             pass
 
         class CONFIG(Graph.KEYS.CONFIG):
             CLUSTER = 'cluster'
             JOB = 'job'
             TASK_INDEX = 'task_index'
+            NB_WORKERS = 'nb_workers'
 
         class SUBGRAPH(Graph.KEYS.SUBGRAPH):
             MASTER = JOB_NAME.MASTER
             WORKER = JOB_NAME.WORKER
 
-    @classmethod
-    def default_config(cls):
-        return {cls.KEYS.CONFIG.CLUSTER: DEFAULT_CLUSTER_CONFIG}
-
-    def __init__(self, job, task_index, distribute_config=None, name=None):
+    def __init__(self,
+                 name=None,
+                 *,
+                 job=None,
+                 task_index=None,
+                 cluster_config=None):
         KC = self.KEYS.CONFIG
         if name is None:
-            name = 'distribute_task'
+            name = 'master_worker_task'
         super().__init__(
             name,
             config={
-                KC.CLUSTER: distribute_config,
+                KC.CLUSTER: cluster_config,
                 KC.JOB: job,
                 KC.TASK_INDEX: task_index
             })
-        self.subgraphs[JOB_NAME.MASTER] = None
-        self.subgraphs[JOB_NAME.WORKER] = []
         self.hosts = {JOB_NAME.MASTER: None, JOB_NAME.WORKER: []}
-        self.steps = {}
-        self.cluster_init()
-        self.subgraph_infos = {JOB_NAME.MASTER: None, JOB_NAME.WORKER: []}
+        self._cluster_init()
+        self._make_master_graph()
+        self._make_worker_graphs()
+        self._make_barriers()
 
+    @classmethod
+    def default_config(cls):
+        from ..core.distribute import DEFAULT_CLUSTER_CONFIG
+        return {
+            cls.KEYS.CONFIG.CLUSTER: DEFAULT_CLUSTER_CONFIG,
+            cls.KEYS.CONFIG.TASK_INDEX: 0
+        }
+
+    @property
+    def job(self):
+        return self.config(self.KEYS.CONFIG.JOB)
+
+    @property
     def nb_workers(self):
-        return len(self.config(self.KEYS.CONFIG.CLUSTER)[JOB_NAME.WORKER])
+        return self.config(self.KEYS.CONFIG.NB_WORKERS)
 
-    def cluster_init(self):
+    @property
+    def job(self):
+        return self.config(self.KEYS.CONFIG.JOB)
+
+    @property
+    def task_index(self):
+        return self.config(self.KEYS.CONFIG.TASK_INDEX)
+
+    def _cluster_init(self):
         """
         Create cluster to run this task, this function should be called before:
         - self.nb_workers()
         """
+
+        self.config.update(
+            self.KEYS.CONFIG.NB_WORKERS,
+            len(self.config(self.KEYS.CONFIG.CLUSTER)[JOB_NAME.WORKER]))
         KC = self.KEYS.CONFIG
         make_cluster(
             self.config(KC.CLUSTER), self.config(KC.JOB),
             self.config(KC.TASK_INDEX), Host(JOB_NAME.MASTER, 0))
         self.hosts[JOB_NAME.MASTER] = MasterHost.host()
         self.hosts[JOB_NAME.WORKER] = [
-            Host(JOB_NAME.WORKER, i) for i in range(self.nb_workers())
-        ]
-        self.subgraph_infos[JOB_NAME.MASTER] = DistributeGraphInfo(
-            None, None, False, self.hosts[JOB_NAME.MASTER])
-        self.subgraph_infos[JOB_NAME.WORKER] = [
-            DistributeGraphInfo(None, None, False, h)
-            for h in self.hosts[JOB_NAME.WORKER]
+            Host(JOB_NAME.WORKER, i) for i in range(self.nb_workers)
         ]
 
-    def add_master_graph(self, g):
-        self.subgraphs[JOB_NAME.MASTER] = g
+    def _make_barriers(self):
+        pass
 
-    def add_worker_graph(self, g):
-        self.subgraphs[JOB_NAME.WORKER].append(g)
+    def _make_master_graph(self):
+        pass
 
-    def add_step(self, name, master_op, worker_ops):
-        """
-        Add step to run, add a step dict with
-        {'mater': mater_op, 'worker': [worker_ops]}
-        """
-        self.steps[name] = {
-            JOB_NAME.MASTER: master_op,
-            JOB_NAME.WORKER: worker_ops
-        }
+    def _make_worker_graphs(self):
+        pass
 
-    def run_step_of_this_host(self, name):
-        if ThisHost.is_master():
-            ThisSession.run(self.steps[name][JOB_NAME.MASTER])
-        else:
-            ThisSession.run(
-                self.steps[name][JOB_NAME.WORKER][ThisHost.host().task_index])
+    # def run_step_of_this_host(self, name):
+    #     if ThisHost.is_master():
+    #         ThisSession.run(self.steps[name][JOB_NAME.MASTER])
+    #     else:
+    #         ThisSession.run(
+    #             self.steps[name][JOB_NAME.WORKER][ThisHost.host().task_index])
 
-    def worker_graph_on(self, host):
-        return self.subgraph(JOB_NAME.WORKER)[host.task_index]
+    # def worker_graph_on(self, host):
+    #     return self.subgraph(JOB_NAME.WORKER)[host.task_index]
 
-    def graph_on_this_host(self):
-        host = ThisHost.host()
-        if ThisHost.is_master():
-            return self.master_graph
-        else:
-            for g in self.worker_graphs:
-                if g.graph_info.host == host:
-                    return g
-        raise KeyError("No local graph for {}.{} found".format(
-            host.job, host.task_index))
+    # def graph_on_this_host(self):
+    #     host = ThisHost.host()
+    #     if ThisHost.is_master():
+    #         return self.master_graph
+    #     else:
+    #         for g in self.worker_graphs:
+    #             if g.graph_info.host == host:
+    #                 return g
+    #     raise KeyError("No local graph for {}.{} found".format(
+    #         host.job, host.task_index))
 
-    def ginfo_master(self):
-        return self.master_graph_info
+    @classmethod
+    def worker_only(cls, func):
+        def call(*args, **kwargs):
+            if not ThisHost.is_master():
+                return func(*args, **kwargs)
+            return None
 
-    def ginfo_worker(self, task_index):
-        return self.worker_graph_infos[task_index]
+        return call
 
-    def ginfo_this(self):
-        """
-        Helper function to provide graph_info of ThisHost.host()
-        """
-        from .graph_info import DistributeGraphInfo
-        return DistributeGraphInfo(None, None, None, ThisHost.host())
+    @classmethod
+    def master_only(cls, func):
+        def call(*args, **kwargs):
+            if ThisHost.is_master():
+                return func(*args, **kwargs)
+            return None
+
+        return call
 
 
-__all__ = ['MasterWorkerTask']
+__all__ = ['MasterWorkerTask', 'JOB_NAME']
+
+

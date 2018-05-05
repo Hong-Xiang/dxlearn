@@ -27,3 +27,4 @@ def map_data(list_of_tensors):
           "Unknown task tpye {}, should be Tensor or tf.Tensor.".format(
               type(t)))
   return result
+
