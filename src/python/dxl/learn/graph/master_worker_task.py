@@ -27,6 +27,7 @@ class MasterWorkerTaskBase(Graph):
 
     def __init__(self,
                  name=None,
+                 graph_info=None,
                  *,
                  job=None,
                  task_index=None,
@@ -36,6 +37,7 @@ class MasterWorkerTaskBase(Graph):
             name = 'master_worker_task'
         super().__init__(
             name,
+            graph_info=graph_info,
             config={
                 KC.CLUSTER: cluster_config,
                 KC.JOB: job,
@@ -54,6 +56,13 @@ class MasterWorkerTaskBase(Graph):
             cls.KEYS.CONFIG.CLUSTER: DEFAULT_CLUSTER_CONFIG,
             cls.KEYS.CONFIG.TASK_INDEX: 0
         }
+
+    def default_info(self):
+        return DistributeGraphInfo(self.name, self.name,
+                                   Host(
+                                       self.config(self.KEYS.CONFIG.JOB),
+                                       self.config(
+                                           self.KEYS.CONFIG.TASK_INDEX)))
 
     @property
     def job(self):
@@ -89,13 +98,22 @@ class MasterWorkerTaskBase(Graph):
             Host(JOB_NAME.WORKER, i) for i in range(self.nb_workers)
         ]
 
-    def _make_barriers(self):
-        pass
-
     def _make_master_graph(self):
+        """
+        User might want to overwrite this function.
+        """
         pass
 
     def _make_worker_graphs(self):
+        """
+        User might want to overwrite this function.
+        """
+        pass
+
+    def _make_barriers(self):
+        """
+        User might want to overwrite this function.
+        """
         pass
 
     # def run_step_of_this_host(self, name):
@@ -139,5 +157,3 @@ class MasterWorkerTaskBase(Graph):
 
 
 __all__ = ['MasterWorkerTask', 'JOB_NAME']
-
-

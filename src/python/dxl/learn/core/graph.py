@@ -93,12 +93,15 @@ class Graph(ConfigurableWithName):
             tensors = dict()
         self.tensors = tensors
         if graph_info is None:
-            graph_info = GraphInfo(name)
+            graph_info = self.default_info()
         self.graph_info = graph_info
         if self.graph_info.scope is None:
             self.graph_info.scope = self.name
         if self.graph_info._name is None:
             self.graph_info._name = name
+
+    def default_info(self):
+        return GraphInfo(self.name, self.name)
 
     def __hash__(self):
         return hash(self.name)
@@ -142,7 +145,7 @@ class Graph(ConfigurableWithName):
             except Exception as e:
                 raise e
                 # raise ValueError(
-                    # 'Invalid subgraph_maker {}'.format(subgraph_maker))
+                # 'Invalid subgraph_maker {}'.format(subgraph_maker))
             subgraph = self.subgraphs.get(key)
 
         return subgraph
