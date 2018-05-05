@@ -64,6 +64,7 @@ class Graph(ConfigurableWithName):
         class DOMAIN:
             TENSOR = 'tensor'
             SUBGRAPH = 'subgraph'
+            CONFIG = 'config'
 
         class TENSOR:
             MAIN = 'main'
@@ -72,6 +73,9 @@ class Graph(ConfigurableWithName):
             LOSS = 'loss'
 
         class SUBGRAPH:
+            pass
+
+        class CONFIG:
             pass
 
     def __init__(self,
@@ -89,12 +93,15 @@ class Graph(ConfigurableWithName):
             tensors = dict()
         self.tensors = tensors
         if graph_info is None:
-            graph_info = GraphInfo(name)
+            graph_info = self.default_info()
         self.graph_info = graph_info
         if self.graph_info.scope is None:
             self.graph_info.scope = self.name
         if self.graph_info._name is None:
             self.graph_info._name = name
+
+    def default_info(self):
+        return GraphInfo(self.name)
 
     def __hash__(self):
         return hash(self.name)
@@ -129,8 +136,8 @@ class Graph(ConfigurableWithName):
         return self.tensors.get(key)
 
     def subgraph(self,
-                 key:str=None,
-                 subgraph_maker: Callable[['ParentGraph'], 'subGraph']=None):       
+                 key: str = None,
+                 subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
         subgraph = self.subgraphs.get(key)
         if subgraph is None:
             try:
@@ -138,7 +145,7 @@ class Graph(ConfigurableWithName):
             except Exception as e:
                 raise e
             subgraph = self.subgraphs.get(key)
-        
+
         return subgraph
 
     def get_tensor(self, key,
@@ -172,12 +179,15 @@ class Graph(ConfigurableWithName):
                 feed_dict.update(self.tensor(k), inputs[k])
         return ThisSession.run(feed_dict=feed_dict)
 
+    @property
+    def info(self):
+        return self.graph_info
+
     @classmethod
     def tensorflow_tensor(cls, t):
         warnings.warn(
-            DeprecationWarning(
-                "Graph.tensorflow_tensor will be deprecated, use dxl.learn.core.tf_tensor instead."
-            ))
+            "Graph.tensorflow_tensor will be deprecated, use dxl.learn.core.tf_tensor instead.",
+            DeprecationWarning)
         import tensorflow as tf
         if isinstance(t, tf.Tensor):
             return t
@@ -186,3 +196,11 @@ class Graph(ConfigurableWithName):
         else:
             raise TypeError("Can not convert {} to tensorflow_tensor.".format(
                 type(t)))
+
+
+class GraphV2(Graph):
+    def __init__(self, info, tensors=None, subgraphs=None, config=None):
+        if isinstance(info, str):
+            info = GraphInfo(info, info, None)
+        super().__init__(
+            info.name, tensors, subgraphs, config, graph_info=info)
