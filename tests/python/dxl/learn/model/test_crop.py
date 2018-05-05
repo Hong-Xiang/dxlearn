@@ -1,7 +1,7 @@
 import tensorflow as tf 
 import numpy as np
-from dxl.learn.model.image import random_crop, boundary_crop, align_crop
-from dxl.learn.model.image import random_crop_offset
+from dxl.learn.model import random_crop, boundary_crop, align_crop
+from dxl.learn.model import random_crop_offset
 
 class CropTest(tf.test.TestCase):
     def test_random_crop_offset(self):
@@ -20,7 +20,7 @@ class CropTest(tf.test.TestCase):
         target_shape = [1, 1, 3]
         y = random_crop(
             input_=x,
-            target_shape=target_shape,
+            target=target_shape,
             name='random_crop'
         )
         with self.test_session() as sess:

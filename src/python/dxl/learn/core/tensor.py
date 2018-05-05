@@ -69,34 +69,6 @@ class Tensor:
     def __matmul__(self, m):
         return self.matmul(m)
 
-    def __add__(self, x):
-        if isinstance(x, Tensor):
-            result = self.data + x.data
-        else:
-            result = self.data + x
-        return Tensor(result, None, self.graph_info.update(name=None))
-
-    def __sub__(self, x):
-        if isinstance(x, Tensor):
-            result = self.data - x.data
-        else:
-            result = self.data - x
-        return Tensor(result, None, self.graph_info.update(name=None))
-
-    def __truediv__(self, x):
-        if isinstance(x, Tensor):
-            result = self.data / x.data
-        else:
-            result = self.data / x
-        return Tensor(result, None, self.graph_info.update(name=None))
-
-    def __mod__(self, x):
-        if isinstance(x, Tensor):
-            result = self.data % x.data
-        else:
-            result = self.data % x
-        return Tensor(result, None, self.graph_info.update(name=None))
-
     def eval(self):
         return self.data.eval()
 
@@ -131,25 +103,14 @@ class Tensor:
         return cls(data=t.data, data_info=t.data_info, graph_info=t.graph_info)
 
 
-class NoOp(Tensor):
-    def __init__(self):
-        self.data = tf.no_op()
-
-
-class Constant(Tensor):
+class TensorNumpyNDArray(Tensor):
     def _process_input_data(self, data):
         with self.graph_info.variable_scope():
             data = tf.constant(np.array(data), name=self.graph_info.name)
         return data
 
-    @classmethod
-    def from_config(cls, ndarray_spec, graph_info):
-        from dxl.data.io import load_array
-        data = load_array(ndarray_spec)
-        return cls(data, None, graph_info)
 
-
-TensorNumpyNDArray = Constant
+Constant = TensorNumpyNDArray
 
 
 class SparseTensor(Tensor):
@@ -199,31 +160,26 @@ class Variable(Tensor):
 
     def _process_input_data(self, data):
         with self.graph_info.variable_scope():
+            name = self.graph_info.name
             if self._is_constant_initializer():
-                kw = {'initializer': self.data_info.initializer}
-            else:
-                kw = {
-                    'dtype': self.data_info.dtype,
-                    'shape': self.data_info.shape,
-                    'initializer': tf.initializers.zeros
-                }
-            return tf.get_variable(self.graph_info.relatevie_name(), **kw)
+                return tf.get_variable(
+                    name, initializer=self.data_info.initializer)
+            return tf.get_variable(
+                name,
+                dtype=self.data_info.dtype,
+                shape=self.data_info.shape,
+                initializer=tf.initializers.zeros)
 
-    def assign(self, t: Tensor, info=None):
-        if info is None:
-            info = self.graph_info
-        if isinstance(info, str):
-            info = self.graph_info.update(name=info)
-        with info.variable_scope() as scope:
-            new_name = info.name if not info is self.graph_info else None
+    def assign(self, t: Tensor):
+        with self.graph_info.variable_scope() as scope:
             if isinstance(t, (np.ndarray, tf.Tensor)):
                 data = self.data.assign(t)
             else:
                 data = self.data.assign(t.data)
-            return Tensor(data, None, info)
-
-    def init(self):
-        return Tensor(self.data.initializer, None, self.graph_info)
+            return Tensor(
+                data,
+                DataInfo(self.data_info.info),
+                self.graph_info.update(name=None))
 
 
 class TensorVariable:
