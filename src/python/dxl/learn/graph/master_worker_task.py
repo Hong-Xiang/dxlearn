@@ -118,3 +118,6 @@ class MasterWorkerTask(Graph):
         """
         from .graph_info import DistributeGraphInfo
         return DistributeGraphInfo(None, None, None, ThisHost.host())
+
+
+__all__ = ['MasterWorkerTask']
