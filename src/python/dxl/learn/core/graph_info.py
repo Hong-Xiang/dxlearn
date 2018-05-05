@@ -9,6 +9,8 @@ import json
 class GraphInfo:
     def __init__(self, name=None, variable_scope=None, reuse=None):
         self._name = name
+        if isinstance(variable_scope, (Path, pathlib.Path)):
+            variable_scope = str(variable_scope)
         self.scope = variable_scope
         if self.scope is None:
             self.scope = str(self.name)

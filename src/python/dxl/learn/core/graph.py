@@ -101,7 +101,7 @@ class Graph(ConfigurableWithName):
             self.graph_info._name = name
 
     def default_info(self):
-        return GraphInfo(self.name, self.name)
+        return GraphInfo(self.name)
 
     def __hash__(self):
         return hash(self.name)
