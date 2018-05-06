@@ -40,7 +40,7 @@ class _Config:
 
 class Configurable:
     def _create_config(self, cnode):
-        return None
+        raise NotImplementedError
 
     @classmethod
     def default_config(cls):
@@ -65,7 +65,7 @@ class ConfigurableWithName(Configurable):
 
     def _create_config(self, config):
         DefaultConfig.root().update(str(self.name), config)
-        node = DefaultConfig.root().get(str(self.name))
+        node = DefaultConfig.root().read(str(self.name))
         view = dcc.create_view(DefaultConfig.root(), str(self.name))
         return _Config(node, view)
 
