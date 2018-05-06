@@ -21,6 +21,9 @@ class Model(Graph):
         class TENSOR(Graph.KEYS.TENSOR):
             INPUT = 'input'
             OUTPUT = 'output'
+            INFERENCE = 'inference'
+            LABEL = 'label'
+            LOSS = 'loss'
 
     def __init__(self,
                  name: Path,

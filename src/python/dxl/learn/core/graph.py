@@ -68,9 +68,7 @@ class Graph(ConfigurableWithName):
 
         class TENSOR:
             MAIN = 'main'
-            INFERENCE = 'inference'
-            LABEL = 'label'
-            LOSS = 'loss'
+    
 
         class SUBGRAPH:
             pass

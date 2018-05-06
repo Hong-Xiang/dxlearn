@@ -30,10 +30,10 @@ class SessionBase(ConfigurableWithName):
     @classmethod
     def default_config(cls):
         return {
-            self.KEYS.CONFIG.IS_DEFAULT: True,
-            self.KEYS.CONFIG.IS_ALLOW_GROWTH: True,
-            self.KEYS.CONFIG.IS_LOG_DEVICE_PLACEMENT: False,
-            self.KEYS.CONFIG.IS_RUN_VAR_INIT: True,
+            cls.KEYS.CONFIG.IS_DEFAULT: True,
+            cls.KEYS.CONFIG.IS_ALLOW_GROWTH: True,
+            cls.KEYS.CONFIG.IS_LOG_DEVICE_PLACEMENT: False,
+            cls.KEYS.CONFIG.IS_RUN_VAR_INIT: True,
         }
 
     def __init__(self,
@@ -91,7 +91,21 @@ class SessionBase(ConfigurableWithName):
 
     def run(self, *args, **kwargs):
         with ThisSession.session_scope(self):
-            return ThisSession.session().run(*args, **kwargs)
+            fetches = args[0]
+            if isinstance(fetches, (list, tuple)):
+                fetches = [
+                    f if isinstance(f, (tf.Tensor, str)) else f.data
+                    for f in fetches
+                ]
+            elif isinstance(fetches, dict):
+                fetches = {
+                    k: f if isinstance(f, (tf.Tensor, str)) else f.data
+                    for k, f in fetches.items()
+                }
+            elif not isinstance(fetches, (tf.Tensor, str)):
+                fetches = fetches.data
+            args_new = [fetches, args[1:]]
+            return ThisSession.session().run(*args_new, **kwargs)
 
 
 class Session(SessionBase):
@@ -160,7 +174,7 @@ class ThisSession:
 
     @classmethod
     def run(cls, *args, **kwargs):
-        return cls.session().run(*args, **kwargs)
+        return cls.warp_session().run(*args, **kwargs)
 
     @classmethod
     def set_session(cls, session=None):
