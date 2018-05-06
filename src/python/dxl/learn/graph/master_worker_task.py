@@ -28,6 +28,7 @@ class MasterWorkerTaskBase(Graph):
     def __init__(self,
                  name=None,
                  graph_info=None,
+                 config=None,
                  *,
                  job=None,
                  task_index=None,
@@ -35,14 +36,14 @@ class MasterWorkerTaskBase(Graph):
         KC = self.KEYS.CONFIG
         if name is None:
             name = 'master_worker_task'
-        super().__init__(
-            name,
-            graph_info=graph_info,
-            config={
-                KC.CLUSTER: cluster_config,
-                KC.JOB: job,
-                KC.TASK_INDEX: task_index
-            })
+        if config is None:
+            config = {}
+        config.update({
+            KC.CLUSTER: cluster_config,
+            KC.JOB: job,
+            KC.TASK_INDEX: task_index
+        })
+        super().__init__(name, graph_info=graph_info, config=config)
         self.hosts = {JOB_NAME.MASTER: None, JOB_NAME.WORKER: []}
         self._cluster_init()
         self._make_master_graph()
