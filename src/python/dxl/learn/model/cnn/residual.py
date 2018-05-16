@@ -184,9 +184,9 @@ class StackedResidualIncept(Model):
             cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
-    def sub_block_maker(cls, preblock, subkey, input_tensor, id_block):
+    def sub_block_maker(cls, preblock, subkey, input_tensor):
         sub_block = ResidualIncept(
-            name=preblock.name/"{}_{}".format(subkey, id_block),
+            name=preblock.name/subkey,
             input_tensor=input_tensor,
             graph_info=preblock.info.update(name=None),
             ratio=0.3)
@@ -198,8 +198,7 @@ class StackedResidualIncept(Model):
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             sub_block = self.subgraph(
                 self.KEYS.SUB_BLOCK.RES_INCEPT,
-                lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x, i)
-            )
+                lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x))
             x = sub_block(inputs)
         return x
 

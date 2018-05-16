@@ -21,6 +21,22 @@ class BlocksTest(tf.test.TestCase):
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
             self.assertAllEqual(y.shape, (1, 50, 50, 32))
+    
+    def test_Conv2D_Reuse(self):
+        x = np.ones([1, 100, 100, 3], dtype="float32")
+        conv2d_ins = Conv2D(
+            name='Conv2D_test',
+            input_tensor=tf.constant(x),
+            filters=32,
+            kernel_size=[5,5],
+            strides=(2, 2),
+            padding='same',
+            activation='basic')
+        xt = conv2d_ins({'input': tf.constant(x)})
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            yt = sess.run(xt)
+            self.assertAllEqual(yt.shape, (1, 50, 50, 32))
 
     def test_StackedConv2D(self):
         x = np.ones([1, 100, 100, 3], dtype="float32")
