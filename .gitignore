@@ -13,7 +13,7 @@ src/python/dxl/learn/configs/
 src/python/dxl/learn/dataset/
 src/python/dxl/learn/distribute/
 src/python/dxl/learn/model.old/
-src/python/dxl/learn/net/
+src/python/dxl/learn/network/
 src/python/dxl/learn/run/
 src/python/dxl/learn/scalar/
 src/python/dxl/learn/scripts/
