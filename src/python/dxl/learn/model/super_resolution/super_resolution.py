@@ -39,7 +39,9 @@ class SuperResolution2x(Model):
     """
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
-            pass
+            INFERENCE = 'inference'
+            LABEL = 'label'
+            LOSS = 'loss'
         class CONFIG:
             NB_LAYERS = 'nb_layers'
             FILTERS = 'filters'
@@ -153,7 +155,9 @@ class SuperResolutionBlock(Model):
     '''
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
-            pass
+            INFERENCE = 'inference'
+            LABEL = 'label'
+            LOSS = 'loss'
         class CONFIG:
             FILTERS = 'filters'
             BOUNDARY_CROP = 'boundary_crop'
