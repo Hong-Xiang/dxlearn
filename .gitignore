@@ -129,3 +129,6 @@ develop-cgy/
 # vs
 .vs/*
 /.vs
+
+# pytest
+.pytest_cache/*
