@@ -6,7 +6,7 @@ from typing import Dict
 from dxl.fs import Path
 import tensorflow as tf
 
-
+# TODO: Add self.variables and self.trainable_variables support.
 class Model(Graph):
     """
     A special case of Graph, which all inputs are listed in inputs, i.e. no Tensor
@@ -21,6 +21,9 @@ class Model(Graph):
         class TENSOR(Graph.KEYS.TENSOR):
             INPUT = 'input'
             OUTPUT = 'output'
+            INFERENCE = 'inference'
+            LABEL = 'label'
+            LOSS = 'loss'
 
     def __init__(self,
                  name: Path,

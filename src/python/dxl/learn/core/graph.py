@@ -10,7 +10,7 @@ import warnings
 
 class Graph(ConfigurableWithName):
     """
-      Graph is a collection of Tensors and their opeartions.
+      Graph is a warp of Tensors, subgraphs and configs.
 
       `self.tensors` is a dict of Tensors, which is provided as an interface to Graph.
       Which means one may use ::
@@ -23,12 +23,14 @@ class Graph(ConfigurableWithName):
       Another useage is to substitute part of graph with other tensors. One may use ::
 
           g = Graph(tensor_dict, ...)
-          g.run(fetch_keys, inputs={k: tensor})
+          g.run(key, feeds={k: tensor})
 
-      to substitute (by tf.run(feed_dict={g.tensors[k]: inputs[k].data})) mechanism.
+    which is equivilant to ::
+
+        tf.run(g.tensor(key).data, feeds={g.tensor[k]:tensor})
 
 
-      KEYS:
+    KEYS:
 
       - GRAPH:
 
@@ -45,18 +47,13 @@ class Graph(ConfigurableWithName):
 
       - tensor(key): -> Tensor
 
-    
+
     Provide The following methods:
-    
+
     - `g.tensor(key)`
     - `g.subgraph(key)`
     - `g.config(key)`
 
-    Some graphs may support:
-
-    - `g.tensors.key`
-    - `g.subgraph.key`
-    - `g.config.key`
 
     """
 
@@ -68,9 +65,6 @@ class Graph(ConfigurableWithName):
 
         class TENSOR:
             MAIN = 'main'
-            INFERENCE = 'inference'
-            LABEL = 'label'
-            LOSS = 'loss'
 
         class SUBGRAPH:
             pass
@@ -99,8 +93,22 @@ class Graph(ConfigurableWithName):
             self.graph_info.scope = self.name
         if self.graph_info._name is None:
             self.graph_info._name = name
+        self.build()
+
+    def build(self):
+        with self.info.variable_scope():
+            self.kernel()
+
+    def kernel(self):
+        """
+        Users may overwrite this function to construct graph.
+        """
+        pass
 
     def default_info(self):
+        """
+        User may overwrite this function to provide default GraphInfo
+        """
         return GraphInfo(self.name)
 
     def __hash__(self):
@@ -131,21 +139,30 @@ class Graph(ConfigurableWithName):
         return self.tensors.__iter__()
 
     def tensor(self, key, is_required=False):
-        if is_required and not key in self.tensors:
-            raise ValueError("Key {} is required but not found.".format(key))
-        return self.tensors.get(key)
+        # Old version
+        # TODO: Clear it and fix all usage.
+        if isinstance(is_required, bool):
+            if is_required and not key in self.tensors:
+                raise ValueError("Key {} is required but not found.".format(key))
+            return self.tensors.get(key)
+        else:
+            t = self.tensors.get(key)
+            if t is None and isinstance(is_required, callable):
+                t = is_required(self)
+            return t
+
+            
 
     def subgraph(self,
                  key: str = None,
                  subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
         subgraph = self.subgraphs.get(key)
-        if subgraph is None:
-            try:
-                self.subgraphs[key] = subgraph_maker(self, key)
-            except Exception as e:
-                raise e
+        if not isinstance(subgraph, Graph):
+            if isinstance(subgraph, callable):
+                subgraph = subgraph(self)
+        elif subgraph is None:
+            self.subgraphs[key] = subgraph_maker(self, key)
             subgraph = self.subgraphs.get(key)
-
         return subgraph
 
     def get_tensor(self, key,
@@ -157,12 +174,40 @@ class Graph(ConfigurableWithName):
             self.tensors[key] = tensor_maker(self)
         return self.tensors[key]
 
-    def run(self, fetches=None, inputs=None, configs=None):
+    def parse_names_maybe(self, data):
+        if isinstance(data, tf.Tensor):
+            return data
+        if isinstance(data, Tensor):
+            return data.data
+        if isinstance(data, (Path, str)):
+            name = Path(data)
+            if len(name.parts) == 1:
+                return self.tensor(str(name))
+            else:
+                pass
+
+    def find(self, name):
+        """
+        Helper function to get tensor with deep path.
+        If name is a normal name, thus no '/' included, returns self.tensor(name);
+        If name has '/' inlcuded, like 'a/x', return self.subgraph('a').tensor('x')
+        """
+        if len(Path(name).parts) == 1:
+            return self.tensor(str(name))
+        return self.subgraph(Path(name).parts[0]).find('/'.join(
+            Path(name).parts[1:]))
+
+    def run(self, fetches=None, feeds=None):
         """
         run graph with given fetches and inputs.
         if fetches is None, use self.KEYS.TENSOR.MAIN.
         if inputs is a dict, valid inputs will be filtered.
+
+        Graph.run provide the following functionalities:
+        1. run by name, when g.run('x') is actually calling tf.run(g.tensor('x'))
+        2. add feeds by name.
         """
+        inputs = feeds
         if fetches is None:
             fetches = self.tensor(self.KEYS.TENSOR.MAIN)
         if inputs is not None:
@@ -196,11 +241,3 @@ class Graph(ConfigurableWithName):
         else:
             raise TypeError("Can not convert {} to tensorflow_tensor.".format(
                 type(t)))
-
-
-class GraphV2(Graph):
-    def __init__(self, info, tensors=None, subgraphs=None, config=None):
-        if isinstance(info, str):
-            info = GraphInfo(info, info, None)
-        super().__init__(
-            info.name, tensors, subgraphs, config, graph_info=info)

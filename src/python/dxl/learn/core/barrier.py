@@ -11,7 +11,8 @@ def barrier_single(name, nb_signal, nb_join, task=None, id_join=None):
     Returns:
         A NoOp object as an barrier op.
     """
-    with tf.name_scope('barrier_{}'.format(name)):
+    name = str(name)
+    with tf.name_scope(name):
         with tf.name_scope('queues'):
             names = ["{}_{}".format(name, i) for i in range(nb_join)]
             queues = [
