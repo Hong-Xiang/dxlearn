@@ -259,7 +259,8 @@ class SuperResolutionBlock(Model):
                     filters=self.config(self.KEYS.CONFIG.FILTERS),
                     kernel_size=5,
                     padding='same',
-                    name='stem')
+                    name='stem',
+                    reuse=tf.AUTO_REUSE)
             
             return u, r, l
 
@@ -274,7 +275,8 @@ class SuperResolutionBlock(Model):
                 inputs=represents,
                 filters=1,
                 kernel_size=3,
-                padding='same')
+                padding='same',
+                reuse=tf.AUTO_REUSE)
             residual = align_crop(
                 input_=residual,
                 target=upsampled)
@@ -308,7 +310,7 @@ class SuperResolutionBlock(Model):
                     return result
                 else:
                     loss_mse = mean_square_error(
-                        label, infer) * self.config(self.KEYS.CONFIG.MES_LOSS_WEIGHT)
+                        align_label, infer) * self.config(self.KEYS.CONFIG.MES_LOSS_WEIGHT)
                     loss = loss_mse
                     if self.config(self.KEYS.CONFIG.WITH_POI_LOSS):
                         loss_poi = poission_loss(

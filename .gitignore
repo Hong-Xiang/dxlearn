@@ -132,3 +132,6 @@ develop-cgy/
 .vs/*
 /.vs
 .idea/
+
+# pytest
+.pytest_cache/*

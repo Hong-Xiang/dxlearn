@@ -92,7 +92,7 @@ class ResidualTestDefaultBlock(tf.test.TestCase):
         x = np.ones([1, 10, 10, 3], dtype="float32")
         ratio = 0.5
         residualincept_ins = ResidualIncept(
-            name='ResidualInceptDef_testd',
+            name='ResidualInceptDef_test',
             input_tensor=tf.constant(x),
             ratio=ratio)
         y = residualincept_ins.outputs['main']
@@ -153,7 +153,7 @@ class ResidualTestInputBlock(tf.test.TestCase):
             paths=3,
             activation='incept')
         residualincept_ins = ResidualIncept(
-            name='ResidualInceptDef_testd',
+            name='ResidualInceptInp_testd',
             input_tensor=tf.constant(x),
             ratio=ratio,
             sub_block=sub_block)
@@ -191,14 +191,15 @@ class ResidualTestInputBlock(tf.test.TestCase):
         nb_layers = 2
         ratio = 0.5
         # default ResidualIncept ratio=0.3
-        sub_block = ResidualStackedConv(
-            name='ResidualStackedConv_block',
+        sub_block = ResidualIncept(
+            name='ResidualInput_block',
             input_tensor=tf.constant(x),
             ratio=ratio)
         stackedResidualincept_ins = StackedResidualIncept(
-            name='StackedResidualInceptDef_test',
+            name='StackedResidualInceptInp_test',
             input_tensor=tf.constant(x),
-            nb_layers=nb_layers)
+            nb_layers=nb_layers,
+            sub_block=sub_block)
         y = stackedResidualincept_ins.outputs['main']
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())

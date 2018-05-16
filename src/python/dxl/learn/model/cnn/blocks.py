@@ -98,7 +98,8 @@ class Conv2D(Model):
             kernel_size=self.config(self.KEYS.CONFIG.KERNEL_SIZE),
             strides=self.config(self.KEYS.CONFIG.STRIDES),
             padding=self.config(self.KEYS.CONFIG.PADDING),
-            name='convolution')
+            name='convolution',
+            reuse=tf.AUTO_REUSE)
         x = activation.apply(acc, x, 'post')
         return x
 
@@ -214,6 +215,20 @@ class InceptionBlock(Model):
             cls.KEYS.CONFIG.PATHS: 2,
             cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
+    @classmethod
+    def sub_block_maker(cls, preblock, subkey, input_tensor, config):
+        with tf.variable_scope(config['scop']) as scope:
+            sub_block = Conv2D(
+                name=preblock.name/subkey,
+                input_tensor=input_tensor,
+                filters=config['filters'],
+                kernel_size=config['kernel_size'],
+                padding='same',
+                activation=config['activation'],
+                graph_info=preblock.info.update(name=None, variable_scope=scope))
+
+        return sub_block
+
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         filters = x.shape.as_list()[-1]
@@ -222,35 +237,41 @@ class InceptionBlock(Model):
         x = activation.apply(acc, x, 'pre')
         paths = []
         for i_path in range(self.config(self.KEYS.CONFIG.PATHS)):
-            with tf.variable_scope('path_{}'.format(i_path)):
-                h = Conv2D(
-                    name='conv_0',
-                    input_tensor=x,
-                    filters=filters,
-                    kernel_size=1,
-                    strides=(1, 1),
-                    padding='same',
-                    activation='linear')()
-                for j in range(i_path):
-                    h = Conv2D(
-                        name='conv2d_{}'.format(j + 1),
-                        input_tensor=h,
-                        filters=filters,
-                        kernel_size=3,
-                        strides=(1, 1),
-                        padding='same',
-                        activation='pre')()
-                paths.append(h)
+            key = 'conv_{}'.format(i_path)
+            config = {
+                'scop': 'path_{}'.format(i_path),
+                'filters': filters,
+                'kernel_size': 1,
+                'activation': 'linear'}
+            sub_block = self.subgraph(
+                key,
+                lambda p, k: InceptionBlock.sub_block_maker(p, k, x, config))                                    
+            h = sub_block({self.KEYS.TENSOR.INPUT: x})        
+            for j in range(i_path):
+                key = 'conv2d_{}'.format(j + 1)
+                config = {
+                    'scop': 'path_2d{}'.format(i_path),
+                    'filters': filters,
+                    'kernel_size': 3,
+                    'activation': 'pre'}
+                sub_block = self.subgraph(
+                    key,
+                    lambda p, k: InceptionBlock.sub_block_maker(p, k, h, config))
+                h = sub_block({self.KEYS.TENSOR.INPUT: h})
+            paths.append(h)
         with tf.name_scope('concat'):
             x = tf.concat(paths, axis=-1)
-        x = Conv2D(
-            name='conv_end',
-            input_tensor=x,
-            filters=filters,
-            kernel_size=1,
-            strides=(1, 1),
-            padding='same',
-            activation='pre')()
+
+        key = 'conv_end'
+        config = {
+            'scop': 'conv_end',
+            'filters': filters,
+            'kernel_size': 1,
+            'activation': 'pre'}
+        sub_block = self.subgraph(
+            key,
+            lambda p, k: InceptionBlock.sub_block_maker(p, k, x, config))
+        x = sub_block({self.KEYS.TENSOR.INPUT: x})
         return x
 
 

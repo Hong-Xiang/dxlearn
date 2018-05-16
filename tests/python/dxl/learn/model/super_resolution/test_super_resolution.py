@@ -68,7 +68,7 @@ class SuperResolutionBlockTest(tf.test.TestCase):
             inputs={
                 'input': tf.constant(x, tf.float32),
                 'label': tf.constant(l, tf.float32)})
-        res = superRe2x_ins.outputs
+        res = superReBlk_ins.outputs
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             for key, y in res.items():
