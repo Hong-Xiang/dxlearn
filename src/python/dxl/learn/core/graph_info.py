@@ -95,6 +95,9 @@ class GraphInfo:
             'reuse': self.reuse
         })
 
+    def erase_name(self):
+        return self.copy_without_name()
+
 
 class DistributeGraphInfo(GraphInfo):
     def __init__(self,

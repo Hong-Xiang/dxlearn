@@ -86,6 +86,10 @@ class SessionBase(ConfigurableWithName):
         return self._raw_session
 
     @property
+    def data(self):
+        return self._raw_session
+
+    @property
     def graph(self):
         return self.session().graph
 

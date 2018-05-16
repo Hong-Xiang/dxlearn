@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+sharelink.txt
+
 src/python/dxl/learn/analysis/
 src/python/dxl/learn/configs/
 src/python/dxl/learn/dataset/
@@ -129,3 +131,4 @@ develop-cgy/
 # vs
 .vs/*
 /.vs
+.idea/
