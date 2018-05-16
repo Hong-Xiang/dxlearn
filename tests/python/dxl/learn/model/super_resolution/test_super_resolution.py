@@ -58,21 +58,21 @@ class SuperResolution2xTest(tf.test.TestCase):
                 y = sess.run(y)
 
 
-# class SuperResolutionBlockTest(tf.test.TestCase):
-#     def test_SuperResolutionBlockDef(self):
-#         # test default sub_block
-#         x = np.random.randint(0, 255, [2, 32, 32, 3])
-#         l = np.random.randint(0, 255, [2, 64, 64, 3])
-#         superReBlk_ins = SuperResolutionBlock(
-#             name='superReBlk_test',
-#             inputs={
-#                 'input': tf.constant(x, tf.float32),
-#                 'label': tf.constant(l, tf.float32)})
-#         res = superRe2x_ins.outputs
-#         with self.test_session() as sess:
-#             sess.run(tf.global_variables_initializer())
-#             for key, y in res.items():
-#                 y = sess.run(y)
+class SuperResolutionBlockTest(tf.test.TestCase):
+    def test_SuperResolutionBlockDef(self):
+        # test default sub_block
+        x = np.random.randint(0, 255, [2, 32, 32, 3])
+        l = np.random.randint(0, 255, [2, 64, 64, 3])
+        superReBlk_ins = SuperResolutionBlock(
+            name='superReBlk_test',
+            inputs={
+                'input': tf.constant(x, tf.float32),
+                'label': tf.constant(l, tf.float32)})
+        res = superReBlk_ins.outputs
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            for key, y in res.items():
+                y = sess.run(y)
 
 if __name__ == '__main__':
    tf.test.main() 
