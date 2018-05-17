@@ -10,20 +10,31 @@ import warnings
 
 class Graph(ConfigurableWithName):
     """
-      Graph is a warp of Tensors, subgraphs and configs.
+    Graph is a collections of Tensors, subgraphs and configs.
 
-      `self.tensors` is a dict of Tensors, which is provided as an interface to Graph.
-      Which means one may use ::
+    Features for config:
 
-          g = Graph(...)
-          g.run(key)
+    - provide access to default / external config by info.name;
+    - provide default_config() classmethod;
+    - provide self.config(key) rearch-like config getter.
 
-      to run corresponding tensors.
 
-      Another useage is to substitute part of graph with other tensors. One may use ::
+    Features for tenosrs:
+    - provide default collections of holding tensors: self.tensors
+    - access to these 
 
-          g = Graph(tensor_dict, ...)
-          g.run(key, feeds={k: tensor})
+    `self.tensors` is a dict of Tensors, which is provided as an interface to Graph.
+    Which means one may use ::
+
+        g = Graph(...)
+        g.run(key)
+
+    to run corresponding tensors.
+
+    Another useage is to substitute part of graph with other tensors. One may use ::
+
+        g = Graph(tensor_dict, ...)
+        g.run(key, feeds={k: tensor})
 
     which is equivilant to ::
 
@@ -32,10 +43,9 @@ class Graph(ConfigurableWithName):
 
     KEYS:
 
-      - GRAPH:
-
-          - MAIN: Main purpose/effect of graph, thus the one which is fetched by
-          by default, and most part of the graph should be evaluated.
+    - `TENSOR`:
+        - `MAIN`: Main purpose/effect of graph, thus the one which is fetched by
+        by default, thus `g.run()` is eqvilant to `g.run(g.KEYS.TENSOR.MAIN)`.
 
       Methods:
 
@@ -143,15 +153,14 @@ class Graph(ConfigurableWithName):
         # TODO: Clear it and fix all usage.
         if isinstance(is_required, bool):
             if is_required and not key in self.tensors:
-                raise ValueError("Key {} is required but not found.".format(key))
+                raise ValueError(
+                    "Key {} is required but not found.".format(key))
             return self.tensors.get(key)
         else:
             t = self.tensors.get(key)
             if t is None and isinstance(is_required, callable):
                 t = is_required(self)
             return t
-
-            
 
     def subgraph(self,
                  key: str = None,
