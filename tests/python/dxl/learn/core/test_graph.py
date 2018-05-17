@@ -3,6 +3,10 @@ from dxl.learn.core.tensor import Tensor
 import unittest
 
 
+def add_default_config(c):
+    pass
+
+
 class TestGraph(unittest.TestCase):
     def test_config(self):
         g = Graph(config={'some_key': 1})
@@ -33,3 +37,16 @@ class TestGraph(unittest.TestCase):
         g = TestGraph('test_g')
         assert isinstance(g.tensor('x'), Tensor)
         assert str(g.tensor('x').name) == 'test_g/x'
+
+    def test_access_config(self):
+        add_default_config({'g': {'key1': 1}})
+        g = Graph('g')
+        assert g.config('key1') == 1
+
+    def test_info_name(self):
+        g = Graph('g') 
+        assert g.info.name == 'g'
+    
+    def test_info_scope(self):
+        g = Graph('g')
+        assert g.info.variable_scope.name == 'g'
