@@ -337,9 +337,9 @@ class DownSampling2D(Model):
                  name='downsample2d',
                  input_tensor=None,
                  size=None,
-                 is_scale=True,
-                 method=0,
-                 align_corners=False,
+                 is_scale=None,
+                 method=None,
+                 align_corners=None,
                  graph_info=None):
         super().__init__(
             name,
@@ -351,6 +351,13 @@ class DownSampling2D(Model):
                 self.KEYS.CONFIG.METHOD: method,
                 self.KEYS.CONFIG.ALIGN_CORNERS: align_corners
             })
+
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.IS_SCALE: True,
+            cls.KEYS.CONFIG.METHOD: 0,
+            cls.KEYS.CONFIG.ALIGN_CORNERS: False}
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
@@ -415,9 +422,9 @@ class UpSampling2D(Model):
                  name='upsample2d',
                  input_tensor=None,
                  size=None,
-                 is_scale=True,
-                 method=0,
-                 align_corners=False,
+                 is_scale=None,
+                 method=None,
+                 align_corners=None,
                  graph_info=None):
         super().__init__(
             name,
@@ -429,6 +436,13 @@ class UpSampling2D(Model):
                 self.KEYS.CONFIG.METHOD: method,
                 self.KEYS.CONFIG.ALIGN_CORNERS: align_corners
             })
+
+    @classmethod
+    def default_config(cls):
+        return {
+            cls.KEYS.CONFIG.IS_SCALE: True,
+            cls.KEYS.CONFIG.METHOD: 0,
+            cls.KEYS.CONFIG.ALIGN_CORNERS: False}
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
