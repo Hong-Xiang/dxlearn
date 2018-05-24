@@ -120,17 +120,6 @@ class Partition:
     #     raise NotImplementedError
 
 class CrossValidate(Partition):
-    # def __init__(self,
-    #              dataset,
-    #              *,
-    #              nb_partitions=None,
-    #              idx_test=None,
-    #              is_shuffle=None,
-    #              nb_epochs=None):
-    #     super().__init__(dataset, is_shuffle=is_shuffle, nb_epochs=nb_epochs)
-    #     self.nb_partitions = nb_partitions
-    #     self.idx_test = idx_test
-    #     self.capacity = self.capacity_of(dataset)
     def __init__(self,
                  cross: Dict[str, Iterable],
                  capacity=None,
