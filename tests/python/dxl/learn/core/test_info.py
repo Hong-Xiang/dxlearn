@@ -11,7 +11,7 @@ def create_reuseable_info(name='x'):
 class TestGraphInfo(unittest.TestCase):
     def test_construct_tensor_info(self):
         info = create_simple_info('x')
-        assert info.name = 'x'
+        assert info.name == 'x'
     
     def test_scope(self):
         info = create_simple_info('scope')
