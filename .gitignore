@@ -10,7 +10,6 @@ sharelink.txt
 
 src/python/dxl/learn/analysis/
 src/python/dxl/learn/configs/
-src/python/dxl/learn/dataset/
 src/python/dxl/learn/distribute/
 src/python/dxl/learn/model.old/
 src/python/dxl/learn/network/
