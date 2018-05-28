@@ -43,6 +43,10 @@ class Tensor:
         return data
 
     @property
+    def info(self):
+        return self.graph_info
+
+    @property
     def shape(self):
         return self.data.shape
 
