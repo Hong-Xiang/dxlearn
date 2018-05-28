@@ -1,6 +1,7 @@
 from dxl.learn.core.graph import Graph
 from dxl.learn.core.tensor import Tensor
 import unittest
+import tensorflow as tf
 
 
 def add_default_config(c):
@@ -9,8 +10,9 @@ def add_default_config(c):
 
 class TestGraph(unittest.TestCase):
     def test_config(self):
-        g = Graph(config={'some_key': 1})
-        assert g.config('some_key') == 1
+        with tf.Graph().as_default():
+            g = Graph('g', config={'some_key': 1})
+            assert g.config('some_key') == 1
 
     def test_config_of_subgraph(self):
         class TestGraph(Graph):
@@ -19,11 +21,12 @@ class TestGraph(unittest.TestCase):
 
         g = Graph(
             name='g',
-            subgraph={'subg': lambda g: Graph(name=g.name / 'subg')},
+            subgraphs={'subg': lambda g: Graph(name=g.name / 'subg')},
             config={'subg': {
                 'some_key': 1
             }})
-        assert subg.config('some_key') == 1
+        assert g.subgraph('subg').config('some_key') == 1
+        assert g.subgraph('subg').info.name == 'g/subg'
 
     def test_access_tensor(self):
         class TestGraph(Graph):
@@ -36,7 +39,7 @@ class TestGraph(unittest.TestCase):
 
         g = TestGraph('test_g')
         assert isinstance(g.tensor('x'), Tensor)
-        assert str(g.tensor('x').name) == 'test_g/x'
+        assert str(g.tensor('x').info.name) == 'test_g/x'
 
     def test_access_config(self):
         add_default_config({'g': {'key1': 1}})
@@ -44,9 +47,10 @@ class TestGraph(unittest.TestCase):
         assert g.config('key1') == 1
 
     def test_info_name(self):
-        g = Graph('g') 
+        g = Graph('g')
         assert g.info.name == 'g'
-    
+
     def test_info_scope(self):
         g = Graph('g')
-        assert g.info.variable_scope.name == 'g'
+        with g.info.variable_scope() as scope:
+            assert scope.name == 'g'

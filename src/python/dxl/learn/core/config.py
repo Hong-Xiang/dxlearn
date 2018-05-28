@@ -18,6 +18,10 @@ class DefaultConfig:
     def reset(cls):
         cls._root = dcc.CNode()
 
+    @classmethod
+    def update(cls, key, value):
+        cls.root().update(key, value)
+
 
 def set_global_config(dct):
     DefaultConfig.root().update([], dct)

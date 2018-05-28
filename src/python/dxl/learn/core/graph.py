@@ -167,7 +167,7 @@ class Graph(ConfigurableWithName):
                  subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
         subgraph = self.subgraphs.get(key)
         if not isinstance(subgraph, Graph):
-            if isinstance(subgraph, callable):
+            if isinstance(subgraph, Callable):
                 subgraph = subgraph(self)
         elif subgraph is None:
             self.subgraphs[key] = subgraph_maker(self, key)
