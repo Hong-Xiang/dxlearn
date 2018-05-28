@@ -264,8 +264,8 @@ class TensorRaw(Tensor):
 
 def tf_tensor(t: Tensor):
     """
-  Unified access to convert tensor to Tensor of tensorflow.
-  """
+    Unified access to convert tensor to Tensor of tensorflow.
+    """
     if isinstance(t, tf.Tensor):
         return t
     if isinstance(t, Tensor):

@@ -73,9 +73,9 @@ class MasterWorkerTaskBase(Graph):
     def nb_workers(self):
         return self.config(self.KEYS.CONFIG.NB_WORKERS)
 
-    @property
-    def job(self):
-        return self.config(self.KEYS.CONFIG.JOB)
+    # @property
+    # def job(self):
+    #     return self.config(self.KEYS.CONFIG.JOB)
 
     @property
     def task_index(self):
@@ -120,27 +120,6 @@ class MasterWorkerTaskBase(Graph):
     def make_session(self):
         make_distribute_session()
 
-    # def run_step_of_this_host(self, name):
-    #     if ThisHost.is_master():
-    #         ThisSession.run(self.steps[name][JOB_NAME.MASTER])
-    #     else:
-    #         ThisSession.run(
-    #             self.steps[name][JOB_NAME.WORKER][ThisHost.host().task_index])
-
-    # def worker_graph_on(self, host):
-    #     return self.subgraph(JOB_NAME.WORKER)[host.task_index]
-
-    # def graph_on_this_host(self):
-    #     host = ThisHost.host()
-    #     if ThisHost.is_master():
-    #         return self.master_graph
-    #     else:
-    #         for g in self.worker_graphs:
-    #             if g.graph_info.host == host:
-    #                 return g
-    #     raise KeyError("No local graph for {}.{} found".format(
-    #         host.job, host.task_index))
-
     @classmethod
     def worker_only(cls, func):
         def call(*args, **kwargs):
@@ -160,4 +139,4 @@ class MasterWorkerTaskBase(Graph):
         return call
 
 
-__all__ = ['MasterWorkerTask', 'JOB_NAME']
+__all__ = ['MasterWorkerTaskBase', 'JOB_NAME']
