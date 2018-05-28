@@ -1,1 +1,1 @@
-from ._tensorflow import Tensorflow
+from ._tensorflow import TensorFlow
