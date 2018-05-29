@@ -1,11 +1,11 @@
 import unittest
 
 from dxl.learn.dataset import TestLoader
-from dxl.learn.utils.test_utils import sandbox
+from dxl.learn.test import TestCase
 import tensorflow as tf
 
 
-class TestTestLoader(tf.test.TestCase):
+class TestTestLoader(TestCase):
     def make_dataset_with_capacity(self):
         capacity = 10
         return TestLoader('dataset/test', capacity=capacity), capacity
