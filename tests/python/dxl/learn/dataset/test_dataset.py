@@ -19,21 +19,17 @@ class TestDataset(unittest.TestCase):
             'cache': True,
             'batch': None,
             'field': {
-                'x_l': 'train/large/x_l',
-                'y_l': 'train/large/y_l'
+                # key := NodePath
+                # value := attrName
+                '/data': ['x', 'y'],
             }
         }
         _descrip = {
             'name': 'mnist.h5',
-            'x_l': {
-                'shape': (32, 32, 3),
-                'table': 200,
-                'dtype': 'UInt16Col'
-            },
-            'y_l': {
-                'shape': (1, 10),
-                'table': 200,
-                'dtype': 'UInt8Col'
+            '/data': {
+                'capacity': 100
+                'x': 'shape=(256, 256)',
+                'y': 'shape=(256, 256)'
             }
         }
         mnist_data = Dataset(
