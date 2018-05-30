@@ -80,34 +80,34 @@ class TestDataLoader(unittest.TestCase):
         self.assertEqual(capacity, _capacity)
        
 
-class TestDataLoaderKernel(unittest.TestCase):
-    def set_up_fixture(self):
-        pass
-    def test_TablesEngine(self):
-        name = os.path.join(HOME, 'testdata/dataset/mnist.h5')
-        engine = DLEngine.PYTABLES
-        config = {
-            'field':{
-                'x_train': '/data/train/x',
-                'y_train': '/data/train/y',
-                'x_test': '/data/test/x',
-                'y_test': '/data/test/y'
-            },
-            'pre_processing':{
-                'y_train': {
-                    'exclude': {
-                        'value': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], # get 1~9
-                    }
-                },
-                'y_test': {
-                    'exlude': {
-                        'value': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], # get 1~9
-                    }
-                }
-            }
-        }
-        datald = DataLoader(name, engine, config)
-        datald_kernel = datald.loader('train'), 100, range(100)
+# class TestDataLoaderKernel(unittest.TestCase):
+#     def set_up_fixture(self):
+#         pass
+#     def test_TablesEngine(self):
+#         name = os.path.join(HOME, 'testdata/dataset/mnist_test.h5')
+#         engine = DLEngine.PYTABLES
+#         config = {
+#             'field':{
+#                 'x_train': '/data/train/x',
+#                 'y_train': '/data/train/y',
+#                 'x_test': '/data/test/x',
+#                 'y_test': '/data/test/y'
+#             },
+#             'pre_processing':{
+#                 'y_train': {
+#                     'exclude': {
+#                         'value': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], # get 1~9
+#                     }
+#                 },
+#                 'y_test': {
+#                     'exlude': {
+#                         'value': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], # get 1~9
+#                     }
+#                 }
+#             }
+#         }
+#         datald = DataLoader(name, engine, config)
+#         datald_kernel = datald.loader('train'), 100, range(100)
         
 
         

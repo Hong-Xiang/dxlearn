@@ -141,7 +141,7 @@ class TablesEngine:
             hdl = self.h5.get_node(path)
             map_flag = False
             if self.process_cfg == None:
-                ids = list(range(hdl.nrow))
+                ids = list(range(hdl.nrows))
             else:
                 for attr in self.nodeattr[name]:    
                     if attr in self.process_cfg.keys():
