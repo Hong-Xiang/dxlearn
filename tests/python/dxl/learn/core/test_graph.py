@@ -9,6 +9,8 @@ import tensorflow as tf
 from pathlib import Path
 import pytest
 
+import pytest
+
 
 class TestGraph(TestCase):
     def assertInfoCorrectlyInitialized(self, g, name):
@@ -65,3 +67,8 @@ class TestGraph(TestCase):
         update_config('g', {'key1': 1})
         g = Graph('g')
         assert g.config('key1') == 1
+
+    def test_required(self):
+        g = Graph('g')
+        with pytest.raises(TypeError):
+            g.tensor('x', Graph.required)
