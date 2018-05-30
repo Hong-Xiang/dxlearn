@@ -132,10 +132,11 @@ class TablesEngine:
     def construct(self):
         nodepath = {}
         for k, v in self.fields.items():
-            node_path = Path(v).f   # dirname
-            node_name = Path(node_path).n #basename
+            node_path = Path(v).f   
+            node_name = Path(node_path).n
+            org_attr = Path(v).n 
             nodepath.update({node_name: node_path})
-            self.mapattr.update({k: node_name})
+            self.mapattr.update({k: org_attr})
             if self.nodeattr.get(node_name) == None:
                 self.nodeattr.update({node_name: [k]})
             else:
@@ -150,7 +151,8 @@ class TablesEngine:
                 for attr in self.nodeattr[name]:    
                     if attr in self.process_cfg.keys():
                         cfg = self.process_cfg[attr]
-                        ids = self.pre_processing(hdl, attr, cfg)
+                        org_attr = self.mapattr[attr]
+                        ids = self.pre_processing(hdl, org_attr, cfg)
                         map_flag = True
                     else:
                         ids = list(range(hdl.nrows))
@@ -172,8 +174,8 @@ class TablesEngine:
                 
     def __call__(self, key):
         index = self.nodes[key][self.KEYS.CONFIG.MAPINDEX]
-        mapattrs = self.nodeattr[key]
-        return index, mapattrs
+        attrs = self.nodeattr[key]
+        return index, attrs
 
     def loader(self, node_name, id):
         hdl = self.nodes[node_name][self.KEYS.CONFIG.HANDEL]
