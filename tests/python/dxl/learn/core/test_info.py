@@ -5,14 +5,6 @@ import unittest
 import re
 from functools import wraps
 
-# def sand_box_graph(func):
-#     @wraps(func)
-#     def inner(*args, **kwargs):
-#         with tf.Graph().as_default():
-#             return func(*args, **kwargs)
-
-#     return inner
-
 
 class TestGraphInfo(TestCase):
     def create_simple_info(self, name='x'):
@@ -54,6 +46,11 @@ class TestGraphInfo(TestCase):
     def test_auto_scope(self):
         info = GraphInfo('x', None, False)
         self.assertEqual(info.scope, 'x')
+
+    def test_child(self):
+        info = GraphInfo('x', None, False)
+        child = info.child('y')
+        self.assertEqual(child.name, 'x/y')
 
 
 if __name__ == "__main__":
