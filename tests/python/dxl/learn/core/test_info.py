@@ -41,7 +41,7 @@ class TestGraphInfo(TestCase):
     def test_update(self):
         info = GraphInfo('x', None, False)
         info_u = info.update(name=info.name / 'y')
-        self.assertEqual(info_u.name, 'x/y')
+        self.assertNameEqual(info_u, 'x/y')
 
     def test_auto_scope(self):
         info = GraphInfo('x', None, False)
@@ -50,7 +50,7 @@ class TestGraphInfo(TestCase):
     def test_child(self):
         info = GraphInfo('x', None, False)
         child = info.child('y')
-        self.assertEqual(child.name, 'x/y')
+        self.assertNameEqual(child, 'x/y')
 
 
 if __name__ == "__main__":

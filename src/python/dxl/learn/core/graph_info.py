@@ -1,47 +1,34 @@
 from .distribute import Host
 import tensorflow as tf
 from contextlib import contextmanager
-from dxl.fs import Path
+from pathlib import Path
 import pathlib
 import json
 
 
 class GraphInfo:
     def __init__(self, name=None, variable_scope=None, reuse=None):
-        self._name = Path(name)
-        if isinstance(variable_scope, (Path, pathlib.Path)):
+        self.name = Path(name)
+        if isinstance(variable_scope, Path):
             variable_scope = str(variable_scope)
         self.scope = variable_scope
         if self.scope is None:
             self.scope = str(self.name)
         self.reuse = reuse
 
-    @property
-    def name(self):
-        # if isinstance(self._name, Path):
-        # return self._name.n
-        return self._name
-
-    @property
-    def name_raw(self):
-        return self._name
-
-    def set_name(self, name):
-        self._name = name
-
     def __str__(self):
         return json.dumps({
-            'name': self.name,
+            'name': str(self.name),
             'scope': str(self.scope),
             'reuse': self.reuse
         })
 
     def relative_scope(self, scope):
         if isinstance(scope, Path):
-            scope = scope.n
+            scope = scope.name
             current_scope = tf.get_variable_scope().name
             if scope.startswith(current_scope):
-                scope = str(pathlib.Path(scope).relative_to(scope))
+                scope = str(Path(scope).relative_to(scope))
                 if scope == '.':
                     scope = ''
         return scope
