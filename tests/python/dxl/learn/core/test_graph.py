@@ -45,7 +45,11 @@ class TestGraph(TestCase):
             def kernel(self):
                 subg = self.subgraph('subg')
 
-        g = Graph('g', subgraphs={'subg': Graph.child_maker})
+        g = Graph(
+            'g',
+            subgraphs={
+                'subg': lambda g, n: Graph.child_maker(g, n, Graph)
+            })
         assert g.subgraph('subg').config('key') == 'value'
         self.assertNameEqual(g.subgraph('subg'), 'g/subg')
 
@@ -66,7 +70,7 @@ class TestGraph(TestCase):
     def test_required(self):
         g = Graph('g')
         with pytest.raises(TypeError):
-            g.tensor('x', Graph.required)
+            g.tensor('x', Graph.required_tensor)
 
     def test_find(self):
         pass

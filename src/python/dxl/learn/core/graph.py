@@ -136,8 +136,8 @@ class Graph(ConfigurableWithName):
         raise ValueError("Unknown domain {}.".format(domain))
 
     @classmethod
-    def child_maker(self, g, name, cls):
-        return cls(g.info.child(name))
+    def child_maker(self, g, name, constructor):
+        return constructor(g.info.child(name))
 
     def tensor_keys(self):
         warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))
@@ -160,11 +160,17 @@ class Graph(ConfigurableWithName):
         return self.tensors.__iter__()
 
     @classmethod
-    def required(cls):
-        def raise_error(g, key, expected_type):
-            raise TypeError(
-                'Required key {} of type {} of graph {} is not found.'.format(
-                    key, expected_type, g))
+    def raise_error(g, key, expected_type):
+        raise TypeError('Required key {} of {}.{} is not found.'.format(
+            key, g, expected_type))
+
+    @classmethod
+    def required_tensor(cls):
+        return lambda g, n: raise_error(g, n, 'tensor')
+
+    @classmethod
+    def required_subgraph(cls):
+        return lambda g, n: raise_error(g, n, 'subgraph')
 
     def _get_or_create_item(self, collection, key, expected_type, maker):
         if not collection.get(key) is None and isinstance(
@@ -173,7 +179,7 @@ class Graph(ConfigurableWithName):
         if maker is None and collection.get(key) is not None:
             maker = collection.get(key)
         if maker is not None:
-            item = maker(self, key, expected_type)
+            item = maker(self, key)
             collection[key] = item
         return collection.get(key)
 
