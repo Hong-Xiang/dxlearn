@@ -3,8 +3,13 @@ import dxl.learn.core.config as dlcc
 
 
 class TestConfigurableWithName(unittest.TestCase):
-    def test_basic(self):
+    def setUp(self):
         dlcc.DefaultConfig.reset()
+
+    def tearDown(self):
+        dlcc.DefaultConfig.reset()
+
+    def test_basic(self):
         c = dlcc.ConfigurableWithName('x', {'a': 1, 'b': 2})
         self.assertEqual(c.config('a'), 1)
 
@@ -22,6 +27,7 @@ class TestConfigurableWithName(unittest.TestCase):
 
     def test_default(self):
         dlcc.DefaultConfig.reset()
+
         class A(dlcc.ConfigurableWithName):
             @classmethod
             def default_config(cls):
@@ -36,6 +42,7 @@ class TestConfigurableWithName(unittest.TestCase):
 
     def test_inherent_default(self):
         dlcc.DefaultConfig.reset()
+
         class A(dlcc.ConfigurableWithName):
             @classmethod
             def default_config(cls):
@@ -51,3 +58,8 @@ class TestConfigurableWithName(unittest.TestCase):
         self.assertEqual(c3.config('a'), 2)
         c4 = A('z')
         self.assertEqual(c4.config('a'), 1)
+
+    def test_external_config(self):
+        dlcc.DefaultConfig.update('x', {'key': 'value'})
+        c = dlcc.ConfigurableWithName('x')
+        self.assertEqual(c.config('x')['key'], 'value')

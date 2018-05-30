@@ -43,6 +43,10 @@ class Tensor:
         return data
 
     @property
+    def info(self):
+        return self.graph_info
+
+    @property
     def shape(self):
         return self.data.shape
 
@@ -260,8 +264,8 @@ class TensorRaw(Tensor):
 
 def tf_tensor(t: Tensor):
     """
-  Unified access to convert tensor to Tensor of tensorflow.
-  """
+    Unified access to convert tensor to Tensor of tensorflow.
+    """
     if isinstance(t, tf.Tensor):
         return t
     if isinstance(t, Tensor):
