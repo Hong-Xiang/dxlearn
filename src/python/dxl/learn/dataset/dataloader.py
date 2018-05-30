@@ -26,6 +26,7 @@ class DataLoader:
                  name:Path,
                  engine=0,
                  config:Dict=None):
+        self.dict = {}
         if config == None:
             raise ValueError("config is not allowed None")
 
@@ -40,8 +41,8 @@ class DataLoader:
         else:
             raise ValueError("Not implement loader engine={}".format(engine))
 
-    def __call__(self, mapattr, index=None):
-        return self.ld_engine(mapattr, index)
+    def __getitem__(self, mapattr):
+        return self.dict[mapattr]
 
 
 class TablesEngine:
@@ -111,7 +112,7 @@ class TablesEngine:
     def __call__(self, mapattr, index):
         return self.loader(mapattr, index)
 
-    def loader(self, mapatter, index):
+    def loader(self, mapatter):
         dl = {}
 
 
