@@ -149,7 +149,7 @@ class TablesEngine:
                         ids = self.pre_processing(hdl, attr, cfg)
                         map_flag = True
                     else:
-                        ids = list(range(hdl.nrow))
+                        ids = list(range(hdl.nrows))
 
             mapids = []
             if map_flag:
