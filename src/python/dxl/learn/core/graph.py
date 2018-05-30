@@ -194,6 +194,7 @@ class Graph(ConfigurableWithName):
         return self.tensors[key]
 
     def parse_names_maybe(self, data):
+        warnings.warn(DeprecationWarning())
         if isinstance(data, tf.Tensor):
             return data
         if isinstance(data, Tensor):
@@ -232,16 +233,16 @@ class Graph(ConfigurableWithName):
         if inputs is not None:
             valid_inputs = {
                 k: inputs[k]
-                for k in inputs if k in self.tensor_keys()
+                for k in inputs if k in self.tensors.keys()
             }
         else:
             valid_inputs = dict()
-        from .session import ThisSession
+        from .session import default_session
         feed_dict = {}
         for k in self.tensor_keys(k):
             if k in valid_inputs:
                 feed_dict.update(self.tensor(k), inputs[k])
-        return ThisSession.run(feed_dict=feed_dict)
+        return default_session().run(feed_dict=feed_dict)
 
     # @property
     # def info(self):

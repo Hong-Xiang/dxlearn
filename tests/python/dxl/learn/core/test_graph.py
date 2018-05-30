@@ -72,3 +72,9 @@ class TestGraph(TestCase):
         g = Graph('g')
         with pytest.raises(TypeError):
             g.tensor('x', Graph.required)
+
+    def test_find(self):
+        pass
+
+    def test_run(self):
+        pass
