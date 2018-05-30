@@ -1,15 +1,14 @@
-from dxl.learn.core.graph import Graph
-from dxl.learn.core.graph_info import GraphInfo
-from dxl.learn.test import TestCase
-from dxl.learn.core.tensor import Tensor
-from dxl.learn.core.config import update_config
 import unittest
+from pathlib import Path
+
+import pytest
 import tensorflow as tf
 
-from pathlib import Path
-import pytest
-
-import pytest
+from dxl.learn.core.config import update_config
+from dxl.learn.core.graph import Graph
+from dxl.learn.core.graph_info import GraphInfo
+from dxl.learn.core.tensor import Tensor
+from dxl.learn.test import TestCase
 
 
 class TestGraph(TestCase):
@@ -53,15 +52,11 @@ class TestGraph(TestCase):
     def test_access_tensor(self):
         class TestGraph(Graph):
             def kernel(self):
-                self.tensors['x'] = Tensor(
-                    tf.constant('x'),
-                    None,
-                    self.info.update(name=self.name / 'x'),
-                )
+                self.tensors['x'] = Tensor(tf.constant(1, name='x'))
 
         g = TestGraph('test_g')
         assert isinstance(g.tensor('x'), Tensor)
-        assert str(g.tensor('x').info.name) == 'test_g/x'
+        self.assertNameEqual(g.tensor('x'), 'test_g/x')
 
     def test_access_config(self):
         update_config('g', {'key1': 1})

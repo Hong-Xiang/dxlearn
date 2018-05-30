@@ -4,6 +4,10 @@ import numpy as np
 import uuid
 from dxl.learn.backend import current_backend
 from dxl.learn.utils.test_utils import name_str_without_colon_and_index, get_object_name_str
+from contextlib import contextmanager
+import tensorflow as tf
+import unittest
+import pytest
 
 
 class TestCase(current_backend().TestCase()):
@@ -27,9 +31,9 @@ class TestCase(current_backend().TestCase()):
     def resource_path(self):
         return Path(os.getenv('DEV_DXLEARN_TEST_RESOURCE_PATH'))
 
-    def assertFloatArrayEqual(self, first, second, msg):
+    def assertFloatArrayEqual(self, first, second, msg=None):
         return np.testing.assert_array_almost_equal(
-            np.array(first), np.array(second), msg)
+            np.array(first), np.array(second), err_msg=msg)
 
     def assertNameEqual(self, first, second, with_strip_colon_and_index=True):
         names = map(get_object_name_str, [first, second])
@@ -37,3 +41,16 @@ class TestCase(current_backend().TestCase()):
             names = map(name_str_without_colon_and_index, names)
         names = list(names)
         self.assertEqual(names[0], names[1], 'Name not equal.')
+
+    @pytest.mark.skip
+    # @unittest.skip
+    @contextmanager
+    def test_session(self):
+        with super().test_session() as sess:
+            yield sess
+
+    @contextmanager
+    def variables_initialized_test_session(self):
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            yield sess

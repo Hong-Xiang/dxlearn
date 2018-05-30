@@ -33,7 +33,7 @@ class GraphInfo:
                     scope = ''
         return scope
 
-    def relatevie_name(self):
+    def relative_name(self):
         return self.relative_scope(self.name)
 
     @contextmanager

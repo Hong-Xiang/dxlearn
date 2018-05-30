@@ -3,7 +3,7 @@ from .graph_info import GraphInfo, DistributeGraphInfo
 from .distribute import make_distribute_host, Master, ThisHost, Host, Server, Barrier
 from .distribute import ClusterSpec, MasterHost, make_cluster
 from .session import make_distribute_session, make_session, ThisSession, Session
-from .tensor import Tensor, TensorNumpyNDArray, TensorVariable, DataInfo, VariableInfo, tf_tensor, Variable, variable, Constant, NoOp
+from .tensor import Tensor, Variable, Constant, NoOp
 from .graph import Graph
 from .model import Model
 from .barrier import barrier_single
