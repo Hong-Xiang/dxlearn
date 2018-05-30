@@ -18,8 +18,8 @@ class GraphInfo:
 
     @property
     def name(self):
-        if isinstance(self._name, Path):
-            return self._name.n
+        # if isinstance(self._name, Path):
+            # return self._name.n
         return self._name
 
     @property
