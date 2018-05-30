@@ -229,6 +229,9 @@ class Variable(Tensor):
     def init(self):
         return Tensor(self.data.initializer, None, self.graph_info)
 
+class VariableV2(Variable):
+    def __init__(self, info, shape, dtype, initializer):
+        pass
 
 class TensorVariable:
     def __init__(self, data_info, graph_info):

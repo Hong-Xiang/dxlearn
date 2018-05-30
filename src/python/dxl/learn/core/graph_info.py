@@ -19,7 +19,7 @@ class GraphInfo:
     @property
     def name(self):
         # if isinstance(self._name, Path):
-            # return self._name.n
+        # return self._name.n
         return self._name
 
     @property
@@ -51,18 +51,18 @@ class GraphInfo:
 
     @contextmanager
     def variable_scope(self, scope=None, reuse=None):
+        if scope is None and self.scope is None:
+            yield
+            return
         if scope is None:
             scope = self.scope
-        if scope is None:
-            yield
+        scope = self.relative_scope(scope)
+        if scope is tf.get_variable_scope():
+            yield scope
         else:
-            scope = self.relative_scope(scope)
-            if scope is tf.get_variable_scope():
+            with tf.variable_scope(scope, reuse=reuse) as scope:
+                self.scope = scope
                 yield scope
-            else:
-                with tf.variable_scope(scope, reuse=reuse) as scope:
-                    self.scope = scope
-                    yield scope
 
     @classmethod
     def from_dict(cls, dct):

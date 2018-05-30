@@ -6,6 +6,7 @@ from typing import Dict
 from dxl.fs import Path
 import tensorflow as tf
 
+
 # TODO: Add self.variables and self.trainable_variables support.
 class Model(Graph):
     """
@@ -37,6 +38,9 @@ class Model(Graph):
         self.inputs = {}
         self.outputs = {}
         self.construct(inputs, True)
+
+    def _build(self):
+        pass
 
     def __call__(self, inputs=None):
         """

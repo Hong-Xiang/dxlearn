@@ -14,28 +14,29 @@ class Network(Model):
 
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
-            TRAINERS = 'trainers'
+            TRAIN = 'train'
             OBJECTIVES = 'objectives'
-            SUMMARIES = 'summaries'
+            METRICS = 'metrics'
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
 
         class SUBGRAPH(Model.KEYS.SUBGRAPH):
             TRAINER = 'trainer'
+            SUMMARY_WRITER = 'summary_writer'
+            SAVER = 'saver'
 
     def __init__(self,
-                 name='network',
+                 info='network',
                  inputs=None,
                  subgraphs=None,
                  config=None,
-                 info=None,
                  *,
-                 objectives=None,
-                 trainers=None,
+                 trainer=None,
+                 metrics=None,
                  summaries=None,
                  saver=None,
-                 add_trainers=None,
-                 add_saver=None):
+                 is_add_trainer=None,
+                 is_add_saver=None):
         """
         `objectives`: dict of Tensor/tf.tensor or callable. If objectives is a 
         dict of callables, these callables should have current Network
@@ -64,6 +65,9 @@ class Network(Model):
         trainer = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.TRAINERS,
                                                     name)
         trainer.train(feeds)
+
+    def train_multiple_steps(self, nb_steps=None, name=None, feeds=None):
+        pass
 
     def inference(self, name=None, feeds=None):
         t = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.INFERNECES,
