@@ -27,6 +27,14 @@ def set_global_config(dct):
     DefaultConfig.root().update([], dct)
 
 
+def clear_config():
+    DefaultConfig.reset()
+
+
+def update_config(key, value):
+    DefaultConfig.root().update(key, value)
+
+
 class _Config:
     def __init__(self, node, view):
         self._cnode = node
