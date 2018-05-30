@@ -5,12 +5,6 @@ import dxl.learn.dataset as dld
 
 HOME = os.environ['HOME']
 
-class TestDataLoader(unittestit.TestCase):
-    def test_loader(self):
-        dl = dld.DataLoader()
-        dl[0]
-
-
 
 class TestDataset(unittest.TestCase):
     def test_descrip(self):
