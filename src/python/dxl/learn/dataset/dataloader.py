@@ -137,7 +137,7 @@ class TablesEngine:
             else:
                 self.nodeattr[node_name].append(k)
 
-        for name, path in nodepath:
+        for name, path in nodepath.items():
             hdl = self.h5.get_node(path)
             map_flag = False
             if self.process_cfg == None:
