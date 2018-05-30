@@ -189,7 +189,7 @@ class TablesEngine:
                 for i, row in enumerate(hdl):
                     if row[k] not in dep:
                         index.append(i)
-            else op == self.KEYS.PROCESS.FILTER:
+            elif op == self.KEYS.PROCESS.FILTER:
                 for i, row in enumerate(hdl):
                     if row[k] in dep:
                         index.append(i)
