@@ -9,4 +9,12 @@ class TensorFlow(Backend):
         def inner(*args, **kwargs):
             with tf.Graph().as_default():
                 return func(*args, **kwargs)
+
         return inner
+
+    def unbox(self):
+        return tf
+
+    @classmethod
+    def TestCase(cls):
+        return tf.test.TestCase

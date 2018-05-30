@@ -103,9 +103,9 @@ class Graph(ConfigurableWithName):
             self.graph_info.scope = self.name
         if self.graph_info._name is None:
             self.graph_info._name = name
-        self.build()
+        self._build()
 
-    def build(self):
+    def _build(self):
         with self.info.variable_scope():
             self.kernel()
 

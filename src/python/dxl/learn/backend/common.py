@@ -15,3 +15,10 @@ class Backend:
         Useful for unittest.
         """
         raise NotImplementedError
+
+    def unbox(self):
+        raise NotImplementedError
+
+    @classmethod
+    def TestCase(cls):
+        raise NotImplementedError
