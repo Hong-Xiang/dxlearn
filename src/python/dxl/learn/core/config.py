@@ -1,7 +1,7 @@
 import json
 from typing import Iterable, Dict
 from abc import ABCMeta, abstractmethod
-from dxl.fs import Path
+from pathlib import Path
 import dxl.core.config as dcc
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import uuid
 from dxl.learn.backend import current_backend
-from dxl.learn.utils.general import strip_colon_and_index_from_name
+from dxl.learn.utils.test_utils import name_str_without_colon_and_index, get_object_name_str
 
 
 class TestCase(current_backend().TestCase()):
@@ -31,16 +31,9 @@ class TestCase(current_backend().TestCase()):
         return np.testing.assert_array_almost_equal(
             np.array(first), np.array(second), msg)
 
-    def assertNameEqual(self,
-                        obj_with_name,
-                        name,
-                        is_strip_colon_and_index=True):
-        if hasattr(obj_with_name, 'info'):
-            gname = str(obj_with_name.info.name)
-        if hasattr(obj_with_name, 'name'):
-            gname = str(obj_with_name.name)
-        name = str(name)
-        if is_strip_colon_and_index:
-            gname = strip_colon_and_index_from_name(gname)
-            name = strip_colon_and_index_from_name(name)
-        self.assertEqual(name, gname, 'Name not equal.')
+    def assertNameEqual(self, first, second, with_strip_colon_and_index=True):
+        names = map(get_object_name_str, [first, second])
+        if with_strip_colon_and_index:
+            names = map(name_str_without_colon_and_index, names)
+        names = list(names)
+        self.assertEqual(names[0], names[1], 'Name not equal.')
