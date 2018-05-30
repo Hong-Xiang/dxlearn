@@ -51,6 +51,10 @@ class TestGraphInfo(TestCase):
         info_u = info.update(name=info.name / 'y')
         self.assertEqual(info_u.name, 'x/y')
 
+    def test_auto_scope(self):
+        info = GraphInfo('x', None, False)
+        self.assertEqual(info.scope, 'x')
+
 
 if __name__ == "__main__":
     unittest.main()
