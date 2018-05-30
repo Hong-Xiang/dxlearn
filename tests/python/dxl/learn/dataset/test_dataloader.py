@@ -59,6 +59,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_LoaderEngine(self):
         name = os.path.join(DATATEST, "mnist_test.h5")
+        self.create_tables(name)
         engine = DLEngine.PYTABLES
         config = {
             'field':{
