@@ -57,7 +57,7 @@ class TestDataLoader(unittest.TestCase):
         #     train_tb = grp.create_dataset(self.train, (80,))
         #     test_tb = grp.create_dataset(self.test, (20,))
 
-    def test_TablesEngine(self):
+    def test_LoaderEngine(self):
         name = os.path.join(DATATEST, "mnist_test.h5")
         engine = DLEngine.PYTABLES
         config = {
@@ -68,11 +68,15 @@ class TestDataLoader(unittest.TestCase):
                 'y_test': '/data/test/y'
             }
         }
-        _attrs = config['field'].keys()
+        _attrs = ['x_train', 'y_train']
+        _capacity = 80
         datald = DataLoader(name, engine, config)
-        assert isinstance(datald.loader('train'), LoaderKernel)
-        mapattrs = datald.loader('train').name
-        self.assertEqual(mapattrs, _attrs)
+        train_ld = datald.loader('train')
+        assert isinstance(train_ld, LoaderKernel)
+        attrs = train_ld.name
+        capacity = train_ld.capacity
+        self.assertEqual(attrs, _attrs)
+        self.assertEqual(capacity, _capacity)
        
 
 class TestDataLoaderKernel(unittest.TestCase):
