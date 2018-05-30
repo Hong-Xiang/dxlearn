@@ -1,5 +1,5 @@
 from .graph import Graph
-from .tensor import Tensor
+from .tensor import Tensor, Constant
 from .distribute import Host
 from .graph_info import GraphInfo, DistributeGraphInfo
 from typing import Dict
@@ -24,50 +24,54 @@ class Model(Graph):
             OUTPUT = 'output'
 
     def __init__(self,
-                 name: Path,
+                 info,
                  inputs: Dict[str, Tensor] = None,
                  submodels: Dict[str, 'Model'] = None,
-                 graph_info: GraphInfo = None,
                  config: Dict[str, 'Config'] = None):
         super().__init__(
-            name,
-            tensors=inputs,
+            info,
+            tensors=self.make_inputs(inputs),
             subgraphs=submodels,
-            graph_info=graph_info,
             config=config)
-        self.inputs = {}
-        self.outputs = {}
-        self.construct(inputs, True)
 
-    def _build(self):
-        pass
+    def make_inputs(self, inputs):
+        if inputs is None or isinstance(inputs, dict):
+            return inputs
+        if isinstance(inputs, (Tensor, tf.Tensor)):
+            return {self.KEYS.TENSOR.INPUT: inputs}
+        raise TypeError("Invalid inputs {}.".format(inputs))
 
     def __call__(self, inputs=None):
         """
         Returns:
             A dict of tensors.
         """
-        return self.construct(inputs, False)
+        return self.construct(inputs)
 
-    def construct(self, inputs, is_create):
+    def _make_kernel_with_scope(self):
+        self._created = False
+        self.inputs = {}
+        self.outputs = {}
+        inputs = dict(self.tensors)
+        self.construct(inputs)
+        self._created = True
+
+    def construct(self, inputs):
+        is_create = not self._created
         if inputs is None:
             inputs = {}
-        inputs = self.pre_kernel(inputs, is_create)
-        with self.graph_info.variable_scope(reuse=not is_create):
-            inputs = self.pre_kernel_in_scope(inputs, is_create)
+        inputs = self.pre_kernel(inputs)
+        with self.info.variable_scope(reuse=not is_create):
+            inputs = self.pre_kernel_in_scope(inputs)
             results = self.kernel(inputs)
-            results = self.post_kernel_in_scope(results, is_create)
-        return self.post_kernel(results, is_create)
+            results = self.post_kernel_in_scope(results)
+        return self.post_kernel(results)
 
     def kernel(self, inputs):
         return {}
 
-    def pre_kernel(self, inputs, is_create):
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
+    def pre_kernel(self, inputs):
+        inputs = self.make_inputs(inputs)
         if inputs is not None:
             if isinstance(inputs, dict):
                 for k in self.inputs:
@@ -75,13 +79,14 @@ class Model(Graph):
                         inputs[k] = self.inputs[k]
         return inputs
 
-    def pre_kernel_in_scope(self, inputs, is_create):
+    def pre_kernel_in_scope(self, inputs):
         return inputs
 
-    def post_kernel_in_scope(self, results, is_create):
+    def post_kernel_in_scope(self, results):
         return results
 
-    def post_kernel(self, results, is_create):
+    def post_kernel(self, results):
+        is_create = not self._created
         if is_create:
             if results is None:
                 results = {}
