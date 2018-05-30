@@ -103,17 +103,21 @@ class TablesEngine:
         A Dict['mapAttr', indexs] where idexs := Iterable[int]  
     '''
     class KEYS:
-        FIELD = 'field'
-        PRE_PROCESS = 'pre_processing'
-        HANDEL = 'handel'
-        INDEX = 'index'
-        NODEATTR = 'nodeattr'
-        MAPINDEX = 'mapindex'
-    
+        class CONFIG:
+            FIELD = 'field'
+            PRE_PROCESS = 'pre_processing'
+            HANDEL = 'handel'
+            INDEX = 'index'
+            NODEATTR = 'nodeattr'
+            MAPINDEX = 'mapindex'
+        class PROCESS:
+            EXCLUDE = 'exclude'
+            FILTER = 'filter'
+      
     def __init__(self, name, config):
         self.name = name
-        self.fields = config[self.KEYS.FIELD]
-        self.process_cfg = config.get(self.KEYS.PRE_PROCESS)
+        self.fields = config[self.KEYS.CONFIG.FIELD]
+        self.process_cfg = config.get(self.KEYS.CONFIG.PRE_PROCESS)
 
         self.nodes = {}
         self.nodeattr = {}
@@ -160,27 +164,39 @@ class TablesEngine:
     
             self.nodes.update({
                 name: {
-                    self.KEYS.HANDEL: hdl,
-                    self.KEYS.MAPINDEX: mapids,
-                    self.KEYS.INDEX: ids
+                    self.KEYS.CONFIG.HANDEL: hdl,
+                    self.KEYS.CONFIG.MAPINDEX: mapids,
+                    self.KEYS.CONFIG.INDEX: ids
                 }
             })
                 
     def __call__(self, key):
-        index = self.nodes[key][self.KEYS.MAPINDEX]
+        index = self.nodes[key][self.KEYS.CONFIG.MAPINDEX]
         mapattrs = self.nodeattr[key]
         return index, mapattrs
 
     def loader(self, node_name, id):
-        hdl = self.nodes[node_name][self.KEYS.HANDEL]
-        mapindex = self.nodes[node_name][self.KEYS.MAPINDEX]
-        index = self.nodes[node_name][self.KEYS.INDEX]
+        hdl = self.nodes[node_name][self.KEYS.CONFIG.HANDEL]
+        mapindex = self.nodes[node_name][self.KEYS.CONFIG.MAPINDEX]
+        index = self.nodes[node_name][self.KEYS.CONFIG.INDEX]
         trid = index[mapindex[id]]    
         return hdl[trid]
 
     def pre_processing(self, hdl, k, cfg):
-        raise NotImplementedError
-
+        index = []
+        for op, dep in cfg.items():
+            if op == self.KEYS.PROCESS.EXCLUDE:
+                for i, row in enumerate(hdl):
+                    if row[k] not in dep:
+                        index.append(i)
+            else op == self.KEYS.PROCESS.FILTER:
+                for i, row in enumerate(hdl):
+                    if row[k] in dep:
+                        index.append(i)
+            else:
+                raise ValueError("Unknown pre_procesing label {}".format(op))
+                
+        return index
 
 class H5pyEngine:
     '''H5py Loader Engine

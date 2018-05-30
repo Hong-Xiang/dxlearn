@@ -21,27 +21,28 @@ class TbDesp(tb.IsDescription):
 
 
 class TestDataLoader(unittest.TestCase):
-    group = 'data'
-    train = 'train'
-    test = 'test'
-    valid = 'valid'
-    trainid = 80
-    testid = 20
+    class KEYS:
+        GROUP = 'data'
+        TRAIN = 'train'
+        TEST = 'test'
+        VALID = 'valid'
+        TRAINID = 80
+        TESTID = 20
 
     def create_tables(self, name):
         with tb.open_file(name, "w") as h5:
-            grp = h5.create_group('/', self.group)
-            train_tb = h5.create_table(grp, self.train, TbDesp)
-            test_tb = h5.create_table(grp, self.test, TbDesp)
+            grp = h5.create_group('/', self.KEYS.GROUP)
+            train_tb = h5.create_table(grp, self.KEYS.TRAIN, TbDesp)
+            test_tb = h5.create_table(grp, self.KEYS.TEST, TbDesp)
             train_row = train_tb.row 
             test_row = test_tb.row
-            for i in range(self.trainid):
+            for i in range(self.KEYS.TRAINID):
                 train_row['x'] = 1 + np.ones([32, 32, 1], np.int8)
                 label = np.zeros(10, np.int8)
                 label[i%10] = 1
                 train_row['y'] = label
                 train_row.append()
-            for i in range(self.testid):
+            for i in range(self.KEYS.TESTID):
                 test_row['x'] = 1 + np.ones([32, 32, 1], np.int8)
                 label = np.zeros(10, np.int8)
                 label[i%10] = 1
@@ -50,14 +51,7 @@ class TestDataLoader(unittest.TestCase):
             train_tb.flush()
             test_tb.flush()
     
-    def create_h5py(self, name):
-        pass
-        # with h5py.File(name, "w") as f:
-        #     grp = f.create_group(self.group)
-        #     train_tb = grp.create_dataset(self.train, (80,))
-        #     test_tb = grp.create_dataset(self.test, (20,))
-
-    def test_LoaderEngine(self):
+    def test_LoaderKernel(self):
         name = os.path.join(DATATEST, "mnist_test.h5")
         self.create_tables(name)
         engine = DLEngine.PYTABLES
@@ -78,8 +72,59 @@ class TestDataLoader(unittest.TestCase):
         capacity = train_ld.capacity
         self.assertEqual(attrs, _attrs)
         self.assertEqual(capacity, _capacity)
-       
 
+    def test_TablesEngine_preprocess(self):
+        name = os.path.join(DATATEST, "mnist_test.h5")
+        self.create_tables(name)
+        engine = DLEngine.PYTABLES
+        config = {
+            'field':{
+                'x_train': '/data/train/x',
+                'y_train': '/data/train/y',
+                'x_test': '/data/test/x',
+                'y_test': '/data/test/y'
+            },
+            'pre_processing':{
+                'y_train': {
+                    'exclude': [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],], # get 1~9
+                },
+                'y_test': {
+                    'exclude': [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],], # get 1~9
+                }
+            }
+        }
+        datald = DataLoader(name, engine, config)
+        _capacity = 18
+        test_ld = datald.loader('test')
+        capacity = test_ld.capacity
+        self.assertEqual(capacity, _capacity)
+    
+    def test_TablesEngine_loader(self):
+        name = os.path.join(DATATEST, "mnist_test.h5")
+        self.create_tables(name)
+        engine = DLEngine.PYTABLES
+        config = {
+            'field':{
+                'x_train': '/data/train/x',
+                'y_train': '/data/train/y',
+                'x_test': '/data/test/x',
+                'y_test': '/data/test/y'
+            },
+            'pre_processing':{
+                'y_train': {
+                    'exclude': [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],], # get 1~9
+                },
+                'y_test': {
+                    'exclude': [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],], # get 1~9
+                }
+            }
+        }
+        datald = DataLoader(name, engine, config)
+        test_ld = datald.loader('test')
+        id = 9
+        _value = (id + 2) + np.ones([32, 32, 1], np.int8)
+        self.assertEqual(test_ld[id]['x_test'], _value)
+    
 # class TestDataLoaderKernel(unittest.TestCase):
 #     def set_up_fixture(self):
 #         pass
