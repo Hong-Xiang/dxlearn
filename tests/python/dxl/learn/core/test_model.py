@@ -16,28 +16,31 @@ class TestModel(TestCase):
 
         return TestModel
 
+    def get_dummy_input(self):
+        return Constant(1.0, 'x')
+
     def assertDictIs(self, first, second):
         self.assertEqual(len(first), len(second), 'Dict has differnt len')
         for k in first:
             self.assertIs(first[k], second[k])
 
     def test_normal_inputs(self):
-        x = Constant(1.0, 'x')
+        x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', {'input': x})
         self.assertDictIs(m.inputs_spy, {'input': x})
 
     def test_single_input(self):
-        x = Constant(1.0, 'x')
+        x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', x)
         self.assertDictIs(m.inputs_spy, {'input': x})
 
     def test_single_output(self):
-        x = Constant(1.0, 'x')
+        x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', x)
         self.assertIs(m(), x)
 
     def test_single_output_shortcut(self):
-        x = Constant(1.0, 'x')
+        x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', x)
         y = m(x)
         self.assertNotIsInstance(y, dict)
