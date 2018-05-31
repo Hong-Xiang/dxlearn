@@ -35,11 +35,25 @@ class Model(Graph):
             config=config)
 
     def make_inputs(self, inputs):
-        if inputs is None or isinstance(inputs, dict):
+        if inputs is None:
+            return {}
+        if isinstance(inputs, dict):
             return inputs
         if isinstance(inputs, (Tensor, tf.Tensor)):
             return {self.KEYS.TENSOR.INPUT: inputs}
         raise TypeError("Invalid inputs {}.".format(inputs))
+
+    def complete_inputs(self, inputs):
+        for k, v in self.inputs.items():
+            if not k in inputs:
+                inputs[k] = v
+        return inputs
+
+    def cache_inputs(self, inputs):
+        if not self._created:
+            for k, v in inputs.items():
+                if not k in self.inputs:
+                    self.inputs[k] = v
 
     def __call__(self, inputs=None):
         """
@@ -61,22 +75,31 @@ class Model(Graph):
         if inputs is None:
             inputs = {}
         inputs = self.pre_kernel(inputs)
+        self.cache_inputs(inputs)
+        if self.is_short_cut(inputs):
+            return self.outputs
         with self.info.variable_scope(reuse=not is_create):
             inputs = self.pre_kernel_in_scope(inputs)
             results = self.kernel(inputs)
             results = self.post_kernel_in_scope(results)
         return self.post_kernel(results)
 
+    def is_short_cut(self, inputs):
+        if not self._created:
+            return False
+        without_new_inputs = True
+        for k in inputs:
+            if not inputs[k] is self.inputs[k]:
+                without_new_inputs = False
+                break
+        return without_new_inputs
+
     def kernel(self, inputs):
         return {}
 
     def pre_kernel(self, inputs):
         inputs = self.make_inputs(inputs)
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
+        inputs = self.complete_inputs(inputs)
         return inputs
 
     def pre_kernel_in_scope(self, inputs):
@@ -97,6 +120,9 @@ class Model(Graph):
         if is_create:
             for k, v in results.items():
                 self.outputs[k] = v
-        if len(results) == 1 and self.KEYS.TENSOR.MAIN in results:
-            return results[self.KEYS.TENSOR.MAIN]
+        if len(results) == 1:
+            if self.KEYS.TENSOR.MAIN in results:
+                return results[self.KEYS.TENSOR.MAIN]
+            if self.KEYS.TENSOR.OUTPUT in results:
+                return results[self.KEYS.TENSOR.OUTPUT]
         return results

@@ -10,6 +10,14 @@ class TestModel(TestCase):
             def kernel(self, inputs):
                 self.inputs_spy = inputs
                 self.scope_spy = tf.get_variable_scope()
+                return {
+                    self.KEYS.TENSOR.OUTPUT: inputs[self.KEYS.TENSOR.INPUT]
+                }
+
+            def post_kernel(self, results):
+                results = super().post_kernel(results)
+                self.outputs_spy = results
+                return results
 
         return TestModel
 
@@ -27,3 +35,8 @@ class TestModel(TestCase):
         x = Constant(1.0, 'x')
         m = self.get_test_model_cls()('test', x)
         self.assertDictIs(m.inputs_spy, {'input': x})
+
+    def test_single_output(self):
+        x = Constant(1.0, 'x')
+        m = self.get_test_model_cls()('test', x)
+        self.assertIs(m.outputs_spy, x)
