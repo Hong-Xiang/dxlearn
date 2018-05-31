@@ -65,3 +65,24 @@ class TestTrain80Partition(unittest.TestCase):
         expected = list(range(partition_size))
         self.assertAllSamplesIndexIn(samples, expected)
         self.assertAllIndexInSamples(expected, samples)
+
+class TestCrossValidate(unittest.TestCase):
+    DATASET = {
+        'x': list(range(100)),
+        'y': [0 if i%2 else 1 for i in range(100)]
+    }
+    def test_CrossValidate(self):
+        nb_blocks = 10
+        capacity = len(self.DATASET['x'])
+        nb_epochs = 1
+        cross = {
+            'train': [0, 2, 3, 4, 5, 6, 7, 8],
+            'test': [1, 9]
+        }
+        _test =  list(range(10, 20)) + list(range(90, 100))
+        cross_part = dld.CrossValidate(cross=cross,
+                                       capacity=capacity,
+                                       nb_blocks=nb_blocks,
+                                       nb_epochs=nb_epochs)
+        for idx in _test:
+            assert next(cross_part['test']) == idx
