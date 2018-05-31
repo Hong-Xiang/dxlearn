@@ -1,10 +1,11 @@
 from .graph import Graph
-from .tensor import Tensor
+from .tensor import Tensor, Constant
 from .distribute import Host
 from .graph_info import GraphInfo, DistributeGraphInfo
 from typing import Dict
 from dxl.fs import Path
 import tensorflow as tf
+
 
 # TODO: Add self.variables and self.trainable_variables support.
 class Model(Graph):
@@ -23,71 +24,111 @@ class Model(Graph):
             OUTPUT = 'output'
 
     def __init__(self,
-                 name: Path,
+                 info,
                  inputs: Dict[str, Tensor] = None,
                  submodels: Dict[str, 'Model'] = None,
-                 graph_info: GraphInfo = None,
                  config: Dict[str, 'Config'] = None):
         super().__init__(
-            name,
-            tensors=inputs,
+            info,
+            tensors=self.make_inputs(inputs),
             subgraphs=submodels,
-            graph_info=graph_info,
             config=config)
-        self.inputs = {}
-        self.outputs = {}
-        self.construct(inputs, True)
+
+    def make_inputs(self, inputs):
+        if inputs is None:
+            return {}
+        if isinstance(inputs, dict):
+            return inputs
+        if isinstance(inputs, (Tensor, tf.Tensor)):
+            return {self.KEYS.TENSOR.INPUT: inputs}
+        raise TypeError("Invalid inputs {}.".format(inputs))
+
+    def complete_inputs(self, inputs):
+        for k, v in self.inputs.items():
+            if not k in inputs:
+                inputs[k] = v
+        return inputs
+
+    def cache_inputs(self, inputs):
+        if not self._created:
+            for k, v in inputs.items():
+                if not k in self.inputs:
+                    self.inputs[k] = v
 
     def __call__(self, inputs=None):
         """
         Returns:
             A dict of tensors.
         """
-        return self.construct(inputs, False)
+        return self.construct(inputs)
 
-    def construct(self, inputs, is_create):
+    def _make_kernel_with_scope(self):
+        self._created = False
+        self.inputs = {}
+        self.outputs = {}
+        inputs = dict(self.tensors)
+        self.construct(inputs)
+        self._created = True
+
+    def construct(self, inputs):
+        is_create = not self._created
         if inputs is None:
             inputs = {}
-        inputs = self.pre_kernel(inputs, is_create)
-        with self.graph_info.variable_scope(reuse=not is_create):
-            inputs = self.pre_kernel_in_scope(inputs, is_create)
-            results = self.kernel(inputs)
-            results = self.post_kernel_in_scope(results, is_create)
-        return self.post_kernel(results, is_create)
+        inputs = self.pre_kernel(inputs)
+        self.cache_inputs(inputs)
+        if self.is_short_cut(inputs):
+            results = self.outputs
+        else:
+            with self.info.variable_scope(reuse=not is_create):
+                inputs = self.pre_kernel_in_scope(inputs)
+                results = self.kernel(inputs)
+                results = self.post_kernel_in_scope(results)
+            results = self.post_kernel(results)
+        self.cache_outputs(results)
+        return self.maybe_simpify_outputs(results)
+
+    def is_short_cut(self, inputs):
+        if not self._created:
+            return False
+        without_new_inputs = True
+        for k in inputs:
+            if not inputs[k] is self.inputs[k]:
+                without_new_inputs = False
+                break
+        return without_new_inputs
 
     def kernel(self, inputs):
         return {}
 
-    def pre_kernel(self, inputs, is_create):
-        if is_create:
-            for k, v in inputs.items():
-                self.inputs[k] = v
-        if isinstance(inputs, (Tensor, tf.Tensor)):
-            inputs = {self.KEYS.TENSOR.INPUT: inputs}
-        if inputs is not None:
-            if isinstance(inputs, dict):
-                for k in self.inputs:
-                    if not k in inputs:
-                        inputs[k] = self.inputs[k]
+    def pre_kernel(self, inputs):
+        inputs = self.make_inputs(inputs)
+        inputs = self.complete_inputs(inputs)
         return inputs
 
-    def pre_kernel_in_scope(self, inputs, is_create):
+    def pre_kernel_in_scope(self, inputs):
         return inputs
 
-    def post_kernel_in_scope(self, results, is_create):
+    def post_kernel_in_scope(self, results):
         return results
 
-    def post_kernel(self, results, is_create):
-        if is_create:
-            if results is None:
-                results = {}
+    def maybe_simpify_outputs(self, results):
+        if len(results) == 1:
+            if self.KEYS.TENSOR.MAIN in results:
+                return results[self.KEYS.TENSOR.MAIN]
+            if self.KEYS.TENSOR.OUTPUT in results:
+                return results[self.KEYS.TENSOR.OUTPUT]
+        return results
+
+    def cache_outputs(self, results):
+        if not self._created:
+            for k, v in results.items():
+                self.outputs[k] = v
+
+    def post_kernel(self, results):
+        if not self._created and results is None:
+            results = {}
         if results is None:
             return results
         if isinstance(results, (Tensor, tf.Tensor)):
             results = {self.KEYS.TENSOR.MAIN: results}
-        if is_create:
-            for k, v in results.items():
-                self.outputs[k] = v
-        if len(results) == 1 and self.KEYS.TENSOR.MAIN in results:
-            return results[self.KEYS.TENSOR.MAIN]
         return results

@@ -63,3 +63,15 @@ class TestConfigurableWithName(unittest.TestCase):
         dlcc.DefaultConfig.update('x', {'key': 'value'})
         c = dlcc.ConfigurableWithName('x')
         self.assertEqual(c.config('x')['key'], 'value')
+
+    def test_update_config(self):
+        dlcc.update_config('name', {'key': 'value'})
+        assert dlcc.ConfigurableWithName('name').config('key') == 'value'
+
+    def test_update_config2(self):
+        dlcc.update_config('name/sub', {'key': 'value'})
+        assert dlcc.ConfigurableWithName('name/sub').config('key') == 'value'
+
+    def test_update_config_inherence(self):
+        dlcc.update_config('name', {'key': 'value'})
+        assert dlcc.ConfigurableWithName('name/sub').config('key') == 'value'

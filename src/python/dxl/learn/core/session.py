@@ -210,6 +210,10 @@ class ThisSession:
         cls._session = _pre_session
 
 
+def default_session():
+    return ThisSession
+
+
 def make_session(session_name='session'):
     ThisSession.set_session(Session(session_name))
     return ThisSession.session()

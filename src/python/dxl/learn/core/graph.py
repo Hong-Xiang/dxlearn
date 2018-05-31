@@ -1,9 +1,9 @@
 from .config import ConfigurableWithName
-from typing import Dict, Callable
+from typing import Dict, Callable, TypeVar
 from .tensor import Tensor
 from .distribute import Host
 from .graph_info import GraphInfo
-from dxl.fs import Path
+from pathlib import Path
 
 import warnings
 
@@ -71,7 +71,6 @@ class Graph(ConfigurableWithName):
         class DOMAIN:
             TENSOR = 'tensor'
             SUBGRAPH = 'subgraph'
-            CONFIG = 'config'
 
         class TENSOR:
             MAIN = 'main'
@@ -83,29 +82,31 @@ class Graph(ConfigurableWithName):
             pass
 
     def __init__(self,
-                 name: Path,
+                 info: TypeVar('ConvertableToInfo', Path, GraphInfo),
+                 config: Dict[str, 'Config'] = None,
                  tensors: Dict[str, Tensor] = None,
-                 subgraphs: Dict[str, 'Graph'] = None,
-                 graph_info: GraphInfo = None,
-                 config: Dict[str, 'Config'] = None):
+                 subgraphs: Dict[str, 'Graph'] = None):
+        super().__init__(self._name_for_configurable(info), config=config)
+        self.info = self.make_info(info)
+        self.subgraphs = subgraphs or dict()
+        self.tensors = tensors or dict()
+        self._make_kernel_with_scope()
 
-        super().__init__(name, config=config)
-        if subgraphs is None:
-            subgraphs = dict()
-        self.subgraphs = subgraphs
-        if tensors is None:
-            tensors = dict()
-        self.tensors = tensors
-        if graph_info is None:
-            graph_info = self.default_info()
-        self.graph_info = graph_info
-        if self.graph_info.scope is None:
-            self.graph_info.scope = self.name
-        if self.graph_info._name is None:
-            self.graph_info._name = name
-        self.build()
+    def _name_for_configurable(self, info):
+        if isinstance(info, (str, Path)):
+            return info
+        if isinstance(info, GraphInfo):
+            return info.name
+        raise TypeError("Invalid name or graph info: {}.".format(info))
 
-    def build(self):
+    def make_info(self, info):
+        if isinstance(info, (Path, str)):
+            return self.default_info(info)
+        if not isinstance(info, GraphInfo):
+            raise TypeError("Invalid info type for {}.".format(info))
+        return info
+
+    def _make_kernel_with_scope(self):
         with self.info.variable_scope():
             self.kernel()
 
@@ -115,16 +116,17 @@ class Graph(ConfigurableWithName):
         """
         pass
 
-    def default_info(self):
+    def default_info(self, name):
         """
         User may overwrite this function to provide default GraphInfo
         """
-        return GraphInfo(self.name)
+        return GraphInfo(name)
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(str(self.info.name))
 
     def keys(self, domain=None):
+        warnings.warn(DeprecationWarning())
         if domain == self.KEYS.DOMAIN.TENSOR:
             return self.tensor_keys()
         if domain == self.KEYS.DOMAIN.SUBGRAPH:
@@ -133,57 +135,72 @@ class Graph(ConfigurableWithName):
             return tuple(list(self.tensor_keys()) + list(self.subgraph_keys()))
         raise ValueError("Unknown domain {}.".format(domain))
 
+    @classmethod
+    def child_maker(self, g, name, constructor):
+        return constructor(g.info.child(name))
+
     def tensor_keys(self):
+        warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))
         return self.tensors.keys()
 
     def subgraph_keys(self):
+        warnings.warn(DeprecationWarning('Use self.subgraphs.keys() instead.'))
         return self.subgraphs.keys()
 
     def values(self):
+        warnings.warn(DeprecationWarning())
         return self.tensors.values()
 
     def items(self):
+        warnings.warn(DeprecationWarning())
         return self.tensors.values()
 
     def __iter__(self):
+        warnings.warn(DeprecationWarning())
         return self.tensors.__iter__()
 
-    def tensor(self, key, is_required=False):
-        # Old version
-        # TODO: Clear it and fix all usage.
-        if isinstance(is_required, bool):
-            if is_required and not key in self.tensors:
-                raise ValueError(
-                    "Key {} is required but not found.".format(key))
-            return self.tensors.get(key)
-        else:
-            t = self.tensors.get(key)
-            if t is None and isinstance(is_required, callable):
-                t = is_required(self)
-            return t
+    @classmethod
+    def raise_error(g, key, expected_type):
+        raise TypeError('Required key {} of {}.{} is not found.'.format(
+            key, g, expected_type))
 
-    def subgraph(self,
-                 key: str = None,
-                 subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
-        subgraph = self.subgraphs.get(key)
-        if not isinstance(subgraph, Graph):
-            if isinstance(subgraph, Callable):
-                subgraph = subgraph(self)
-        elif subgraph is None:
-            self.subgraphs[key] = subgraph_maker(self, key)
-            subgraph = self.subgraphs.get(key)
-        return subgraph
+    @classmethod
+    def required_tensor(cls):
+        return lambda g, n: raise_error(g, n, 'tensor')
+
+    @classmethod
+    def required_subgraph(cls):
+        return lambda g, n: raise_error(g, n, 'subgraph')
+
+    def _get_or_create_item(self, collection, key, expected_type, maker):
+        if not collection.get(key) is None and isinstance(
+                collection.get(key), expected_type):
+            return collection.get(key)
+        if maker is None and collection.get(key) is not None:
+            maker = collection.get(key)
+        if maker is not None:
+            item = maker(self, key)
+            collection[key] = item
+        return collection.get(key)
+
+    def tensor(self, key, maker=None):
+        return self._get_or_create_item(self.tensors, key, Tensor, maker)
+
+    def subgraph(self, key, maker=None):
+        return self._get_or_create_item(self.subgraphs, key, Graph, maker)
 
     def get_tensor(self, key,
                    tensor_maker: Callable[['Graph'], Tensor] = None):
         """
             """
+        warnings.warn(DeprecationWarning('Use self.tensor.'))
         tensor = self.tensor(key)
         if tensor is None:
             self.tensors[key] = tensor_maker(self)
         return self.tensors[key]
 
     def parse_names_maybe(self, data):
+        warnings.warn(DeprecationWarning())
         if isinstance(data, tf.Tensor):
             return data
         if isinstance(data, Tensor):
@@ -222,20 +239,20 @@ class Graph(ConfigurableWithName):
         if inputs is not None:
             valid_inputs = {
                 k: inputs[k]
-                for k in inputs if k in self.tensor_keys()
+                for k in inputs if k in self.tensors.keys()
             }
         else:
             valid_inputs = dict()
-        from .session import ThisSession
+        from .session import default_session
         feed_dict = {}
         for k in self.tensor_keys(k):
             if k in valid_inputs:
                 feed_dict.update(self.tensor(k), inputs[k])
-        return ThisSession.run(feed_dict=feed_dict)
+        return default_session().run(feed_dict=feed_dict)
 
-    @property
-    def info(self):
-        return self.graph_info
+    # @property
+    # def info(self):
+    #     return self.graph_info
 
     @classmethod
     def tensorflow_tensor(cls, t):

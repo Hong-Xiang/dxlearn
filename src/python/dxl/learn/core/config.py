@@ -1,7 +1,7 @@
 import json
 from typing import Iterable, Dict
 from abc import ABCMeta, abstractmethod
-from dxl.fs import Path
+from pathlib import Path
 import dxl.core.config as dcc
 
 
@@ -25,6 +25,14 @@ class DefaultConfig:
 
 def set_global_config(dct):
     DefaultConfig.root().update([], dct)
+
+
+def clear_config():
+    DefaultConfig.reset()
+
+
+def update_config(key, value):
+    DefaultConfig.root().update(key, value)
 
 
 class _Config:

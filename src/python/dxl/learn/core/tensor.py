@@ -4,11 +4,13 @@ from contextlib import contextmanager
 import numpy as np
 import tensorflow as tf
 
-from dxl.fs import Path
+from pathlib import Path
 
 from .distribute import Host
 from .graph_info import DistributeGraphInfo, GraphInfo
 import warnings
+
+from dxl.learn.utils.general import strip_colon_and_index_from_name
 
 
 class DataInfo:
@@ -28,23 +30,39 @@ class Tensor:
     Providing unified interface to `numpy.ndarray`, `tensorflow.Tensor`, hdf5 file on filesystem, etc.
     """
 
-    def __init__(self,
-                 data: tf.Tensor,
-                 data_info: DataInfo = None,
-                 graph_info: GraphInfo = None):
-        self.data_info = data_info
-        self.graph_info = graph_info
-        self.data: tf.Tensor = self._process_input_data(data)
-        if self.graph_info.name is None:
-            self.graph_info.set_name(self.data.name)
+    def __init__(self, data: tf.Tensor, info: GraphInfo = None):
+        if hasattr(data, 'name'):
+            name_hint = data.name
+        else:
+            name_hint = None
+        self.info = self.make_info(info, name_hint)
+        self.data = self._process_input_data(data)
         self._nb_copied = 0
 
-    def _process_input_data(self, data):
-        return data
+    def make_info(self, info, name_hint=None):
+        def parse_scope_from_name_hint():
+            return str(Path(strip_colon_and_index_from_name(name_hint)).parent)
 
-    @property
-    def info(self):
-        return self.graph_info
+        if info is None:
+            return GraphInfo(name_hint, parse_scope_from_name_hint(), None)
+        if isinstance(info, (str, Path)):
+            return GraphInfo(Path(info), parse_scope_from_name_hint())
+        if not isinstance(info, GraphInfo):
+            raise TypeError("Invalid info type {}.".format(type(info)))
+        if info.name is not None:
+            return info
+        if info.scope is not None:
+            scope = info.scope
+        else:
+            scope = parse_scope_from_name_hint()
+        reuse = info.reuse
+        return GraphInfo(name, scope, reuse)
+
+    def _process_input_data(self, data):
+        if isinstance(data, Tensor):
+            return data.data
+        else:
+            return data
 
     @property
     def shape(self):
@@ -61,14 +79,17 @@ class Tensor:
     def run(self, session=None):
         if session is not None:
             return session.run(self.data)
-        from .session import ThisSession
-        return ThisSession.run(self.data)
+        from .session import default_session
+        return default_session().run(self.data)
 
-    def matmul(self, m, constructor=None):
-        if constructor is None:
-            constructor = lambda d: Tensor(d, self.data_info, self.graph_info.update(name=None))
+    def tensor_with_same_info_except_name(self, d):
+        if isinstance(d, Tensor):
+            return d
+        return Tensor(d, self.info.erase_name())
+
+    def matmul(self, m):
         d = tf.matmul(self.data, m.data)
-        return constructor(d)
+        return self.tensor_with_same_info_except_name(d)
 
     def __matmul__(self, m):
         return self.matmul(m)
@@ -78,28 +99,28 @@ class Tensor:
             result = self.data + x.data
         else:
             result = self.data + x
-        return Tensor(result, None, self.graph_info.update(name=None))
+        return self.tensor_with_same_info_except_name(result)
 
     def __sub__(self, x):
         if isinstance(x, Tensor):
             result = self.data - x.data
         else:
             result = self.data - x
-        return Tensor(result, None, self.graph_info.update(name=None))
+        return self.tensor_with_same_info_except_name(result)
 
     def __truediv__(self, x):
         if isinstance(x, Tensor):
             result = self.data / x.data
         else:
             result = self.data / x
-        return Tensor(result, None, self.graph_info.update(name=None))
+        return self.tensor_with_same_info_except_name(result)
 
     def __mod__(self, x):
         if isinstance(x, Tensor):
             result = self.data % x.data
         else:
             result = self.data % x
-        return Tensor(result, None, self.graph_info.update(name=None))
+        return self.tensor_with_same_info_except_name(result)
 
     def eval(self):
         return self.data.eval()
@@ -108,27 +129,25 @@ class Tensor:
         # if host == self.graph_info.host:
         # raise ValueError("Can not copy to original host.")
         self._nb_copied += 1
-        name = self.graph_info.name + '_copy_{}'.format(self._nb_copied)
-        with self.graph_info.variable_scope(host=host) as scope:
-            if self.data_info is None:
-                info = None
-            else:
-                info = self.data_info.info
-            vi = VariableInfo(info, self.data.shape, self.data.dtype)
-            variable = Variable(vi,
-                                self.graph_info.update(
-                                    name=name, host=host,
-                                    variable_scope=scope))
+        name = Path(str(self.info.name) + '_copy_{}'.format(self._nb_copied))
+        with self.info.variable_scope(host=host) as scope:
+            variable = Variable(
+                self.info.update(name=name, host=host, variable_scope=scope),
+                self.shape,
+                self.dtype,
+            )
             assigned = variable.assign(self)
             if is_return_variable:
                 return assigned, variable
             return assigned
 
     def transpose(self, perm=None, name='transpose', conjugate=False):
-        return Tensor(tf.transpose(self.data, perm, name, conjugate))
+        result = tf.transpose(self.data, perm, name, conjugate)
+        return self.tensor_with_same_info_except_name(result)
 
     @classmethod
     def from_(cls, t: 'Tensor'):
+        warnings.warn(DeprecationWarning('Use construct directly.'))
         # with t.graph_info.variable_scope() as scope:
         #     data = tf.identity(t.data, name=t.graph_info.name)
         #     return cls(data=data, data_info=t.data_info, graph_info=t.graph_info.update(name=None))
@@ -136,14 +155,14 @@ class Tensor:
 
 
 class NoOp(Tensor):
-    def __init__(self):
-        self.data = tf.no_op()
+    def __init__(self, info=None):
+        super().__init__(tf.no_op(), info)
 
 
 class Constant(Tensor):
     def _process_input_data(self, data):
-        with self.graph_info.variable_scope():
-            data = tf.constant(np.array(data), name=self.graph_info.name)
+        with self.info.variable_scope():
+            data = tf.constant(data, name=str(self.info.name))
         return data
 
     @classmethod
@@ -164,7 +183,7 @@ class SparseTensor(Tensor):
 
     def _process_input_data(self, data):
         import scipy.sparse
-        with self.graph_info.variable_scope():
+        with self.info.variable_scope():
             if isinstance(data, scipy.sparse.coo.coo_matrix):
                 data = tf.SparseTensor(
                     np.array([data.row, data.col]).T, data.data, data.shape)
@@ -174,7 +193,7 @@ class SparseTensor(Tensor):
 
     def matmul(self, m, constructor=None):
         if constructor is None:
-            constructor = lambda d: Tensor(d, self.data_info, self.graph_info.update(name=None))
+            constructor = lambda d: Tensor(d, self.info.update(name=None))
         d = tf.sparse_tensor_dense_matmul(self.data, m.data)
         return constructor(d)
 
@@ -191,8 +210,12 @@ class VariableInfo(DataInfo):
 
 
 class Variable(Tensor):
-    def __init__(self, data_info: VariableInfo, graph_info: GraphInfo):
-        super().__init__(None, data_info, graph_info)
+    def __init__(self, info, shape, dtype, initializer=None):
+        super().__init__({
+            'shape': shape,
+            'dtype': dtype,
+            'init': initializer
+        }, info)
 
     def _is_constant_initializer(self):
         with_init = self.data_info.initializer is not None
@@ -202,16 +225,18 @@ class Variable(Tensor):
         return False
 
     def _process_input_data(self, data):
-        with self.graph_info.variable_scope():
-            if self._is_constant_initializer():
-                kw = {'initializer': self.data_info.initializer}
+        with self.info.variable_scope():
+            initializer = data['init']
+            if initializer is None:
+                initializer = tf.initializers.zeros
+                shape = data['shape']
             else:
-                kw = {
-                    'dtype': self.data_info.dtype,
-                    'shape': self.data_info.shape,
-                    'initializer': tf.initializers.zeros
-                }
-            return tf.get_variable(self.graph_info.relatevie_name(), **kw)
+                shape = None
+            return tf.get_variable(
+                self.info.relative_name(),
+                shape=shape,
+                dtype=data['dtype'],
+                initializer=initializer)
 
     def assign(self, t: Tensor, info=None):
         if info is None:
@@ -230,36 +255,13 @@ class Variable(Tensor):
         return Tensor(self.data.initializer, None, self.graph_info)
 
 
-class TensorVariable:
-    def __init__(self, data_info, graph_info):
-        warnings.warn(
-            "TensorVariable is going to be deprecated, use Variable instead.")
-        super().__init__(data_info, graph_info)
-
-
 def variable(graph_info,
              variable_info=None,
              shape=None,
              dtype=None,
              initializer=None):
-    return Variable(
-        VariableInfo(variable_info, shape, dtype, initializer), graph_info)
-
-
-class TensorRaw(Tensor):
-    def __add__(self, t: Tensor):
-        if isinstance(t, Tensor):
-            data = t.data
-        elif isinstance(t, tf.Tensor):
-            data = t
-        else:
-            raise TypeError("Required Tensor or tf.Tensor to add.")
-        result = self.data + data
-        return Tensor(
-            result,
-            self.data_info,
-            self.graph_info.from_dict(
-                self.graph_info.update_to_dict(name=result.name)))
+    warnings.warn(DeprecationWarning("Use Variable directly."))
+    return Variable(graph_info, shape, dtype, initializer)
 
 
 def tf_tensor(t: Tensor):
