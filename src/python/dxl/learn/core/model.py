@@ -77,12 +77,15 @@ class Model(Graph):
         inputs = self.pre_kernel(inputs)
         self.cache_inputs(inputs)
         if self.is_short_cut(inputs):
-            return self.outputs
-        with self.info.variable_scope(reuse=not is_create):
-            inputs = self.pre_kernel_in_scope(inputs)
-            results = self.kernel(inputs)
-            results = self.post_kernel_in_scope(results)
-        return self.post_kernel(results)
+            results = self.outputs
+        else:
+            with self.info.variable_scope(reuse=not is_create):
+                inputs = self.pre_kernel_in_scope(inputs)
+                results = self.kernel(inputs)
+                results = self.post_kernel_in_scope(results)
+            results = self.post_kernel(results)
+        self.cache_outputs(results)
+        return self.maybe_simpify_outputs(results)
 
     def is_short_cut(self, inputs):
         if not self._created:
@@ -108,21 +111,24 @@ class Model(Graph):
     def post_kernel_in_scope(self, results):
         return results
 
-    def post_kernel(self, results):
-        is_create = not self._created
-        if is_create:
-            if results is None:
-                results = {}
-        if results is None:
-            return results
-        if isinstance(results, (Tensor, tf.Tensor)):
-            results = {self.KEYS.TENSOR.MAIN: results}
-        if is_create:
-            for k, v in results.items():
-                self.outputs[k] = v
+    def maybe_simpify_outputs(self, results):
         if len(results) == 1:
             if self.KEYS.TENSOR.MAIN in results:
                 return results[self.KEYS.TENSOR.MAIN]
             if self.KEYS.TENSOR.OUTPUT in results:
                 return results[self.KEYS.TENSOR.OUTPUT]
+        return results
+
+    def cache_outputs(self, results):
+        if not self._created:
+            for k, v in results.items():
+                self.outputs[k] = v
+
+    def post_kernel(self, results):
+        if not self._created and results is None:
+            results = {}
+        if results is None:
+            return results
+        if isinstance(results, (Tensor, tf.Tensor)):
+            results = {self.KEYS.TENSOR.MAIN: results}
         return results

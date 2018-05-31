@@ -14,11 +14,6 @@ class TestModel(TestCase):
                     self.KEYS.TENSOR.OUTPUT: inputs[self.KEYS.TENSOR.INPUT]
                 }
 
-            def post_kernel(self, results):
-                results = super().post_kernel(results)
-                self.outputs_spy = results
-                return results
-
         return TestModel
 
     def assertDictIs(self, first, second):
@@ -39,4 +34,10 @@ class TestModel(TestCase):
     def test_single_output(self):
         x = Constant(1.0, 'x')
         m = self.get_test_model_cls()('test', x)
-        self.assertIs(m.outputs_spy, x)
+        self.assertIs(m(), x)
+
+    def test_single_output_shortcut(self):
+        x = Constant(1.0, 'x')
+        m = self.get_test_model_cls()('test', x)
+        y = m(x)
+        self.assertNotIsInstance(y, dict)
