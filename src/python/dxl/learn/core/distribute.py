@@ -373,6 +373,13 @@ def make_cluster(cluster_spec, job, task_index, master_host=None):
     return ThisHost.host()
 
 
+def reset_cluster():
+    Cluster.reset()
+    MasterHost.reset()
+    ThisHost.reset()
+    Server.reset()
+
+
 class Barrier:
     def __init__(self, name, signal_hosts, join_hosts, task_lists=()):
         """

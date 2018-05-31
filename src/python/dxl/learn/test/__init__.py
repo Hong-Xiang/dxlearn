@@ -1,1 +1,1 @@
-from .testcase import TestCase
+from .testcase import TestCase, DistributeTestCase

@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import tensorflow as tf
 import unittest
 import pytest
+from unittest.mock import patch
 
 
 class TestCase(current_backend().TestCase()):
@@ -54,3 +55,16 @@ class TestCase(current_backend().TestCase()):
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             yield sess
+
+
+class DistributeTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.train_server_patch = patch('tensorflow.train.Server')
+        m = self.train_server_patch.start()
+
+    def tearDown(self):
+        from dxl.learn.core import reset_cluster
+        reset_cluster()
+        self.train_server_patch.stop()
+        super().tearDown()
