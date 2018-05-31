@@ -71,12 +71,20 @@ class MasterHost:
 
     @classmethod
     def set(cls, job: str, task_index: int = None, ip=None, port=None):
+        if cls._host is not None:
+            raise TypeError("Maset host is already set.")
+        if isinstance(job, Host):
+            if task_index is None and ip is None and port is None:
+                cls._host = job
+            else:
+                raise TypeError(
+                    "When job is Host object, all other arguments need to be None."
+                )
+            return
         if job is None:
             job = JOB_NAME.MASTER
         if task_index is None:
             task_index = 0
-        if cls._host is not None:
-            raise TypeError("Maset host is already set.")
         cls._host = Host(job, task_index, ip, port)
 
     @classmethod
@@ -117,7 +125,12 @@ class ThisHost:
 
     @classmethod
     def set(cls, job, task_index=None, ip=None, port=None):
-        cls._host = Host(job, task_index, ip, port)
+        if isinstance(
+                job,
+                Host) and task_index is None and ip is None and port is None:
+            cls._host = job
+        else:
+            cls._host = Host(job, task_index, ip, port)
         return cls._host
 
     @classmethod
@@ -230,8 +243,8 @@ class Cluster:
             return self._hosts
 
         def host(self, job, task_index):
-            for h in cls._cluster:
-                if h == Host(job, task):
+            for h in self._hosts:
+                if h == Host(job, task_index):
                     return h
             return None
 
@@ -357,20 +370,25 @@ def make_distribute_host(cluster_config: dict,
         "make_distribute_host is going to be deprecated, use make_cluster instead.",
         DeprecationWarning)
     Cluster.set(cluster_config)
-    ThisHost.set(job, task)
+    ThisHost.set()
     Server.set()
     if master_job is not None:
         Master.set_master(master_job, master_task_index)
     return ThisHost.host()
 
 
-def make_cluster(cluster_spec, job, task_index, master_host=None):
+def make_cluster_with_master(cluster_spec, job, task_index, master_host=None):
     Cluster.set(cluster_spec)
-    ThisHost.set(job, task_index)
-    Server.set()
+    ThisHost.set(Cluster.host(job, task_index))
     if master_host is not None:
-        Master.set(master_host.job, master_host.task_index)
+        for h in Cluster.hosts():
+            if h == master_host:
+                MasterHost.set(h)
+    Server.set()
     return ThisHost.host()
+
+
+make_cluster = make_cluster_with_master
 
 
 def reset_cluster():
