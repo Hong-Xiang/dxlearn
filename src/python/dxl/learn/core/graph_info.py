@@ -78,7 +78,14 @@ class GraphInfo:
         return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
 
     def child(self, name):
-        return self.update(Path(self.name) / name)
+        cname = Path(self.name) / name
+        if not isinstance(self.scope, (str, Path)):
+            with self.variable_scope():
+                with tf.variable_scope(name) as scope:
+                    pass
+        else:
+            scope = str(cname)
+        return self.update(cname, variable_scope=scope)
 
     def copy_without_name(self):
         return self.from_dict({

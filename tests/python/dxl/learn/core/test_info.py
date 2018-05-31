@@ -23,6 +23,16 @@ class TestGraphInfo(TestCase):
             x = tf.get_variable('x', [], tf.float32)
             self.assertNameEqual(x, 'scope/x')
 
+    def test_child_scope(self):
+        info = self.create_simple_info('scope')
+        cinfo = info.child('sub')
+        with info.variable_scope():
+            pass
+        with cinfo.variable_scope():
+            pass
+        self.assertNameEqual(info, 'scope')
+        self.assertNameEqual(cinfo, 'scope/sub')
+
     def test_reuse_scope(self):
         info = self.create_simple_info('scope')
         with info.variable_scope():
