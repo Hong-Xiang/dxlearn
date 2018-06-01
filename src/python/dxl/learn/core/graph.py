@@ -109,7 +109,7 @@ class Graph(ConfigurableWithName):
         with self.info.variable_scope():
             self.kernel()
 
-    def kernel(self):
+    def kernel(self, inputs=None):
         """
         Users may overwrite this function to construct graph.
         """
