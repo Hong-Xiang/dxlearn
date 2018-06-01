@@ -91,7 +91,7 @@ class Model(Graph):
             return False
         without_new_inputs = True
         for k in inputs:
-            if not inputs[k] is self.inputs[k]:
+            if not inputs[k] is self.inputs.get(k):
                 without_new_inputs = False
                 break
         return without_new_inputs

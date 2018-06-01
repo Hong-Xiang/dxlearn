@@ -1,28 +1,27 @@
-import tensorflow as tf 
+import tensorflow as tf
 import numpy as np
+from dxl.learn.test import TestCase
 from dxl.learn.model import random_crop, boundary_crop, align_crop
 from dxl.learn.model import random_crop_offset
 
-class CropTest(tf.test.TestCase):
+
+class CropTest(TestCase):
     def test_random_crop_offset(self):
         input_shape = [32, 512, 512, 3]
         target_shape = [32, 224, 244, 3]
         # test batched = False
-        offset = random_crop_offset(input_shape, target_shape,)
+        offset = random_crop_offset(
+            input_shape,
+            target_shape,
+        )
         comp0 = [True, True, True, True]
-        self.assertAllEqual(list(map(lambda x: x>=0, offset)), comp0)
+        self.assertAllEqual(list(map(lambda x: x >= 0, offset)), comp0)
 
     def test_random_crop(self):
-        x = tf.constant([[[1, 1, 1], [2, 2, 2]],
-                         [[3, 3, 3], [4, 4, 4]],
-                         [[5, 5, 5], [6, 6, 6]],
-                         [[7, 7, 7], [8, 8, 8]]])
+        x = tf.constant([[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]],
+                         [[5, 5, 5], [6, 6, 6]], [[7, 7, 7], [8, 8, 8]]])
         target_shape = [1, 1, 3]
-        y = random_crop(
-            input_=x,
-            target=target_shape,
-            name='random_crop'
-        )
+        y = random_crop(input_=x, target=target_shape, name='random_crop')
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)

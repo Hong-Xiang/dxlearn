@@ -1,12 +1,11 @@
 import tensorflow as tf
 import numpy as np
-from typing import Dict 
+from typing import Dict
 from ...core import Model, Tensor
 from ..cnn import StackedResidualIncept
 from ..crop import boundary_crop, align_crop, shape_as_list
-from ..cnn import UpSampling2D, StackedConv2D, StackedResidualConv 
+from ..cnn import UpSampling2D, StackedConv2D, StackedResidualConv
 from ..losses import mean_square_error, CombinedSupervisedLoss, poission_loss
-
 
 __all__ = [
     "SuperResolution2x",
@@ -37,31 +36,32 @@ class SuperResolution2x(Model):
         sub_block: kernel 
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     """
+
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             INFERENCE = 'inference'
             LABEL = 'label'
             LOSS = 'loss'
+
         class CONFIG:
             NB_LAYERS = 'nb_layers'
             FILTERS = 'filters'
             BOUNDARY_CROP = 'boundary_crop'
+
         class SUB_BLOCK:
             BUILDING = 'buildingblock'
 
-    def __init__(self, name, inputs,
+    def __init__(self,
+                 info,
+                 inputs,
                  nb_layers=None,
                  filters=None,
                  boundary_crop=None,
-                 sub_block=None,
-                 graph_info=None):
+                 sub_block=None):
         super().__init__(
-            name,
+            info,
             inputs=inputs,
-            graph_info=graph_info,
-            submodels={
-                self.KEYS.SUB_BLOCK.BUILDING: sub_block
-            },
+            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -73,32 +73,28 @@ class SuperResolution2x(Model):
         return {
             cls.KEYS.CONFIG.NB_LAYERS: 2,
             cls.KEYS.CONFIG.FILTERS: 5,
-            cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)}
+            cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)
+        }
 
     @classmethod
-    def sub_block_maker(cls, preblock, subkey, input_tensor):
-        sub_block = StackedConv2D(
-            name=preblock.name/subkey,
+    def sub_block_maker(cls, graph, name, input_tensor):
+        return StackedConv2D(
+            graph.info.child(name),
             input_tensor=input_tensor,
-            nb_layers=preblock.config(preblock.KEYS.CONFIG.NB_LAYERS),
-            filters=preblock.config(preblock.KEYS.CONFIG.FILTERS),
-            kernel_size=(1,1),
-            strides=(1,1),
+            nb_layers=graph.config(graph.KEYS.CONFIG.NB_LAYERS),
+            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+            kernel_size=(1, 1),
+            strides=(1, 1),
             padding='same',
-            activation='basic',
-            graph_info=preblock.graph_info.update(name=None))
-        
-        return sub_block
+            activation='basic')
 
     def kernel(self, inputs):
         with tf.variable_scope('input'):
             u = UpSampling2D(
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
-                size=(2,2))()
+                input_tensor=inputs[self.KEYS.TENSOR.INPUT], size=(2, 2))()
             if SRKeys.REPRESENTS in inputs:
                 r = UpSampling2D(
-                    input_tensor=inputs[SRKeys.REPRESENTS],
-                    size=(2,2))()
+                    input_tensor=inputs[SRKeys.REPRESENTS], size=(2, 2))()
                 r = align_crop(r, u)
                 r = tf.concat([r, u], axis=3)
             else:
@@ -107,7 +103,7 @@ class SuperResolution2x(Model):
                     filters=self.config(self.KEYS.CONFIG.FILTERS),
                     kernel_size=5,
                     name='stem0')
-            
+
         sub_block = self.subgraph(
             self.KEYS.SUB_BLOCK.BUILDING,
             lambda p, k: SuperResolution2x.sub_block_maker(p, k, r))
@@ -118,24 +114,28 @@ class SuperResolution2x(Model):
                 filters=1,
                 kernel_size=3,
                 padding='same',
-                name='stem1',)
-            res = boundary_crop(res, self.config(self.KEYS.CONFIG.BOUNDARY_CROP))
+                name='stem1',
+            )
+            res = boundary_crop(res,
+                                self.config(self.KEYS.CONFIG.BOUNDARY_CROP))
             u_c = align_crop(u, res)
-            y = res + u_c 
+            y = res + u_c
 
         result = {
             self.KEYS.TENSOR.INFERENCE: y,
             SRKeys.REPRESENTS: x,
             SRKeys.RESIDUAL: res,
-            SRKeys.INTERP: u_c}
+            SRKeys.INTERP: u_c
+        }
         if self.KEYS.TENSOR.LABEL in inputs:
             with tf.name_scope('loss'):
                 aligned_label = align_crop(inputs[self.KEYS.TENSOR.LABEL], y)
                 l = mean_square_error(aligned_label, y)
             result.update({
                 self.KEYS.TENSOR.LOSS: l,
-                SRKeys.ALIGNED_LABEL: aligned_label})
-        
+                SRKeys.ALIGNED_LABEL: aligned_label
+            })
+
         return result
 
 
@@ -153,11 +153,13 @@ class SuperResolutionBlock(Model):
         sub_block: kernel 
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     '''
+
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             INFERENCE = 'inference'
             LABEL = 'label'
             LOSS = 'loss'
+
         class CONFIG:
             FILTERS = 'filters'
             BOUNDARY_CROP = 'boundary_crop'
@@ -170,13 +172,16 @@ class SuperResolutionBlock(Model):
             DENORM_STD = 'denorm_std'
             DENORM_MEAN = 'denorm_mean'
             INTERP = 'interp'
+
         class SUB_BLOCK:
             BUILDING = 'buildingblock'
 
-    def __init__(self, name, inputs,
+    def __init__(self,
+                 info,
+                 inputs,
                  interp=None,
                  sub_block=None,
-                 filters: int=None,
+                 filters: int = None,
                  boundary_crop=None,
                  upsample_ratio=None,
                  boundary_crop_ratio=None,
@@ -185,15 +190,11 @@ class SuperResolutionBlock(Model):
                  mse_loss_weight=None,
                  use_combined_loss=None,
                  denorm_std=None,
-                 denorm_mean=None,
-                 graph_info=None):
+                 denorm_mean=None):
         super().__init__(
-            name,
+            info,
             inputs=inputs,
-            graph_info=graph_info,
-            submodels={
-                self.KEYS.SUB_BLOCK.BUILDING: sub_block
-            },
+            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
             config={
                 self.KEYS.CONFIG.INTERP: interp,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -205,7 +206,8 @@ class SuperResolutionBlock(Model):
                 self.KEYS.CONFIG.MES_LOSS_WEIGHT: mse_loss_weight,
                 self.KEYS.CONFIG.USE_COMBINED_LOSS: use_combined_loss,
                 self.KEYS.CONFIG.DENORM_STD: denorm_std,
-                self.KEYS.CONFIG.DENORM_MEAN: denorm_mean})
+                self.KEYS.CONFIG.DENORM_MEAN: denorm_mean
+            })
 
     @classmethod
     def default_config(cls):
@@ -220,26 +222,24 @@ class SuperResolutionBlock(Model):
             cls.KEYS.CONFIG.MES_LOSS_WEIGHT: 1.0,
             cls.KEYS.CONFIG.USE_COMBINED_LOSS: False,
             cls.KEYS.CONFIG.DENORM_STD: 1.0,
-            cls.KEYS.CONFIG.DENORM_MEAN: 0.0}
+            cls.KEYS.CONFIG.DENORM_MEAN: 0.0
+        }
 
     @classmethod
-    def sub_block_maker(cls, preblock, subkey, input_tensor):
-        sub_block = StackedConv2D(
-            name=preblock.name/subkey,
+    def sub_block_maker(cls, graph, name, input_tensor):
+        return StackedConv2D(
+            info=graph.info.child(name),
             input_tensor=input_tensor,
-            filters=preblock.config(preblock.KEYS.CONFIG.FILTERS),
-            kernel_size=(1,1),
-            strides=(1,1),
+            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+            kernel_size=(1, 1),
+            strides=(1, 1),
             padding='valid',
-            activation='basic',
-            graph_info=preblock.graph_info.update(name=None))
-        
-        return sub_block
-    
+            activation='basic')
+
     def _input(self, inputs):
         with tf.variable_scope('input'):
             u = UpSampling2D(
-                name='upsampling_u',
+                'upsampling_u',
                 input_tensor=inputs[self.KEYS.TENSOR.INPUT],
                 size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
 
@@ -253,7 +253,7 @@ class SuperResolutionBlock(Model):
 
             if SRKeys.REPRESENTS in inputs:
                 r = UpSampling2D(
-                    name='upsampling_r',
+                    'upsampling_r',
                     input_tensor=inputs[SRKeys.REPRESENTS],
                     size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
                 r = align_crop(r, u)
@@ -265,7 +265,7 @@ class SuperResolutionBlock(Model):
                     padding='same',
                     name='stem',
                     reuse=tf.AUTO_REUSE)
-            
+
             return u, r, l
 
     def _inference(self, represents, upsampled):
@@ -281,15 +281,14 @@ class SuperResolutionBlock(Model):
                 kernel_size=3,
                 padding='same',
                 reuse=tf.AUTO_REUSE)
-            residual = align_crop(
-                input_=residual,
-                target=upsampled)
+            residual = align_crop(input_=residual, target=upsampled)
             inference = residual + upsampled
 
         return {
             self.KEYS.TENSOR.INFERENCE: inference,
             SRKeys.RESIDUAL: residual,
-            SRKeys.INTERP: upsampled}
+            SRKeys.INTERP: upsampled
+        }
 
     def _loss(self, label, infer):
         if label is not None:
@@ -298,32 +297,41 @@ class SuperResolutionBlock(Model):
                 if self.config(self.KEYS.CONFIG.USE_COMBINED_LOSS):
                     with tf.name_scope('use_combine_loss'):
                         stdv = tf.constant(
-                            self.config(self.KEYS.CONFIG.DENORM_STD), tf.float32)
+                            self.config(self.KEYS.CONFIG.DENORM_STD),
+                            tf.float32)
                         meanv = tf.constant(
-                            self.config(self.KEYS.CONFIG.DENORM_MEAN, tf.float32))
+                            self.config(self.KEYS.CONFIG.DENORM_MEAN,
+                                        tf.float32))
                         labeld = align_label * stdv + meanv
                         inferd = infer * stdv + meanv
                     result = CombinedSupervisedLoss(
-                        self.name/'loss',
+                        self.name / 'loss',
                         inputs={
                             self.KEYS.TENSOR.INPUT: inferd,
-                            self.KEYS.TENSOR.LABEL: labeld})()
+                            self.KEYS.TENSOR.LABEL: labeld
+                        })()
                     result.update({SRKeys.ALIGNED_LABEL: aligned_label})
-                    result.update({self.KEYS.TENSOR.LOSS: result[self.KEYS.TENSOR.OUTPUT]})
+                    result.update({
+                        self.KEYS.TENSOR.LOSS:
+                        result[self.KEYS.TENSOR.OUTPUT]
+                    })
                     result.pop(self.KEYS.TENSOR.OUTPUT)
                     return result
                 else:
                     loss_mse = mean_square_error(
-                        align_label, infer) * self.config(self.KEYS.CONFIG.MES_LOSS_WEIGHT)
+                        align_label, infer) * self.config(
+                            self.KEYS.CONFIG.MES_LOSS_WEIGHT)
                     loss = loss_mse
                     if self.config(self.KEYS.CONFIG.WITH_POI_LOSS):
                         loss_poi = poission_loss(
-                        align_label, infer) * self.config(self.KEYS.CONFIG.POI_LOSS_WEIGHT)
+                            align_label, infer) * self.config(
+                                self.KEYS.CONFIG.POI_LOSS_WEIGHT)
                         loss = loss + loss_poi
                     result = {
                         self.KEYS.TENSOR.LOSS: loss,
                         SRKeys.MSE_LOSS: loss_mse,
-                        SRKeys.ALIGNED_LABEL: align_label}
+                        SRKeys.ALIGNED_LABEL: align_label
+                    }
                     return result
         else:
             return {}
@@ -342,5 +350,3 @@ class SuperResolutionBlock(Model):
         result.update(self._loss(label, result[self.KEYS.TENSOR.INFERENCE]))
 
         return result
-
-
