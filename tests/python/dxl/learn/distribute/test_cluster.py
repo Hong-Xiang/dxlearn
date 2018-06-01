@@ -100,13 +100,13 @@ class TestDefaultCluster(ClusterTestCase):
         c = self.get_a_cluster()
         DefaultCluster.set(c)
         self.assertIsInstance(DefaultCluster.cluster(), MasterWorkerCluster)
-        self.assertEqual(self.get_master_host(), DefaultCluster.cluster().master())
+        self.assertEqual(self.get_master_host(),
+                         DefaultCluster.cluster().master())
 
 
-# class TestMakeClusterWithMaster(ClusterTestCase):
-#     def test_cluster_created(self):
-#         make_master_worker_cluster(
-#             MasterWorkerClusterSpec(self.get_master_worker_cluster_config()),
-#             JOB_NAME.WORKER, 1)
-#         assert ThisHost.host().task_index == 1
-#         assert ThisHost.host().job == JOB_NAME.WORKER
+class TestMakeClusterWithMaster(ClusterTestCase):
+    def test_cluster_created(self):
+        make_master_worker_cluster(self.get_master_worker_config(),
+                                   JOB_NAME.WORKER, 1)
+        assert ThisHost.host().task_index == 1
+        assert ThisHost.host().job == JOB_NAME.WORKER

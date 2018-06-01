@@ -61,8 +61,12 @@ class ClusterSpec(UserDict):
 
 class MasterWorkerClusterSpec(ClusterSpec):
     @classmethod
-    def make_local_cluster(cls, nb_workers):
-        return MasterWorkerCluster()
+    def make_local_cluster_spec(cls, nb_workers):
+        return MasterWorkerClusterSpec({
+            JOB_NAME.MASTER: ['localhost:2222'],
+            JOB_NAME.WORKER:
+            ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
+        })
 
     @property
     def nb_workers(self):
@@ -126,9 +130,15 @@ class Cluster:
             task_index = job_or_host.task_index
         else:
             job = job_or_host
-        for h in self.hosts:
+        for h in self.all_hosts():
             if h == Host(job, task_index):
                 return h
+
+    def all_hosts(self):
+        result = []
+        for k, v in self.hosts.items():
+            result += v
+        return tuple(result)
 
     def host(self, job, task_index):
         return self.find(job, task_index)
@@ -170,24 +180,24 @@ class Server:
     _server = None
 
     @classmethod
-    def set(cls):
+    def set(cls, cluster):
         """
         Construct server for this process. Requires Cluster, ThisHost ready.
         """
+        from .host import ThisHost
         if cls._server is not None:
             raise TypeError("Server is already constructed.")
-        if Cluster.cluster() is None:
+        if DefaultCluster.cluster() is None:
             raise TypeError("No cluster specification.")
         if ThisHost.host() is None:
             raise TypeError("No ThisHost specification")
         job = ThisHost.host().job
         task_index = ThisHost.host().task_index
-        cluster = Cluster.cluster().spec.unbox()
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         cls._server = tf.train.Server(
-            cluster, job_name=job, task_index=task_index, config=config)
+            cluster.spec.unbox(), job_name=job, task_index=task_index, config=config)
         return cls._server
 
     @classmethod
@@ -215,13 +225,13 @@ class Server:
         return cls._server.join()
 
 
-def make_master_worker_cluster(cluster_spec, job, task_index):
-    Cluster.set(cluster_spec)
-    ThisHost.set(Cluster.host(job, task_index))
-    for h in Cluster.hosts():
-        if h == master_host:
-            MasterHost.set(h)
-    Server.set()
+def make_master_worker_cluster(config, job, task_index=0):
+    spec = ClusterSpec(config)
+    DefaultCluster.set(MasterWorkerCluster(spec))
+    from .host import ThisHost, Master
+    ThisHost.set(DefaultCluster.cluster().host(job, task_index))
+    Master.set(DefaultCluster.cluster().master())
+    Server.set(DefaultCluster.cluster())
     return ThisHost.host()
 
 
@@ -240,6 +250,5 @@ def reset_cluster():
 __all__ = [
     'JOB_NAME', 'ClusterSpec', 'MasterWorkerClusterSpec', 'Cluster',
     'MasterWorkerCluster', 'DefaultCluster', 'Server',
-    'make_master_worker_cluster',
-    'reset_cluster'
+    'make_master_worker_cluster', 'reset_cluster'
 ]
