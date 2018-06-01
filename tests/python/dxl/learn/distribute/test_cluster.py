@@ -91,15 +91,17 @@ class TestMasterWorkerCluster(ClusterTestCase):
             assert cluster.worker(i) == self.get_worker_host(i)
 
 
-# class TestDefaultCluster(ClusterTestCase):
-#     def get_a_cluster(self):
-#         return MasterWorkerCluster(MasterWorkerClusterSpec())
-#     def test_cluster(self):
+class TestDefaultCluster(ClusterTestCase):
+    def get_a_cluster(self):
+        return MasterWorkerCluster(
+            MasterWorkerClusterSpec(self.get_master_worker_config()))
 
-#         DefaultCluster.set()
-#         Cluster.set(ClusterSpec(self.get_ps_worker_config()))
-#         self.assertIn(Host('ps', 0, 'ps0.example.com', 2222), Cluster.hosts())
-#         Cluster.reset()
+    def test_cluster(self):
+        c = self.get_a_cluster()
+        DefaultCluster.set(c)
+        self.assertIsInstance(DefaultCluster.cluster(), MasterWorkerCluster)
+        self.assertEqual(self.get_master_host(), DefaultCluster.cluster().master())
+
 
 # class TestMakeClusterWithMaster(ClusterTestCase):
 #     def test_cluster_created(self):

@@ -230,7 +230,8 @@ def make_ps_worker_cluster(cluster_spec, job, task_index):
 
 
 def reset_cluster():
-    Cluster.reset()
+    DefaultCluster.reset()
+    from .host import Master, ThisHost
     Master.reset()
     ThisHost.reset()
     Server.reset()
@@ -239,5 +240,6 @@ def reset_cluster():
 __all__ = [
     'JOB_NAME', 'ClusterSpec', 'MasterWorkerClusterSpec', 'Cluster',
     'MasterWorkerCluster', 'DefaultCluster', 'Server',
-    'make_master_worker_cluster'
+    'make_master_worker_cluster',
+    'reset_cluster'
 ]

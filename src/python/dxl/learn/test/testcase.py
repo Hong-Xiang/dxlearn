@@ -64,7 +64,7 @@ class DistributeTestCase(TestCase):
         m = self.train_server_patch.start()
 
     def tearDown(self):
-        from dxl.learn.core import reset_cluster
+        from dxl.learn.distribute import reset_cluster
         reset_cluster()
         self.train_server_patch.stop()
         super().tearDown()
