@@ -103,11 +103,11 @@ class Graph(ConfigurableWithName):
             self.graph_info.scope = self.name
         if self.graph_info._name is None:
             self.graph_info._name = name
-        self.build()
+        # self.build()
 
     def build(self):
         with self.info.variable_scope():
-            self.kernel()
+            self.kernel(None)
 
     def kernel(self):
         """
@@ -167,7 +167,7 @@ class Graph(ConfigurableWithName):
                  subgraph_maker: Callable[['ParentGraph'], 'subGraph'] = None):
         subgraph = self.subgraphs.get(key)
         if not isinstance(subgraph, Graph):
-            if isinstance(subgraph, callable):
+            if isinstance(subgraph, Callable):
                 subgraph = subgraph(self)
         elif subgraph is None:
             self.subgraphs[key] = subgraph_maker(self, key)
