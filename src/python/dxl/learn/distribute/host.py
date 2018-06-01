@@ -5,6 +5,8 @@ import json
 from collections import UserDict
 import warnings
 
+__all__ = ['Host', 'Master', 'ThisHost', 'default_host']
+
 
 class Host:
     """
@@ -129,3 +131,7 @@ class ThisHost:
         Return if this host is master.
         """
         return Master.is_master(cls.host())
+
+
+def default_host():
+    return ThisHost.host()

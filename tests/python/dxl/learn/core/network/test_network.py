@@ -1,8 +1,9 @@
 import unittest
 
 from dxl.learn.core import Network
+import pytest
 
-
+@pytest.mark.skip(reason='not impl yet')
 class TestNetwork(unittest.TestCase):
     def make_network_with_dummy_output_and_mse_objective(
             self, is_add_trainer=True):

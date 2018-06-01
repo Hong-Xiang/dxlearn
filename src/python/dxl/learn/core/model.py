@@ -1,7 +1,6 @@
 from .graph import Graph
 from .tensor import Tensor, Constant
-from .distribute import Host
-from .graph_info import GraphInfo, DistributeGraphInfo
+from .graph_info import GraphInfo
 from typing import Dict
 from dxl.fs import Path
 import tensorflow as tf

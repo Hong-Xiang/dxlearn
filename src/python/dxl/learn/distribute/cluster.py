@@ -173,6 +173,10 @@ class DefaultCluster:
         cls._cluster = None
 
 
+def default_cluster():
+    return DefaultCluster.cluster()
+
+
 class Server:
     """
     Singloton Server.
@@ -197,7 +201,10 @@ class Server:
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         cls._server = tf.train.Server(
-            cluster.spec.unbox(), job_name=job, task_index=task_index, config=config)
+            cluster.spec.unbox(),
+            job_name=job,
+            task_index=task_index,
+            config=config)
         return cls._server
 
     @classmethod
