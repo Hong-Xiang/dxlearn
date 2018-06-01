@@ -1,9 +1,9 @@
-# from dxl.learn.graph import MasterWorkerTaskBase
+from dxl.learn.graph import MasterWorkerTaskBase
 import tensorflow as tf
 import pytest
 
 from dxl.learn.test import DistributeTestCase
-from dxl.learn.distribute import Host
+from dxl.learn.distribute import Host, Master
 import pytest
 
 
@@ -12,7 +12,6 @@ class DoNothing:
         pass
 
 
-@pytest.mark.skip(reason='not impl yet')
 class TestMasterWorkerTaskBase(DistributeTestCase):
     def get_graph(self, job='master', task_index=0, nb_workers=3):
         return MasterWorkerTaskBase(
@@ -30,12 +29,12 @@ class TestMasterWorkerTaskBase(DistributeTestCase):
         assert graph.job == job
         assert graph.task_index == task_index
         assert graph.nb_workers == nb_workers
-        assert graph.is_cluster_init == True
-        assert graph.hosts['master'].ip == 'host0'
-        assert graph.hosts['master'].port == 2222
+        assert graph._cluster is not None
+        assert graph.master().ip == 'host0'
+        assert graph.master().port == 2222
         for i in range(nb_workers):
-            assert graph.hosts['worker'][i].ip == 'host1'
-            assert graph.hosts['worker'][i].port == 2222 + i
+            assert graph.worker(i).ip == 'host1'
+            assert graph.worker(i).port == 2222 + i
 
     def test_construct(self):
         job = 'master'
@@ -51,6 +50,6 @@ class TestMasterWorkerTaskBase(DistributeTestCase):
         self.assertCorrectlyInitialized(mwt, job, task_index, nb_workers)
 
     def test_master_host(self):
-        from dxl.learn.core import MasterHost
         g = self.get_graph()
-        assert g.master_host() is MasterHost.host()
+        assert g.master() == Master.host()
+        assert g.master().ip == Master.host().ip
