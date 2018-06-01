@@ -1,10 +1,11 @@
-from dxl.learn.graph import MasterWorkerTaskBase
-import tensorflow as tf
-import pytest
+import unittest
 
-from dxl.learn.test import DistributeTestCase
-from dxl.learn.distribute import Host, Master
 import pytest
+import tensorflow as tf
+
+from dxl.learn.distribute import Host, Master
+from dxl.learn.graph import MasterWorkerTaskBase
+from dxl.learn.test import DistributeTestCase
 
 
 class DoNothing:
@@ -53,3 +54,39 @@ class TestMasterWorkerTaskBase(DistributeTestCase):
         g = self.get_graph()
         assert g.master() == Master.host()
         assert g.master().ip == Master.host().ip
+
+    def get_function_to_check_called_with_decorator(self, deco):
+        class NotExpectedToBeCalled(Exception):
+            pass
+
+        @deco
+        def foo():
+            raise NotExpectedToBeCalled()
+
+        return foo, NotExpectedToBeCalled
+
+    def test_master_only_on_master(self):
+        g = self.get_graph('master')
+        foo, e = self.get_function_to_check_called_with_decorator(
+            g.master_only)
+        with pytest.raises(e):
+            foo()
+
+    def test_master_only_on_worker(self):
+        g = self.get_graph('worker')
+        foo, e = self.get_function_to_check_called_with_decorator(
+            g.master_only)
+        foo()
+
+    def test_worker_only_on_master(self):
+        g = self.get_graph('master')
+        foo, e = self.get_function_to_check_called_with_decorator(
+            g.worker_only)
+        foo()
+
+    def test_worker_only_on_worker(self):
+        g = self.get_graph('worker')
+        foo, e = self.get_function_to_check_called_with_decorator(
+            g.worker_only)
+        with pytest.raises(e):
+            foo()
