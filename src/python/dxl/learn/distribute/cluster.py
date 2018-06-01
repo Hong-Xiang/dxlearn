@@ -4,38 +4,65 @@ from typing import Dict
 import json
 from collections import UserDict
 import warnings
+from .host import Host
+from pathlib import Path
 
-DEFAULT_CLUSTER_CONFIG = {
-    JOB_NAME.MASTER: ['localhost:2221'],
-    JOB_NAME.WORKER: ['localhost:2333', 'localhost:2334']
-}
+
+class JOB_NAME:
+    MASTER = 'master'
+    WORKER = 'worker'
+    PARAMETER_SERVER = 'ps'
 
 
 class ClusterSpec(UserDict):
-    class KEYS:
-        NB_WORKERS = 'nb_workers'
-
     def __init__(self, config):
         super().__init__({})
-        from pathlib import Path
-        if isinstance(config, (str, Path)):
-            with open(config, 'r') as fin:
-                self.data.update(json.load(fin))
-        elif isinstance(config, dict):
-            self.data.update(config)
-        elif isinstance(config, ClusterSpec):
-            self.data.update(config.data)
-        else:
-            for k, v in config.items():
-                self.data[k] = v
+        self._try_load_from_file(config)
+        self._try_load_from_dict(config)
+        self._try_load_from_cluster_spec(config)
+        self._try_load_from_cview(config)
 
-    @property
-    def nb_workers(self):
-        return len(self.data.get(JOB_NAME.WORKER, []))
+    def _try_load_from_file(self, config):
+        if not isinstance(config, (str, Path)):
+            return
+        with open(config, 'r') as fin:
+            self.data.update(json.load(fin))
+
+    def _try_load_from_dict(self, config):
+        if not isinstance(config, dict):
+            return
+        self.data.update(config)
+
+    def _try_load_from_cluster_spec(self, config):
+        if not isinstance(config, ClusterSpec):
+            return
+        self.data.update(config.data)
+
+    def _try_load_from_cview(self, config):
+        from dxl.core.config import CView
+        if not isinstance(config, CView):
+            return
+        for k, v in config.items():
+            self.data[k] = v
 
     @property
     def jobs(self):
         return tuple(self.keys())
+
+    def __str__(self):
+        return json.dumps(self.data)
+
+    def unbox(self, target_backend=None):
+        """
+        Convert to tensorflow ClusterSpec
+        """
+        return tf.train.ClusterSpec(self.data)
+
+
+class MasterWorkerClusterSpec(ClusterSpec):
+    @property
+    def nb_workers(self):
+        return len(self.data.get(JOB_NAME.WORKER, []))
 
     @property
     def master(self):
@@ -45,78 +72,168 @@ class ClusterSpec(UserDict):
     def worker(self):
         return self.data[JOB_NAME.WORKER]
 
-    def __str__(self):
-        result = {self.KEYS.NB_WORKERS: self.nb_workers}
-        result.update(self.data)
-        return json.dumps(result)
 
-    def to_tf(self):
-        """
-        Convert to tensorflow ClusterSpec
-        """
-        return tf.train.ClusterSpec(self.data)
+def default_master_worker_cluster_config(self, nb_workers=2):
+    return {
+        JOB_NAME.MASTER: ['localhost:2221'],
+        JOB_NAME.WORKER:
+        ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
+    }
 
 
 class Cluster:
+    def __init__(self, spec):
+        self.spec = spec
+        self.hosts = self.make_hosts()
+
+    def make_hosts(self):
+        result = {}
+        for job_name, host_spec in self.spec.items():
+            if isinstance(host_spec, dict):
+                hosts = self._parse_dict_jobs(job_name, host_spec)
+            else:
+                hosts = self._parse_list_jobs(job_name, host_spec)
+            result[job_name] = hosts
+        return result
+
+    def _parse_dict_jobs(self, job_name, host_spec):
+        result = []
+        for i, v in host_spec.items():
+            ip, port = v.split(':')
+            port = int(port)
+            result.append(Host(job_name, i, ip, port))
+        return result
+
+    def _parse_list_jobs(self, job_name, host_spec):
+        result = []
+        for i, h in enumerate(host_spec):
+            ip, port = h.split(':')
+            port = int(port)
+            result.append(Host(job_name, i, ip, port))
+        return result
+
+    def find(self, job_or_host, task_index=None):
+        if isinstance(job_or_host, Host):
+            if task_index is not None:
+                raise TypeError(
+                    "task_index is expected to be None when Host object is provided."
+                )
+            job = job_or_host.job
+            task_index = job_or_host.task_index
+        else:
+            job = job_or_host
+        for h in self.hosts:
+            if h == Host(job, task_index):
+                return h
+
+    def host(self, job, task_index):
+        return self.find(job, task_index)
+
+
+def MasterWorkerCluster(Cluster):
+    def master(self):
+        return self.hosts[JOB_NAME.MASTER][0]
+
+    def worker(self, task_index):
+        return self.hosts[JOB_NAME.WORKER][task_index]
+
+
+class DefaultCluster:
     _cluster = None
 
-    class _Cluster:
-        def __init__(self, cluster_spec):
-            self.spec = ClusterSpec(cluster_spec)
-            self._hosts = []
-            for job_name, host_spec in self.spec.items():
-                if isinstance(host_spec, dict):
-                    for i, v in host_spec.items():
-                        ip, port = v.split(':')
-                        port = int(port)
-                        self._hosts.append(Host(job_name, i, ip, port))
-                else:
-                    for i, h in enumerate(host_spec):
-                        ip, port = h.split(':')
-                        port = int(port)
-                        self._hosts.append(Host(job_name, i, ip, port))
-            self._hosts = tuple(self._hosts)
-
-        def hosts(self):
-            return self._hosts
-
-        def host(self, job, task_index):
-            for h in cls._cluster:
-                if h == Host(job, task):
-                    return h
-            return None
-
     @classmethod
-    def set(cls, config):
+    def set(cls, cluster):
         if cls._cluster is not None:
-            msg = "Cluster spec already set with spec:\n{}.".format(
+            msg = "Cluster already set with spec:\n{}.".format(
                 str(cls._cluster.spec))
             raise TypeError(msg)
-        cls._cluster = cls._Cluster(config)
+        cls._cluster = cluster
         return cls._cluster
-
-    @classmethod
-    def set_cluster(cls, config):
-        warnings.warn(
-            "Cluster.set_cluster is going to be deprecated, use Cluste.set instead",
-            DeprecationWarning)
-        return cls.set(config)
 
     @classmethod
     def cluster(cls):
         return cls._cluster
 
     @classmethod
-    def hosts(cls):
-        return cls.cluster().hosts()
+    def reset(cls):
+        cls._cluster = None
+
+
+class Server:
+    """
+    Singloton Server.
+    """
+    _server = None
 
     @classmethod
-    def host(cls, job: str, task: int):
+    def set(cls):
         """
-        Get specific host object.
+        Construct server for this process. Requires Cluster, ThisHost ready.
         """
-        return cls.cluster().host(job, task)
+        if cls._server is not None:
+            raise TypeError("Server is already constructed.")
+        if Cluster.cluster() is None:
+            raise TypeError("No cluster specification.")
+        if ThisHost.host() is None:
+            raise TypeError("No ThisHost specification")
+        job = ThisHost.host().job
+        task_index = ThisHost.host().task_index
+        cluster = Cluster.cluster().spec.unbox()
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        cls._server = tf.train.Server(
+            cluster, job_name=job, task_index=task_index, config=config)
+        return cls._server
 
     @classmethod
     def reset(cls):
-        cls._cluster = None
+        """
+        Clear server for this process
+        """
+        cls._server = None
+
+    @classmethod
+    def server(cls):
+        """
+        Returns: tf.train.Server
+        """
+        return cls._server
+
+    @classmethod
+    def target(cls):
+        return cls._server.target
+
+    @classmethod
+    def join(cls):
+        if cls._server is None:
+            raise TypeError("Server is not set yet.")
+        return cls._server.join()
+
+
+def make_master_worker_cluster(cluster_spec, job, task_index):
+    Cluster.set(cluster_spec)
+    ThisHost.set(Cluster.host(job, task_index))
+    for h in Cluster.hosts():
+        if h == master_host:
+            MasterHost.set(h)
+    Server.set()
+    return ThisHost.host()
+
+
+def make_ps_worker_cluster(cluster_spec, job, task_index):
+    pass
+
+
+def reset_cluster():
+    Cluster.reset()
+    Master.reset()
+    ThisHost.reset()
+    Server.reset()
+
+
+__all__ = [
+    'JOB_NAME', 'ClusterSpec', 'MasterWorkerClusterSpec', 'Cluster',
+    'MasterWorkerCluster', 'DefaultCluster', 'Server',
+    'make_master_worker_cluster'
+]
