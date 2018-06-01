@@ -1,7 +1,6 @@
 from .graph import Graph
 from .tensor import Tensor, Constant
-from .distribute import Host
-from .graph_info import GraphInfo, DistributeGraphInfo
+from .graph_info import GraphInfo
 from typing import Dict
 from dxl.fs import Path
 import tensorflow as tf
@@ -92,7 +91,7 @@ class Model(Graph):
             return False
         without_new_inputs = True
         for k in inputs:
-            if not inputs[k] is self.inputs[k]:
+            if not inputs[k] is self.inputs.get(k):
                 without_new_inputs = False
                 break
         return without_new_inputs

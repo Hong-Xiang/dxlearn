@@ -1,8 +1,7 @@
 from .config import ConfigurableWithName
 from typing import Dict, Callable, TypeVar
 from .tensor import Tensor
-from .distribute import Host
-from .graph_info import GraphInfo
+from .info import GraphInfo
 from pathlib import Path
 
 import warnings

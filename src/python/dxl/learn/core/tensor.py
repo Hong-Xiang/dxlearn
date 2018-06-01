@@ -6,8 +6,7 @@ import tensorflow as tf
 
 from pathlib import Path
 
-from .distribute import Host
-from .graph_info import DistributeGraphInfo, GraphInfo
+from .graph_info import GraphInfo
 import warnings
 
 from dxl.learn.utils.general import strip_colon_and_index_from_name
@@ -125,9 +124,10 @@ class Tensor:
     def eval(self):
         return self.data.eval()
 
-    def copy_to(self, host: Host, is_return_variable=False) -> 'Tensor':
+    def copy_to(self, host: 'Host', is_return_variable=False) -> 'Tensor':
         # if host == self.graph_info.host:
         # raise ValueError("Can not copy to original host.")
+        from ..distribute import Host
         self._nb_copied += 1
         name = Path(str(self.info.name) + '_copy_{}'.format(self._nb_copied))
         with self.info.variable_scope(host=host) as scope:
@@ -172,9 +172,6 @@ class Constant(Tensor):
         return cls(data, None, graph_info)
 
 
-TensorNumpyNDArray = Constant
-
-
 class SparseTensor(Tensor):
     """
     data is required to be scipy.sparse.coo_matrix or a 2-D array.
@@ -201,16 +198,12 @@ class SparseTensor(Tensor):
 SparseMatrix = SparseTensor
 
 
-class VariableInfo(DataInfo):
-    def __init__(self, info=None, shape=None, dtype=None, initializer=None):
-        super().__init__(info)
-        self.shape = shape
-        self.dtype = dtype
-        self.initializer = initializer
-
-
 class Variable(Tensor):
-    def __init__(self, info, shape, dtype, initializer=None):
+    def __init__(self, info, shape=None, dtype=None, initializer=None):
+        if shape is None:
+            shape = initializer.shape
+        if dtype is None:
+            dtype = initializer.dtype
         super().__init__({
             'shape': shape,
             'dtype': dtype,
@@ -253,15 +246,6 @@ class Variable(Tensor):
 
     def init(self):
         return Tensor(self.data.initializer, None, self.graph_info)
-
-
-def variable(graph_info,
-             variable_info=None,
-             shape=None,
-             dtype=None,
-             initializer=None):
-    warnings.warn(DeprecationWarning("Use Variable directly."))
-    return Variable(graph_info, shape, dtype, initializer)
 
 
 def tf_tensor(t: Tensor):

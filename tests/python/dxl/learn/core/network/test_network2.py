@@ -1,10 +1,12 @@
-from dxl.learn import Network, Dense, ReLU, MeanSquareError
-from dxl.learn.dataset import MNIST
+# from dxl.learn import Network, Dense, ReLU, MeanSquareError
+# from dxl.learn.dataset import MNIST
 import unittest
 import tensorflow as tf
 import numpy as np
+import pytest
 
 
+@pytest.mark.skip(reason='not impl yet')
 def create_2_layers_dnn_for_mnist():
     class DNNWith2Layers(Network):
         def kernel(self, inputs):
@@ -34,6 +36,7 @@ def create_mnist_train_dataset():
     pass
 
 
+@pytest.mark.skip(reason='not impl yet')
 class TestNetwork(tf.test.TestCase):
     def test_train(self):
         network = create_2_layers_dnn_for_mnist()

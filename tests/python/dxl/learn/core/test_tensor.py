@@ -12,11 +12,9 @@ class VariableTest(TestCase):
         with self.variables_initialized_test_session() as sess:
             self.assertAllEqual(x.eval(), 1.0)
 
-
-class FuncVariableTest(TestCase):
     def test_basic(self):
         x_ = np.array([1.0, 2.0, 3.0], np.float32)
-        x = tensor.variable(GraphInfo('x'), initializer=x_)
+        x = tensor.Variable(GraphInfo('x'), initializer=x_)
         with self.variables_initialized_test_session() as sess:
             self.assertAllEqual(x.eval(), [1.0, 2.0, 3.0])
 
