@@ -60,6 +60,10 @@ class ClusterSpec(UserDict):
 
 
 class MasterWorkerClusterSpec(ClusterSpec):
+    @classmethod
+    def make_local_cluster(cls, nb_workers):
+        return MasterWorkerCluster()
+
     @property
     def nb_workers(self):
         return len(self.data.get(JOB_NAME.WORKER, []))
@@ -130,7 +134,7 @@ class Cluster:
         return self.find(job, task_index)
 
 
-def MasterWorkerCluster(Cluster):
+class MasterWorkerCluster(Cluster):
     def master(self):
         return self.hosts[JOB_NAME.MASTER][0]
 

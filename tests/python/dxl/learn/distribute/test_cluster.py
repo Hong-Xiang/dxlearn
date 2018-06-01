@@ -1,7 +1,6 @@
 import unittest
-from dxl.learn.distribute import (Host, ThisHost, Master, Cluster, ClusterSpec,
-                                  MasterWorkerClusterSpec, JOB_NAME,
-                                  make_master_worker_cluster)
+from dxl.learn.distribute import *
+
 import pytest
 import tensorflow as tf
 
@@ -31,6 +30,13 @@ class ClusterTestCase(DistributeTestCase):
     def get_master_worker_jobs(self):
         return {JOB_NAME.MASTER, JOB_NAME.WORKER}
 
+    def get_master_host(self):
+        return Host(JOB_NAME.MASTER, 0, 'localhost', 2221)
+
+    def get_worker_host(self, task_index):
+        return Host(JOB_NAME.WORKER, task_index, 'localhost',
+                    2333 + task_index)
+
 
 class TestClusterSpec(ClusterTestCase):
     def test_jobs(self):
@@ -56,24 +62,44 @@ class TestMasterWokerSpec(ClusterTestCase):
         c = MasterWorkerClusterSpec(self.get_master_worker_config())
         assert c.worker == self.get_master_worker_config()[JOB_NAME.WORKER]
 
+
 class TestCluster(ClusterTestCase):
     def test_hosts_master(self):
         spec = ClusterSpec(self.get_master_worker_config())
         cluster = Cluster(spec)
-        assert cluster.hosts[JOB_NAME.MASTER][0] == Host(JOB_NAME.MASTER, 0, 'localhost', 2221)
-    
+        assert cluster.hosts[JOB_NAME.MASTER][0] == Host(
+            JOB_NAME.MASTER, 0, 'localhost', 2221)
+
     def test_hosts_worker(self):
         spec = ClusterSpec(self.get_master_worker_config())
         cluster = Cluster(spec)
         for i in range(2):
-            assert cluster.hosts[JOB_NAME.WORKER][i] == Host(JOB_NAME.WORKER, i, 'localhost', 2333+i)
+            assert cluster.hosts[JOB_NAME.WORKER][i] == Host(
+                JOB_NAME.WORKER, i, 'localhost', 2333 + i)
 
-class TestDefaultCluster(ClusterTestCase):
-    def test_cluster(self):
-        Cluster.set(ClusterSpec(self.get_ps_worker_config()))
-        self.assertIn(Host('ps', 0, 'ps0.example.com', 2222), Cluster.hosts())
-        Cluster.reset()
 
+class TestMasterWorkerCluster(ClusterTestCase):
+    def test_master(self):
+        spec = ClusterSpec(self.get_master_worker_config())
+        cluster = MasterWorkerCluster(spec)
+        assert cluster.master() == self.get_master_host()
+
+    def test_worker(self):
+        spec = ClusterSpec(self.get_master_worker_config())
+        cluster = MasterWorkerCluster(spec)
+        for i in range(2):
+            assert cluster.worker(i) == self.get_worker_host(i)
+
+
+# class TestDefaultCluster(ClusterTestCase):
+#     def get_a_cluster(self):
+#         return MasterWorkerCluster(MasterWorkerClusterSpec())
+#     def test_cluster(self):
+
+#         DefaultCluster.set()
+#         Cluster.set(ClusterSpec(self.get_ps_worker_config()))
+#         self.assertIn(Host('ps', 0, 'ps0.example.com', 2222), Cluster.hosts())
+#         Cluster.reset()
 
 # class TestMakeClusterWithMaster(ClusterTestCase):
 #     def test_cluster_created(self):
