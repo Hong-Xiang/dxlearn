@@ -3,7 +3,7 @@ Trainable Graph
 """
 from ..model import Model
 from ..session import ThisSession
-from ..utils import logger
+from ...utils import logger
 
 
 class Network(Model):

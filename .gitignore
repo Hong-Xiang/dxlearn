@@ -18,7 +18,6 @@ src/python/dxl/learn/scalar/
 src/python/dxl/learn/scripts/
 src/python/dxl/learn/session/
 src/python/dxl/learn/train/
-src/python/dxl/learn/utils/
 src/python/dxl/learn/zoo/
 src/python/dxl/learn/config.py
 src/python/dxl/learn/graph.py

@@ -1,6 +1,8 @@
 from ..core import (DistributeGraphInfo, Graph, Host, MasterHost, ThisHost,
                     ThisSession, make_cluster, make_distribute_session)
 
+from ..distribute import DistributeGraphInfo, Master
+
 from ..core.distribute import JOB_NAME
 
 import warnings

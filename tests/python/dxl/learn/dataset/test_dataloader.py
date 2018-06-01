@@ -3,7 +3,8 @@ import unittest
 import h5py
 import tables as tb
 import numpy as np
-from dxl.learn.dataset import DataLoader, LoaderKernel
+# from dxl.learn.dataset import DataLoader, LoaderKernel
+import pytest
 
 HOME = os.environ['HOME']
 DATATEST = os.path.join(HOME, "dataset", "test")
@@ -20,6 +21,7 @@ class TbDesp(tb.IsDescription):
     y = tb.UInt16Col(shape=(10))
 
 
+@pytest.mark.skip(reason='not impl yet')
 class TestDataLoader(unittest.TestCase):
     class KEYS:
         GROUP = 'data'
