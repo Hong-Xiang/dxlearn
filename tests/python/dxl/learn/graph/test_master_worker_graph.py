@@ -3,22 +3,26 @@ import unittest
 import pytest
 import tensorflow as tf
 
-from dxl.learn.distribute import Host, Master
+from dxl.learn.distribute import (Host, Master, make_master_worker_cluster,
+                                  DistributeGraphInfo)
 from dxl.learn.graph import MasterWorkerTaskBase
 from dxl.learn.test import DistributeTestCase
 
 
-class DoNothing:
-    def __init__(self, *args, **kwargs):
-        pass
-
-
 class TestMasterWorkerTaskBase(DistributeTestCase):
+    def get_cluster(self, job, task_index, nb_workers=3):
+        return make_master_worker_cluster(
+            self.get_cluster_config(nb_workers), job, task_index)
+
+    def test_get_cluster_master(self):
+        c = self.get_cluster('master', 0, 3)
+        assert c.nb_workers == 3
+
     def get_graph(self, job='master', task_index=0, nb_workers=3):
         return MasterWorkerTaskBase(
             job=job,
             task_index=task_index,
-            cluster_config=self.get_cluster_config(nb_workers))
+            cluster=self.get_cluster(job, task_index, nb_workers))
 
     def get_cluster_config(self, nb_workers):
         return {
@@ -90,3 +94,8 @@ class TestMasterWorkerTaskBase(DistributeTestCase):
             g.worker_only)
         with pytest.raises(e):
             foo()
+
+    def test_graph_info(self):
+        g = self.get_graph('master')
+        self.assertIsInstance(g.info, DistributeGraphInfo)
+        assert g.info.host.job == 'master'

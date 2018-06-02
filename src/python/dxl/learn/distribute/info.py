@@ -21,9 +21,11 @@ class DistributeGraphInfo(GraphInfo):
             host = self.host
         if host is None:
             yield
-        else:
-            with tf.device(host.device_prefix()):
-                yield
+            return
+        if not isinstance(host, Host):
+            raise TypeError('Invalid host {}.'.format(host))
+        with tf.device(host.device_prefix()):
+            yield
 
     @contextmanager
     def variable_scope(self, scope=None, reuse=None, *, host=None):

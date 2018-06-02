@@ -34,20 +34,16 @@ class MasterWorkerTaskBase(Graph):
                  *,
                  job=None,
                  task_index=None,
-                 cluster_config=None):
+                 cluster=None):
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
         if config is None:
             config = {}
-        config.update({
-            KC.CLUSTER: cluster_config,
-            KC.JOB: job,
-            KC.TASK_INDEX: task_index
-        })
+        config.update({KC.JOB: job, KC.TASK_INDEX: task_index})
 
         super().__init__(info, config=config)
-        self._cluster_init()
+        self._cluster = cluster
         self._make_master_graph()
         self._make_worker_graphs()
         self._make_barriers()
@@ -67,15 +63,14 @@ class MasterWorkerTaskBase(Graph):
         }
 
     def default_info(self, name):
-        return DistributeGraphInfo(name, name,
-                                   Host(
-                                       self.config(self.KEYS.CONFIG.JOB),
-                                       self.config(
-                                           self.KEYS.CONFIG.TASK_INDEX)))
+        host = Host(
+            self.config(self.KEYS.CONFIG.JOB),
+            self.config(self.KEYS.CONFIG.TASK_INDEX))
+        return DistributeGraphInfo(name, host, name)
 
     @property
     def job(self):
-        return ThisHost.host().job
+        return self.this_host().job
 
     @property
     def nb_workers(self):
@@ -83,13 +78,18 @@ class MasterWorkerTaskBase(Graph):
 
     @property
     def task_index(self):
-        return ThisHost.host().task_index
+        return self.this_host().task_index
 
     def master(self):
         return self._cluster.master()
 
     def worker(self, task_index):
         return self._cluster.worker(task_index)
+
+    def this_host(self):
+        return self._cluster.host(
+            self.config(self.KEYS.CONFIG.JOB),
+            self.config(self.KEYS.CONFIG.TASK_INDEX))
 
     def _cluster_init(self):
         """
