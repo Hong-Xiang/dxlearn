@@ -86,7 +86,7 @@ class Tensor:
         else:
             scope = self.parse_scope_from_name_hint(name_hint)
         reuse = info.reuse
-        return GraphInfo(name, scope, reuse)
+        return GraphInfo(name_hint, scope, reuse)
 
     @property
     def shape(self):
@@ -272,6 +272,11 @@ class Variable(Tensor):
             else:
                 data = self.data.assign(t.data)
             return Tensor(data, info)
+
+    def assign_add(self, b, use_locking=None):
+        with self.info.variable_scope():
+            result = tf.assign_add(self.data, b, use_locking, 'assign_add')
+        return Tensor(result, self.info.erase_name())
 
     def init(self):
         return Tensor(self.data.initializer, self.info.erase_name())
