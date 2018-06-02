@@ -38,15 +38,8 @@ class DistributeGraphInfo(GraphInfo):
                 yield scope
 
     @classmethod
-    def from_graph_info(cls,
-                        distribute_graph_info: 'DistributeGraphInfo',
-                        name=None,
-                        variable_scope=None,
-                        reuse=None,
-                        host=None):
-        return cls.from_dict(
-            distribute_graph_info.update_to_dict(name, host, variable_scope,
-                                                 reuse))
+    def from_local_info(cls, info, host):
+        return cls(info.name, host, info.scope, info.reuse)
 
     def update_to_dict(self,
                        name=None,
@@ -62,7 +55,7 @@ class DistributeGraphInfo(GraphInfo):
     def update(self, name=None, host=None, variable_scope=None,
                reuse=None) -> 'DistributeGraphInfo':
         return self.from_dict(
-            self.update_to_dict(name, variable_scope, reuse, host))
+            self.update_to_dict(name, host, variable_scope, host))
 
     def copy_without_name(self):
         return self.from_dict({

@@ -59,6 +59,11 @@ class TestMasterWorkerTaskBase(DistributeTestCase):
         assert g.master() == Master.host()
         assert g.master().ip == Master.host().ip
 
+    def test_worker(self):
+        g = self.get_graph()
+        assert g.worker(0) == Host('worker', 0)
+        assert g.worker(1) == Host('worker', 1)
+
     def get_function_to_check_called_with_decorator(self, deco):
         class NotExpectedToBeCalled(Exception):
             pass

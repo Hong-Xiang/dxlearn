@@ -11,13 +11,9 @@ class MasterWorkerTaskBase(Graph):
     """
     Helper class of managing distribute task with Master-Multiple Worker model.
 
-    `self.config(KC.CLUSTER)` a ClusterSpec Object.
     """
 
     class KEYS(Graph.KEYS):
-        class TENSOR(Graph.KEYS.TENSOR):
-            pass
-
         class CONFIG(Graph.KEYS.CONFIG):
             CLUSTER = 'cluster'
             JOB = 'job'
@@ -52,9 +48,9 @@ class MasterWorkerTaskBase(Graph):
         self._make_worker_graphs()
         self._make_barriers()
 
-    @property
-    def hosts(self):
-        return self._cluster.hosts
+    # @property
+    # def hosts(self):
+    #     return self._cluster.hosts
 
     @classmethod
     def _default_config(cls):

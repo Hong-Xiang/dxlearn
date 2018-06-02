@@ -149,9 +149,11 @@ class Tensor:
     def eval(self):
         return self.data.eval()
 
-    def copy_to(self, host: 'Host', is_return_variable=False) -> 'Tensor':
-        # if host == self.graph_info.host:
-        # raise ValueError("Can not copy to original host.")
+    def copy_to(self, host: 'Host', *, maker=None):
+        result, _ = self.copy_to_with_variable(host, maker=maker)
+        return result
+
+    def copy_to_with_variable(self, host, *, maker=None):
         from ..distribute import Host
         self._nb_copied += 1
         name = Path(str(self.info.name) + '_copy_{}'.format(self._nb_copied))
@@ -161,10 +163,10 @@ class Tensor:
                 self.shape,
                 self.dtype,
             )
-            assigned = variable.assign(self)
-            if is_return_variable:
-                return assigned, variable
-            return assigned
+        assigned = variable.assign(self)
+        if maker is not None:
+            assigned = maker(assigned, variable.info)
+        return assigned, variable
 
     def transpose(self, perm=None, name='transpose', conjugate=False):
         result = tf.transpose(self.data, perm, name, conjugate)

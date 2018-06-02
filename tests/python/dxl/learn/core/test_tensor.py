@@ -20,6 +20,21 @@ class TestTensor(TestCase):
     def test_parse_scope_from_name_hint_4(self):
         assert tensor.Tensor._parse_scope_from_name_hint('scope/x') == 'scope'
 
+    def test_copy_to_result_with_same_type(self):
+        from dxl.learn.distribute import Host, DistributeGraphInfo
+
+        class NewTensorType(tensor.Tensor):
+            pass
+
+        t_raw = self.make_dummy_tensor()
+        h1 = Host('test', 1)
+        t_new = NewTensorType(t_raw.data,
+                              DistributeGraphInfo.from_local_info(
+                                  t_raw.info, h1))
+        h = Host('test', 0)
+        t_copy = t_new.copy_to(h, maker=NewTensorType)
+        self.assertIsInstance(t_copy, NewTensorType)
+
 
 class TestVariable(TestCase):
     def test_make_info(self):
