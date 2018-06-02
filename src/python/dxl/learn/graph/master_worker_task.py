@@ -44,13 +44,11 @@ class MasterWorkerTaskBase(Graph):
 
         super().__init__(info, config=config)
         self._cluster = cluster
-        self._make_master_graph()
-        self._make_worker_graphs()
-        self._make_barriers()
-
-    # @property
-    # def hosts(self):
-    #     return self._cluster.hosts
+        self.subgraphs[self.KEYS.SUBGRAPH.MASTER] = self._make_master_graph()
+        self.subgraphs[self.KEYS.SUBGRAPH.WORKER] = []
+        for i in range(self.nb_workers):
+            self.subgraphs[self.KEYS.SUBGRAPH.WORKER].append(
+                self._make_worker_graph(i))
 
     @classmethod
     def _default_config(cls):
@@ -69,24 +67,24 @@ class MasterWorkerTaskBase(Graph):
         return DistributeGraphInfo(name, host, name)
 
     @property
-    def job(self):
+    def job(self) -> str:
         return self.this_host().job
 
     @property
-    def nb_workers(self):
-        return self._cluster.nb_workers
-
-    @property
-    def task_index(self):
+    def task_index(self) -> int:
         return self.this_host().task_index
 
-    def master(self):
+    @property
+    def nb_workers(self) -> int:
+        return self._cluster.nb_workers
+
+    def master(self) -> Host:
         return self._cluster.master()
 
-    def worker(self, task_index):
+    def worker(self, task_index) -> Host:
         return self._cluster.worker(task_index)
 
-    def this_host(self):
+    def this_host(self) -> Host:
         return self._cluster.host(
             self.config(self.KEYS.CONFIG.JOB),
             self.config(self.KEYS.CONFIG.TASK_INDEX))
@@ -101,19 +99,13 @@ class MasterWorkerTaskBase(Graph):
             self.config(self.KEYS.CONFIG.JOB),
             self.config(self.KEYS.CONFIG.TASK_INDEX))
 
-    def _make_master_graph(self):
+    def _make_master_graph(self) -> Graph:
         """
         User might want to overwrite this function.
         """
         pass
 
-    def _make_worker_graphs(self):
-        """
-        User might want to overwrite this function.
-        """
-        pass
-
-    def _make_barriers(self):
+    def _make_worker_graph(self, task_index) -> Graph:
         """
         User might want to overwrite this function.
         """
