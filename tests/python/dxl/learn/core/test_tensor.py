@@ -62,6 +62,15 @@ class TestVariable(TestCase):
         with self.variables_initialized_test_session() as sess:
             self.assertAllEqual(x.eval(), [1.0, 2.0, 3.0])
 
+    def test_construct_by_graph_info_name(self):
+        x = tensor.Variable(GraphInfo('x', 'scope', False), initializer=0)
+        assert x.data.name == 'scope/x:0'
+
+    def test_construct_by_graph_info_value(self):
+        x = tensor.Variable(GraphInfo('x', 'scope', False), initializer=0)
+        with self.variables_initialized_test_session() as sess:
+            assert sess.run(x.data) == 0
+
 
 class TestSparseMatrix(TestCase):
     def test_matmul(self):
