@@ -1,22 +1,22 @@
-from ..core import (DistributeGraphInfo, Graph, Host, MasterHost, ThisHost,
-                    ThisSession, make_cluster, make_distribute_session)
+from ..core import Graph, ThisSession
 
-from ..core.distribute import JOB_NAME
+from ..distribute import (DistributeGraphInfo, Host, Master, ThisHost,
+                          make_master_worker_cluster, make_distribute_session,
+                          JOB_NAME, MasterWorkerCluster)
 
-import warnings
+from functools import wraps
 
 
 class MasterWorkerTaskBase(Graph):
     """
     Helper class of managing distribute task with Master-Multiple Worker model.
 
-    `self.config(KC.CLUSTER)` a ClusterSpec Object.
+    User need to implement two methods:
+    `self._make_master_graph()`
+    `self._make_worker_graph(task_index)`
     """
 
     class KEYS(Graph.KEYS):
-        class TENSOR(Graph.KEYS.TENSOR):
-            pass
-
         class CONFIG(Graph.KEYS.CONFIG):
             CLUSTER = 'cluster'
             JOB = 'job'
@@ -33,101 +33,90 @@ class MasterWorkerTaskBase(Graph):
                  *,
                  job=None,
                  task_index=None,
-                 cluster_config=None):
+                 cluster=None):
+        if not isinstance(cluster, MasterWorkerCluster):
+            raise TypeError(
+                "Invalid cluster type, required {}, got {}.".format(
+                    MasterWorkerCluster, type(cluster)))
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
         if config is None:
             config = {}
-        config.update({
-            KC.CLUSTER: cluster_config,
-            KC.JOB: job,
-            KC.TASK_INDEX: task_index
-        })
+        config.update({KC.JOB: job, KC.TASK_INDEX: task_index})
 
         super().__init__(info, config=config)
-        self.hosts = {JOB_NAME.MASTER: None, JOB_NAME.WORKER: []}
-        self.is_cluster_init = False
-        self._cluster_init()
-        self._make_master_graph()
-        self._make_worker_graphs()
-        self._make_barriers()
+        self._cluster = cluster
+        self.subgraphs[self.KEYS.SUBGRAPH.MASTER] = self._make_master_graph()
+        self.subgraphs[self.KEYS.SUBGRAPH.WORKER] = []
+        for i in range(self.nb_workers):
+            self.subgraphs[self.KEYS.SUBGRAPH.WORKER].append(
+                self._make_worker_graph(i))
 
     @classmethod
-    def default_config(cls):
-        from ..core.distribute import DEFAULT_CLUSTER_CONFIG
+    def _default_config(cls):
+        from ..distribute import MasterWorkerClusterSpec
         return {
-            cls.KEYS.CONFIG.CLUSTER: DEFAULT_CLUSTER_CONFIG,
-            cls.KEYS.CONFIG.TASK_INDEX: 0
+            cls.KEYS.CONFIG.CLUSTER:
+            MasterWorkerClusterSpec.make_local_cluster_config(2),
+            cls.KEYS.CONFIG.TASK_INDEX:
+            0
         }
 
-    def default_info(self, name):
-        return DistributeGraphInfo(name, name,
-                                   Host(
-                                       self.config(self.KEYS.CONFIG.JOB),
-                                       self.config(
-                                           self.KEYS.CONFIG.TASK_INDEX)))
+    def _default_info(self, name):
+        host = Host(
+            self.config(self.KEYS.CONFIG.JOB),
+            self.config(self.KEYS.CONFIG.TASK_INDEX))
+        return DistributeGraphInfo(name, host, name)
 
     @property
-    def job(self):
-        return self.config(self.KEYS.CONFIG.JOB)
+    def job(self) -> str:
+        return self.this_host().job
 
     @property
-    def nb_workers(self):
-        return len(self.config(self.KEYS.CONFIG.CLUSTER)[JOB_NAME.WORKER])
+    def task_index(self) -> int:
+        return self.this_host().task_index
 
     @property
-    def task_index(self):
-        return self.config(self.KEYS.CONFIG.TASK_INDEX)
+    def nb_workers(self) -> int:
+        return self._cluster.nb_workers
 
-    def master_host(self):
-        if not self.is_cluster_init:
-            return Host(JOB_NAME.MASTER, 0)
-        return MasterHost.host()
+    def master(self) -> Host:
+        return self._cluster.master()
 
-    def _make_cluster_on_backend(self):
-        make_cluster(
-            self.config(self.KEYS.CONFIG.CLUSTER), self.job, self.task_index,
-            self.master_host())
-        self.is_cluster_init = True
+    def worker(self, task_index) -> Host:
+        return self._cluster.worker(task_index)
+
+    def this_host(self) -> Host:
+        return self._cluster.host(
+            self.config(self.KEYS.CONFIG.JOB),
+            self.config(self.KEYS.CONFIG.TASK_INDEX))
 
     def _cluster_init(self):
         """
         Create cluster to run this task, this function should be called before:
         - self.nb_workers()
         """
-        self._make_cluster_on_backend()
-        self.hosts[JOB_NAME.MASTER] = self.master_host()
-        self.hosts[JOB_NAME.WORKER] = [
-            Host(JOB_NAME.WORKER, i) for i in range(self.nb_workers)
-        ]
+        self._cluster = make_master_worker_cluster(
+            self.config(self.KEYS.CONFIG.CLUSTER),
+            self.config(self.KEYS.CONFIG.JOB),
+            self.config(self.KEYS.CONFIG.TASK_INDEX))
 
-    def _make_master_graph(self):
+    def _make_master_graph(self) -> Graph:
         """
         User might want to overwrite this function.
         """
         pass
 
-    def _make_worker_graphs(self):
+    def _make_worker_graph(self, task_index) -> Graph:
         """
         User might want to overwrite this function.
         """
         pass
-
-    def _make_barriers(self):
-        """
-        User might want to overwrite this function.
-        """
-        pass
-
-    def make_session(self):
-        warnings.warn(
-            DeprecationWarning(
-                "Directly use dxl.learn.make_distribute_session instead."))
-        make_distribute_session()
 
     @classmethod
     def worker_only(cls, func):
+        @wraps(func)
         def call(*args, **kwargs):
             if not ThisHost.is_master():
                 return func(*args, **kwargs)
@@ -137,6 +126,7 @@ class MasterWorkerTaskBase(Graph):
 
     @classmethod
     def master_only(cls, func):
+        @wraps(func)
         def call(*args, **kwargs):
             if ThisHost.is_master():
                 return func(*args, **kwargs)

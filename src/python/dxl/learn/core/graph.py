@@ -14,7 +14,7 @@ class Graph(ConfigurableWithName):
     Features for config:
 
     - provide access to default / external config by info.name;
-    - provide default_config() classmethod;
+    - provide _default_config() classmethod;
     - provide self.config(key) rearch-like config getter.
 
 
@@ -100,7 +100,7 @@ class Graph(ConfigurableWithName):
 
     def make_info(self, info):
         if isinstance(info, (Path, str)):
-            return self.default_info(info)
+            return self._default_info(info)
         if not isinstance(info, GraphInfo):
             raise TypeError("Invalid info type for {}.".format(info))
         return info
@@ -109,13 +109,13 @@ class Graph(ConfigurableWithName):
         with self.info.variable_scope():
             self.kernel()
 
-    def kernel(self):
+    def kernel(self, inputs=None):
         """
         Users may overwrite this function to construct graph.
         """
         pass
 
-    def default_info(self, name):
+    def _default_info(self, name):
         """
         User may overwrite this function to provide default GraphInfo
         """
@@ -136,7 +136,7 @@ class Graph(ConfigurableWithName):
 
     @classmethod
     def child_maker(self, g, name, constructor):
-        return constructor(g.info.child(name))
+        return constructor(g.info.child_scope(name))
 
     def tensor_keys(self):
         warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))

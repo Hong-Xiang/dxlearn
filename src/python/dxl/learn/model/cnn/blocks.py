@@ -51,7 +51,7 @@ class Conv2D(Model):
             ACTIVATION = 'activation'
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.PADDING: 'same',
             cls.KEYS.CONFIG.STRIDES: (1, 1),
@@ -80,7 +80,7 @@ class Conv2D(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.FILTERS: 5,
             cls.KEYS.CONFIG.STRIDES: (1, 1),
@@ -155,7 +155,7 @@ class StackedConv2D(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.NB_LAYERS: 2,
             cls.KEYS.CONFIG.FILTERS: 5,
@@ -212,16 +212,16 @@ class InceptionBlock(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.PATHS: 2, cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
     @classmethod
     def sub_block_maker(cls, father, name, input_tensor, config):
         # with tf.variable_scope(config['scop']) as scope:
-        info = father.info.child(name)
+        info = father.info.child_scope(name)
         print(info)
         sub_block = Conv2D(
-            info=father.info.child(name),
+            info=father.info.child_scope(name),
             input_tensor=input_tensor,
             filters=config['filters'],
             kernel_size=config['kernel_size'],
@@ -340,7 +340,7 @@ class DownSampling2D(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.IS_SCALE: True,
             cls.KEYS.CONFIG.METHOD: 0,
@@ -424,7 +424,7 @@ class UpSampling2D(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.IS_SCALE: True,
             cls.KEYS.CONFIG.METHOD: 0,

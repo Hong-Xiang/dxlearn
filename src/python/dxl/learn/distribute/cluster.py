@@ -61,12 +61,17 @@ class ClusterSpec(UserDict):
 
 class MasterWorkerClusterSpec(ClusterSpec):
     @classmethod
-    def make_local_cluster_spec(cls, nb_workers):
-        return MasterWorkerClusterSpec({
+    def make_local_cluster_config(cls, nb_workers):
+        return {
             JOB_NAME.MASTER: ['localhost:2222'],
             JOB_NAME.WORKER:
-            ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
-        })
+            ['lcalhost:{}'.format(2333 + i) for i in range(nb_workers)]
+        }
+
+    @classmethod
+    def make_local_cluster_spec(cls, nb_workers):
+        return MasterWorkerClusterSpec(
+            MasterWorkerClusterSpec.make_local_cluster_config(nb_workers))
 
     @property
     def nb_workers(self):
@@ -151,6 +156,10 @@ class MasterWorkerCluster(Cluster):
     def worker(self, task_index):
         return self.hosts[JOB_NAME.WORKER][task_index]
 
+    @property
+    def nb_workers(self):
+        return self.spec.nb_workers
+
 
 class DefaultCluster:
     _cluster = None
@@ -233,13 +242,13 @@ class Server:
 
 
 def make_master_worker_cluster(config, job, task_index=0):
-    spec = ClusterSpec(config)
+    spec = MasterWorkerClusterSpec(config)
     DefaultCluster.set(MasterWorkerCluster(spec))
     from .host import ThisHost, Master
     ThisHost.set(DefaultCluster.cluster().host(job, task_index))
     Master.set(DefaultCluster.cluster().master())
     Server.set(DefaultCluster.cluster())
-    return ThisHost.host()
+    return DefaultCluster.cluster()
 
 
 def make_ps_worker_cluster(cluster_spec, job, task_index):

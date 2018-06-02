@@ -27,7 +27,7 @@ class SessionBase(ConfigurableWithName):
             IS_RUN_VAR_INIT = 'is_run_var_init'
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.IS_DEFAULT: True,
             cls.KEYS.CONFIG.IS_ALLOW_GROWTH: True,

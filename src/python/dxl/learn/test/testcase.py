@@ -26,7 +26,13 @@ class TestCase(current_backend().TestCase()):
         from dxl.learn.core import Constant
         if info is None:
             info = str(uuid.uuid4())
-        return Constant(graph_info=info, data=0.0)
+        return Constant(0.0, info)
+
+    def make_dummy_variable(self, info=None):
+        from dxl.learn.core import Variable
+        if info is None:
+            info == str(uuid.uuid4())
+        return Variable(info, [])
 
     @property
     def resource_path(self):

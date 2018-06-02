@@ -47,13 +47,13 @@ class ResidualIncept(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.3}
 
     @classmethod
     def sub_block_maker(cls, graph, name, input_tensor):
         sub_block = InceptionBlock(
-            graph.info.child(name),
+            graph.info.child_scope(name),
             input_tensor=input_tensor,
             paths=3,
             activation='incept')
@@ -103,13 +103,13 @@ class ResidualStackedConv(Model):
             config={self.KEYS.CONFIG.RATIO: ratio})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.1}
 
     @classmethod
     def sub_block_maker(cls, graph, name, input_tensor):
         return StackedConv2D(
-            graph.info.child(name),
+            graph.info.child_scope(name),
             input_tensor=input_tensor,
             nb_layers=2,
             filters=1,
@@ -161,13 +161,13 @@ class StackedResidualIncept(Model):
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor):
         sub_block = ResidualIncept(
-            preblock.info.child(subkey), input_tensor=input_tensor, ratio=0.3)
+            preblock.info.child_scope(subkey), input_tensor=input_tensor, ratio=0.3)
 
         return sub_block
 
@@ -213,13 +213,13 @@ class StackedResidualConv(Model):
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
     def sub_block_maker(cls, preblock, subkey, input_tensor, id_block):
         sub_block = ResidualStackedConv(
-            preblock.info.child(subkey), input_tensor=input_tensor, ratio=0.1)
+            preblock.info.child_scope(subkey), input_tensor=input_tensor, ratio=0.1)
 
         return sub_block
 

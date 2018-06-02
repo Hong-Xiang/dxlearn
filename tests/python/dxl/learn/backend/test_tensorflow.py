@@ -18,7 +18,7 @@ class TestTensorFlowBackend(tf.test.TestCase):
     def test_sandbox(self):
         backend = TensorFlow()
 
-        @backend.sandbox
+        @backend.in_sandbox
         def create_variable():
             self.create_dummy_variable()
 

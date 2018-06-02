@@ -1,4 +1,8 @@
-class SessionDistribute(SessionBase):
+from ..core import SessionBase
+__all__ = ['DistributeSession', 'MonitoredSession', 'make_distribute_session']
+
+
+class DistributeSession(SessionBase):
     def __init__(self, name='session', target=None, **kw):
         super().__init__(name=name, **kw)
         self.target = target
@@ -7,7 +11,7 @@ class SessionDistribute(SessionBase):
         return tf.Session(self.target, config=self.get_session_config())
 
 
-class SessionMonitored(SessionDistribute):
+class MonitoredSession(DistributeSession):
     class KEYS:
         class CONFIG(SessionBase.KEYS.CONFIG):
             CHECKPOINT_DIR = 'checkpoint_dir'
@@ -38,4 +42,3 @@ def make_distribute_session(session_name='session', target=None):
         target = Server.server().target
     ThisSession.set_session(SessionMonitored(session_name, target))
     return ThisSession.session()
-

@@ -20,7 +20,7 @@ class Trainer(Graph):
 
     def kernel(self):
         self.tensors[self.KEYS.TENSOR.LEARNING_RATE] = Variable(
-            self.info.child(self.KEYS.TENSOR.LEARNING_RATE), [],
+            self.info.child_scope(self.KEYS.TENSOR.LEARNING_RATE), [],
             current_backend().float32,
             self.config(self.KEYS.TENSOR.LEARNING_RATE))
 
