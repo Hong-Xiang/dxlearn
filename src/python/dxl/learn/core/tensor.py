@@ -172,14 +172,6 @@ class Tensor:
         result = tf.transpose(self.data, perm, name, conjugate)
         return self.tensor_with_same_info_except_name(result)
 
-    @classmethod
-    def from_(cls, t: 'Tensor'):
-        warnings.warn(DeprecationWarning('Use construct directly.'))
-        # with t.graph_info.variable_scope() as scope:
-        #     data = tf.identity(t.data, name=t.graph_info.name)
-        #     return cls(data=data, data_info=t.data_info, graph_info=t.graph_info.update(name=None))
-        return cls(data=t.data, data_info=t.data_info, graph_info=t.graph_info)
-
 
 class TensorFromExternalData(Tensor):
     def __init__(self, data, info):
@@ -268,27 +260,6 @@ class Variable(Tensor):
                 dtype = initializer.dtype
         return shape, dtype, initializer
 
-    # def _is_constant_initializer(self):
-    #     with_init = self.data_info.initializer is not None
-    #     if with_init and isinstance(self.data_info.initializer,
-    #                                 (float, int, np.ndarray)):
-    #         return True
-    #     return False
-
-    # def _process_input_data(self, data):
-    #     with self.info.variable_scope():
-    #         initializer = data['init']
-    #         if initializer is None:
-    #             initializer = tf.initializers.zeros
-    #             shape = data['shape']
-    #         else:
-    #             shape = None
-    #         return tf.get_variable(
-    #             self.info.name.name,
-    #             shape=shape,
-    #             dtype=data['dtype'],
-    #             initializer=initializer)
-
     def assign(self, t: Tensor, info=None):
         if info is None:
             info = self.info
@@ -304,18 +275,3 @@ class Variable(Tensor):
 
     def init(self):
         return Tensor(self.data.initializer, self.info.erase_name())
-
-
-def tf_tensor(t: Tensor):
-    """
-    Unified access to convert tensor to Tensor of tensorflow.
-    """
-    if isinstance(t, tf.Tensor):
-        return t
-    if isinstance(t, Tensor):
-        return t.data
-    if isinstance(t, np.ndarray):
-        if t.dtype == np.float64:
-            t = t.astype(np.float32)
-        return tf.constant(t, name="from_numpy_ndarray")
-    raise TypeError("Can not convert {} to {}".format(type(t), tf.Tensor))
