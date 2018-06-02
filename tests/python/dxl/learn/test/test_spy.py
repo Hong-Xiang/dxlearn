@@ -5,7 +5,6 @@ from dxl.learn.test import OpRunSpy
 import pytest
 
 
-@pytest.mark.skip(reason='not correctly impl yet')
 class TestRunSpy(TestCase):
     def test_nb_called(self):
         ors = OpRunSpy()
@@ -15,6 +14,7 @@ class TestRunSpy(TestCase):
                 sess.run(ors.op.data)
                 assert sess.run(ors.nb_called.data) == i + 1
 
+    @pytest.mark.skip(reason='not correctly impl yet')
     def test_global_order(self):
         ors0 = OpRunSpy()
         with self.variables_initialized_test_session() as sess:
@@ -24,6 +24,7 @@ class TestRunSpy(TestCase):
             sess.run(ors0.op.data)
             assert sess.run(ors0.global_order.data) == 2
 
+    @pytest.mark.skip(reason='not correctly impl yet')
     def test_global_order_2(self):
         ors0 = OpRunSpy()
         ors1 = OpRunSpy()
@@ -36,6 +37,7 @@ class TestRunSpy(TestCase):
                 assert sess.run(ors0.global_order.data) == i * 2 + 1
                 assert sess.run(ors1.global_order.data) == i * 2 + 2
 
+    @pytest.mark.skip(reason='not correctly impl yet')
     def test_skip_global_order(self):
         ors0 = OpRunSpy()
         ors1 = OpRunSpy(is_skip_global_order=True)

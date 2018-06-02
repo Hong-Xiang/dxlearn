@@ -45,9 +45,8 @@ class OpRunSpy:
 
     def get_or_set_nb_global_called(self):
         if self.global_op_run_spy is None:
-            with tf.variable_scope(None):
-                self.global_op_run_spy = Variable(
-                    GraphInfo('nb_globall_called', 'runpy_scope', False),
-                    initializer=0)
+            self.global_op_run_spy = Variable(
+                GraphInfo('nb_globall_called', 'runpy_scope', False),
+                initializer=0)
             self.previous_assign = NoOp()
         return self.global_op_run_spy
