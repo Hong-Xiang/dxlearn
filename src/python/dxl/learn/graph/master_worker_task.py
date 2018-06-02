@@ -11,6 +11,9 @@ class MasterWorkerTaskBase(Graph):
     """
     Helper class of managing distribute task with Master-Multiple Worker model.
 
+    User need to implement two methods:
+    `self._make_master_graph()`
+    `self._make_worker_graph(task_index)`
     """
 
     class KEYS(Graph.KEYS):
