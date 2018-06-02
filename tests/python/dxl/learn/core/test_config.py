@@ -30,7 +30,7 @@ class TestConfigurableWithName(unittest.TestCase):
 
         class A(dlcc.ConfigurableWithName):
             @classmethod
-            def default_config(cls):
+            def _default_config(cls):
                 return {'a': 1}
 
         c1 = A('x')
@@ -45,7 +45,7 @@ class TestConfigurableWithName(unittest.TestCase):
 
         class A(dlcc.ConfigurableWithName):
             @classmethod
-            def default_config(cls):
+            def _default_config(cls):
                 return {'a': 1}
 
         c0 = dlcc.ConfigurableWithName('x', {'a': 0})

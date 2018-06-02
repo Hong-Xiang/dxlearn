@@ -47,7 +47,7 @@ class ResidualIncept(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.3}
 
     @classmethod
@@ -103,7 +103,7 @@ class ResidualStackedConv(Model):
             config={self.KEYS.CONFIG.RATIO: ratio})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.1}
 
     @classmethod
@@ -161,7 +161,7 @@ class StackedResidualIncept(Model):
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod
@@ -213,7 +213,7 @@ class StackedResidualConv(Model):
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     @classmethod

@@ -48,8 +48,8 @@ class Network(Model):
         super().__init__(name, inputs, submodels, info, config)
 
     @classmethod
-    def default_config(cls):
-        c = super().default_config()
+    def _default_config(cls):
+        c = super()._default_config()
         c.update({})
         return c
 

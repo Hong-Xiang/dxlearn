@@ -69,7 +69,7 @@ class SuperResolution2x(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.NB_LAYERS: 2,
             cls.KEYS.CONFIG.FILTERS: 5,
@@ -210,7 +210,7 @@ class SuperResolutionBlock(Model):
             })
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {
             cls.KEYS.CONFIG.INTERP: False,
             cls.KEYS.CONFIG.FILTERS: 32,

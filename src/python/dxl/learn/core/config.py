@@ -55,14 +55,14 @@ class Configurable:
         raise NotImplementedError
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         return {}
 
     def __init__(self, config=None):
         if config is None:
             config = {}
         self.config = self._create_config(config)
-        for k, v in self.default_config().items():
+        for k, v in self._default_config().items():
             if self.config(k) is None:
                 self.config.update(k, v)
 

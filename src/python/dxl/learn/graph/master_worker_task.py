@@ -2,7 +2,7 @@ from ..core import Graph, ThisSession
 
 from ..distribute import (DistributeGraphInfo, Host, Master, ThisHost,
                           make_master_worker_cluster, make_distribute_session,
-                          JOB_NAME)
+                          JOB_NAME, MasterWorkerCluster)
 
 from functools import wraps
 
@@ -35,6 +35,10 @@ class MasterWorkerTaskBase(Graph):
                  job=None,
                  task_index=None,
                  cluster=None):
+        if not isinstance(cluster, MasterWorkerCluster):
+            raise TypeError(
+                "Invalid cluster type, required {}, got {}.".format(
+                    MasterWorkerCluster, type(cluster)))
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
@@ -53,7 +57,7 @@ class MasterWorkerTaskBase(Graph):
         return self._cluster.hosts
 
     @classmethod
-    def default_config(cls):
+    def _default_config(cls):
         from ..distribute import MasterWorkerClusterSpec
         return {
             cls.KEYS.CONFIG.CLUSTER:
@@ -62,7 +66,7 @@ class MasterWorkerTaskBase(Graph):
             0
         }
 
-    def default_info(self, name):
+    def _default_info(self, name):
         host = Host(
             self.config(self.KEYS.CONFIG.JOB),
             self.config(self.KEYS.CONFIG.TASK_INDEX))
