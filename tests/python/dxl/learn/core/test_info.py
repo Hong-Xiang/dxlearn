@@ -25,7 +25,7 @@ class TestGraphInfo(TestCase):
 
     def test_child_scope(self):
         info = self.create_simple_info('scope')
-        cinfo = info.child('sub')
+        cinfo = info.child_scope('sub')
         with info.variable_scope():
             pass
         with cinfo.variable_scope():
@@ -59,8 +59,13 @@ class TestGraphInfo(TestCase):
 
     def test_child(self):
         info = GraphInfo('x', None, False)
-        child = info.child('y')
+        child = info.child_scope('y')
         self.assertNameEqual(child, 'x/y')
+
+    def test_empty_scope(self):
+        info = GraphInfo('x', '', False)
+        with info.variable_scope():
+            assert tf.get_variable_scope().name == ''
 
 
 if __name__ == "__main__":

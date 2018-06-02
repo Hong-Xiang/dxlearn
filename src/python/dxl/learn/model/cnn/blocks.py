@@ -218,10 +218,10 @@ class InceptionBlock(Model):
     @classmethod
     def sub_block_maker(cls, father, name, input_tensor, config):
         # with tf.variable_scope(config['scop']) as scope:
-        info = father.info.child(name)
+        info = father.info.child_scope(name)
         print(info)
         sub_block = Conv2D(
-            info=father.info.child(name),
+            info=father.info.child_scope(name),
             input_tensor=input_tensor,
             filters=config['filters'],
             kernel_size=config['kernel_size'],

@@ -8,11 +8,7 @@ __all__ = ['DistributeGraphInfo']
 
 
 class DistributeGraphInfo(GraphInfo):
-    def __init__(self,
-                 name=None,
-                 variable_scope=None,
-                 reuse=None,
-                 host: Host = None):
+    def __init__(self, name, host, variable_scope=None, reuse=None):
         super().__init__(name, variable_scope, reuse)
         self.host = host
 
@@ -47,28 +43,28 @@ class DistributeGraphInfo(GraphInfo):
                         reuse=None,
                         host=None):
         return cls.from_dict(
-            distribute_graph_info.update_to_dict(name, variable_scope, reuse,
-                                                 host))
+            distribute_graph_info.update_to_dict(name, host, variable_scope,
+                                                 reuse))
 
     def update_to_dict(self,
                        name=None,
+                       host=None,
                        variable_scope=None,
-                       reuse=None,
-                       host=None):
+                       reuse=None):
         result = super().update_to_dict(name, variable_scope, reuse)
         if host is None:
             host = self.host
         result.update({'host': host})
         return result
 
-    def update(self, name=None, variable_scope=None, reuse=None,
-               host=None) -> 'GraphInfo':
+    def update(self, name=None, host=None, variable_scope=None,
+               reuse=None) -> 'DistributeGraphInfo':
         return self.from_dict(
             self.update_to_dict(name, variable_scope, reuse, host))
 
     def copy_without_name(self):
         return self.from_dict({
+            'host': self.host,
             'variable_scope': self.variable_scope,
-            'reuse': self.reuse,
-            'host': self.host
+            'reuse': self.reuse
         })

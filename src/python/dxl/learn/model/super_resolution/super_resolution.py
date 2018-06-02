@@ -79,7 +79,7 @@ class SuperResolution2x(Model):
     @classmethod
     def sub_block_maker(cls, graph, name, input_tensor):
         return StackedConv2D(
-            graph.info.child(name),
+            graph.info.child_scope(name),
             input_tensor=input_tensor,
             nb_layers=graph.config(graph.KEYS.CONFIG.NB_LAYERS),
             filters=graph.config(graph.KEYS.CONFIG.FILTERS),
@@ -228,7 +228,7 @@ class SuperResolutionBlock(Model):
     @classmethod
     def sub_block_maker(cls, graph, name, input_tensor):
         return StackedConv2D(
-            info=graph.info.child(name),
+            info=graph.info.child_scope(name),
             input_tensor=input_tensor,
             filters=graph.config(graph.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),

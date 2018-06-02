@@ -6,7 +6,36 @@ from dxl.learn.core.graph_info import GraphInfo
 import scipy.sparse
 
 
-class VariableTest(TestCase):
+class TestTensor(TestCase):
+    def test_parse_scope_from_name_hint(self):
+        assert tensor.Tensor._parse_scope_from_name_hint('x:0') == ''
+
+    def test_parse_scope_from_name_hint_2(self):
+        assert tensor.Tensor._parse_scope_from_name_hint(
+            'scope/x:0') == 'scope'
+
+    def test_parse_scope_from_name_hint_3(self):
+        assert tensor.Tensor._parse_scope_from_name_hint('x') == ''
+
+    def test_parse_scope_from_name_hint_4(self):
+        assert tensor.Tensor._parse_scope_from_name_hint('scope/x') == 'scope'
+
+
+class TestVariable(TestCase):
+    def test_make_info(self):
+        x = tensor.Variable('x', [], tf.float32)
+        self.assertNameEqual(x.info, 'x')
+        assert x.info.scope.name == ''
+
+    def test_name(self):
+        x = tensor.Variable('x', [], tf.float32)
+        assert x.data.name == 'x:0'
+
+    def test_in_scope_name(self):
+        with tf.variable_scope('scope'):
+            x = tensor.Variable('x', [], tf.float32)
+        assert x.data.name == 'scope/x:0'
+
     def test_init_constant(self):
         x = tensor.Variable('x', [], tf.float32, 1.0)
         with self.variables_initialized_test_session() as sess:
@@ -35,6 +64,16 @@ class TestSparseMatrix(TestCase):
 
 
 class TestConstant(TestCase):
+    def test_name(self):
+        a = tensor.Constant(1.0, 'x')
+        assert a.data.name == 'x:0'
+
+    def test_under_variable_scope(self):
+        with tf.variable_scope('scope'):
+            a = tensor.Constant(1.0, 'x')
+        assert a.data.name == 'scope/x:0'
+        assert a.info.scope.name == 'scope'
+
     def test_run(self):
         value = [1.0, 2.0]
         a = tensor.Constant(value, 'x')

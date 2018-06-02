@@ -136,7 +136,7 @@ class Graph(ConfigurableWithName):
 
     @classmethod
     def child_maker(self, g, name, constructor):
-        return constructor(g.info.child(name))
+        return constructor(g.info.child_scope(name))
 
     def tensor_keys(self):
         warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))

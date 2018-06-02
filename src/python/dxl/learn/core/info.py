@@ -76,7 +76,7 @@ class GraphInfo:
                reuse=None) -> 'GraphInfo':
         return self.from_dict(self.update_to_dict(name, variable_scope, reuse))
 
-    def child(self, name):
+    def child_scope(self, name):
         cname = Path(self.name) / name
         if not isinstance(self.scope, (str, Path)):
             with self.variable_scope():
@@ -85,6 +85,10 @@ class GraphInfo:
         else:
             scope = str(cname)
         return self.update(cname, variable_scope=scope)
+
+    def child_tensor(self, name):
+        cname = Path(self.name) / name
+        return self.update(cname, variable_scope=self.scope)
 
     def copy_without_name(self):
         return self.from_dict({

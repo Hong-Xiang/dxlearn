@@ -30,38 +30,63 @@ class Tensor:
     """
 
     def __init__(self, data: tf.Tensor, info: GraphInfo = None):
-        if hasattr(data, 'name'):
-            name_hint = data.name
-        else:
-            name_hint = None
-        self.info = self.make_info(info, name_hint)
-        self.data = self._process_input_data(data)
+        self.data = self._maybe_unbox(data)
+        self.info = self._make_info(info,
+                                    strip_colon_and_index_from_name(
+                                        self._get_name(self.data, info)))
+        # self.data = self._process_input_data(data)
         self._nb_copied = 0
 
-    def make_info(self, info, name_hint=None):
-        def parse_scope_from_name_hint():
-            return str(Path(strip_colon_and_index_from_name(name_hint)).parent)
+    def _maybe_unbox(self, data):
+        if isinstance(data, Tensor):
+            return data.data
+        else:
+            return data
 
+    @classmethod
+    def _get_name(self, tensor, info):
+        if isinstance(tensor, Tensor):
+            return tensor.info.name
+        if isinstance(tensor, tf.SparseTensor):
+            if isinstance(info, (str, Path)):
+                return str(info)
+            else:
+                return str(info.name)
+        return tensor.name
+
+    @classmethod
+    def _parse_scope_from_name_hint(cls, name_hint):
+        result = str(Path(strip_colon_and_index_from_name(name_hint)).parent)
+        if result == '.':
+            result = ''
+        return result
+
+    def _deal_with_non_graph_info_info(self, info, backend_name):
+        hit = False
         if info is None:
-            return GraphInfo(name_hint, parse_scope_from_name_hint(), None)
+            full_name = backend_name
+            hit = True
         if isinstance(info, (str, Path)):
-            return GraphInfo(Path(info), parse_scope_from_name_hint())
-        if not isinstance(info, GraphInfo):
+            full_name = str(info)
+            hit = True
+        if not hit:
             raise TypeError("Invalid info type {}.".format(type(info)))
+        return GraphInfo(full_name,
+                         self._parse_scope_from_name_hint(full_name), None)
+
+    def _make_info(self, info, name_hint=None):
+        if not isinstance(info, GraphInfo):
+            result = self._deal_with_non_graph_info_info(info, name_hint)
+            if result is not None:
+                return result
         if info.name is not None:
             return info
         if info.scope is not None:
             scope = info.scope
         else:
-            scope = parse_scope_from_name_hint()
+            scope = self.parse_scope_from_name_hint(name_hint)
         reuse = info.reuse
         return GraphInfo(name, scope, reuse)
-
-    def _process_input_data(self, data):
-        if isinstance(data, Tensor):
-            return data.data
-        else:
-            return data
 
     @property
     def shape(self):
@@ -154,39 +179,53 @@ class Tensor:
         return cls(data=t.data, data_info=t.data_info, graph_info=t.graph_info)
 
 
+class TensorFromExternalData(Tensor):
+    def __init__(self, data, info):
+        data, info = self._make_data_and_info(data, info)
+        super().__init__(data, info)
+
+    def _make_data_and_info(self, data, info):
+        if isinstance(info, (str, Path)):
+            return self._construct_tensor(self._parse_data(data), str(info))
+
+        if isinstance(info, GraphInfo):
+            with info.variable_scope():
+                return self._construct_tensor(
+                    self._parse_data(data), str(info.name))
+        raise TypeError("Invalid info: {}.".format(info))
+
+    def _parse_data(self, data):
+        return data
+
+    def _construct_tensor(self, data, name):
+        raise NotImplementedError
+
+
 class NoOp(Tensor):
     def __init__(self, info=None):
         super().__init__(tf.no_op(), info)
 
 
-class Constant(Tensor):
-    def _process_input_data(self, data):
-        with self.info.variable_scope():
-            data = tf.constant(data, name=str(self.info.name))
-        return data
-
-    @classmethod
-    def from_config(cls, ndarray_spec, graph_info):
-        from dxl.data.io import load_array
-        data = load_array(ndarray_spec)
-        return cls(data, None, graph_info)
+class Constant(TensorFromExternalData):
+    def _construct_tensor(self, data, name):
+        return tf.constant(
+            data, name=name), GraphInfo(name, tf.get_variable_scope(), False)
 
 
-class SparseTensor(Tensor):
+class SparseTensor(TensorFromExternalData):
     """
     data is required to be scipy.sparse.coo_matrix or a 2-D array.
     If data is a 2-D array, it should has shape [N, ndim+1], data[:, :-1] are coordinates and data[:, -1] are values.
     """
 
-    def _process_input_data(self, data):
+    def _construct_tensor(self, data, name):
         import scipy.sparse
-        with self.info.variable_scope():
-            if isinstance(data, scipy.sparse.coo.coo_matrix):
-                data = tf.SparseTensor(
-                    np.array([data.row, data.col]).T, data.data, data.shape)
-            else:
-                data = tf.SparseTensor(data[:, :-1], data[:, -1], data.shape)
-        return data
+        if isinstance(data, scipy.sparse.coo.coo_matrix):
+            data = tf.SparseTensor(
+                np.array([data.row, data.col]).T, data.data, data.shape)
+        else:
+            data = tf.SparseTensor(data[:, :-1], data[:, -1], data.shape)
+        return data, GraphInfo(name, tf.get_variable_scope(), False)
 
     def matmul(self, m, constructor=None):
         if constructor is None:
@@ -200,52 +239,69 @@ SparseMatrix = SparseTensor
 
 class Variable(Tensor):
     def __init__(self, info, shape=None, dtype=None, initializer=None):
-        if shape is None:
-            shape = initializer.shape
-        if dtype is None:
-            dtype = initializer.dtype
-        super().__init__({
-            'shape': shape,
-            'dtype': dtype,
-            'init': initializer
-        }, info)
+        shape, dtype, initializer = self._unified_shape_dtype_and_initializer(
+            shape, dtype, initializer)
+        data, info = self._make_data_and_info(shape, dtype, initializer, info)
+        super().__init__(data, info)
 
-    def _is_constant_initializer(self):
-        with_init = self.data_info.initializer is not None
-        if with_init and isinstance(self.data_info.initializer,
-                                    (float, int, np.ndarray)):
-            return True
-        return False
+    def _make_data_and_info(self, shape, dtype, initializer, info):
+        if isinstance(info, (str, Path)):
+            return tf.get_variable(str(info), shape, dtype,
+                                   initializer), GraphInfo(
+                                       info, tf.get_variable_scope(), False)
+        if not isinstance(info, GraphInfo):
+            raise TypeError("Invalid info type {}.".format(type(info)))
+        with info.variable_scope():
+            return tf.get_variable(str(info.name), shape, dtype,
+                                   initializer), info
 
-    def _process_input_data(self, data):
-        with self.info.variable_scope():
-            initializer = data['init']
-            if initializer is None:
-                initializer = tf.initializers.zeros
-                shape = data['shape']
-            else:
-                shape = None
-            return tf.get_variable(
-                self.info.relative_name(),
-                shape=shape,
-                dtype=data['dtype'],
-                initializer=initializer)
+    def _unified_shape_dtype_and_initializer(self, shape, dtype, initializer):
+        if initializer is not None and isinstance(initializer,
+                                                  (float, int, np.ndarray)):
+            shape, dtype = None, None
+        else:
+            if shape is None:
+                shape = initializer.shape
+            if dtype is None:
+                dtype = initializer.dtype
+        return shape, dtype, initializer
+
+    # def _is_constant_initializer(self):
+    #     with_init = self.data_info.initializer is not None
+    #     if with_init and isinstance(self.data_info.initializer,
+    #                                 (float, int, np.ndarray)):
+    #         return True
+    #     return False
+
+    # def _process_input_data(self, data):
+    #     with self.info.variable_scope():
+    #         initializer = data['init']
+    #         if initializer is None:
+    #             initializer = tf.initializers.zeros
+    #             shape = data['shape']
+    #         else:
+    #             shape = None
+    #         return tf.get_variable(
+    #             self.info.name.name,
+    #             shape=shape,
+    #             dtype=data['dtype'],
+    #             initializer=initializer)
 
     def assign(self, t: Tensor, info=None):
         if info is None:
-            info = self.graph_info
-        if isinstance(info, str):
-            info = self.graph_info.update(name=info)
+            info = self.info
+        if isinstance(info, (str, Path)):
+            info = self.info.update(name=info)
         with info.variable_scope() as scope:
-            new_name = info.name if not info is self.graph_info else None
+            new_name = info.name if not info is self.info else None
             if isinstance(t, (np.ndarray, tf.Tensor)):
                 data = self.data.assign(t)
             else:
                 data = self.data.assign(t.data)
-            return Tensor(data, None, info)
+            return Tensor(data, info)
 
     def init(self):
-        return Tensor(self.data.initializer, None, self.graph_info)
+        return Tensor(self.data.initializer, self.info.erase_name())
 
 
 def tf_tensor(t: Tensor):
