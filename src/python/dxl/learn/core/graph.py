@@ -180,9 +180,15 @@ class Graph(ConfigurableWithName):
         return lambda g, n: raise_error(g, n, 'subgraph')
 
     def _get_or_create_item(self, collection, key, expected_type, maker):
-        if not collection.get(key) is None and isinstance(
-                collection.get(key), expected_type):
-            return collection.get(key)
+        if not collection.get(key) is None:
+            if isinstance(collection.get(key), expected_type):
+                return collection.get(key)
+            if isinstance(collection.get(key), (list, tuple)) and all(
+                    map(lambda x: isinstance(x, expected_type),
+                        collection.get(key))):
+                return collection.get(key)
+            if isinstance(collection.get(key), dict) and all(map(lambda k: isinstance(collection.get(key)[k], expected_type), collection.get(key))):
+                return collection.get(key)
         if maker is None and collection.get(key) is not None:
             maker = collection.get(key)
         if maker is not None:
