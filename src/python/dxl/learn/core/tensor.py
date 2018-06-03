@@ -43,6 +43,9 @@ class Tensor:
         else:
             return data
 
+    def unbox(self):
+        return self.data
+
     @classmethod
     def _get_name(self, tensor, info):
         if isinstance(tensor, Tensor):

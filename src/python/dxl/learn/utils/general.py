@@ -56,3 +56,15 @@ def unbox(obj):
     if hasattr(obj, 'unbox'):
         return obj.unbox()
     return obj
+
+
+def generic_map(func, collection):
+    if isinstance(collection, list):
+        return [func(v) for v in collection]
+    if isinstance(collection, tuple):
+        return tuple([func(v) for v in collection])
+    if isinstance(collection, dict):
+        return {k: func(v) for k, v in collection.items()}
+    if isinstance(collection, set):
+        return {func(v) for v in collection}
+    raise TypeError("Unspported collection type: {}.".format(type(collection)))

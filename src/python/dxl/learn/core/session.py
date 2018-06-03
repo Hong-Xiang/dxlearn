@@ -15,6 +15,23 @@ from .config import ConfigurableWithName
 from abc import ABCMeta, abstractmethod
 import warnings
 
+from ..backend import current_backend
+
+
+class TestSession:
+    def __init__(self, backend_session):
+        self.data = backend_session
+
+    def run(self, fetches, feeds=None):
+        if isinstance(fetches, (list, tuple)):
+            is_tuple = isinstance(fetches, tuple)
+            fetches = [self.unbox(t) for t in fetches]
+            if is_tuple:
+                fetches = tuple(fetches)
+        fetches = current_backend().maybe_unbox(fetches)
+        feeds = current_backend().maybe_unbox(feeds)
+        return self.data.run(fetches, feeds)
+
 
 class SessionBase(ConfigurableWithName):
     _raw_session = None
@@ -37,6 +54,8 @@ class SessionBase(ConfigurableWithName):
 
     def __init__(self,
                  name='session',
+                 *,
+                 backend_session=None,
                  is_default=None,
                  is_allow_growth=None,
                  is_log_device_placement=None,
@@ -50,6 +69,8 @@ class SessionBase(ConfigurableWithName):
                 is_log_device_placement,
                 self.KEYS.CONFIG.IS_RUN_VAR_INIT: is_run_var_init
             })
+        if backend_session is not None:
+            self.data = backend_session
 
     def get_session_config(self):
         config = tf.ConfigProto()

@@ -40,6 +40,9 @@ class Model(Graph):
             return inputs
         if isinstance(inputs, (Tensor, tf.Tensor)):
             return {self.KEYS.TENSOR.INPUT: inputs}
+        if isinstance(inputs, (list, tuple)) and all(
+                map(lambda t: isinstance(t, (Tensor, tf.Tensor)), inputs)):
+            return {self.KEYS.TENSOR.INPUT: inputs}
         raise TypeError("Invalid inputs {}.".format(inputs))
 
     def complete_inputs(self, inputs):
