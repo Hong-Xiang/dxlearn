@@ -192,7 +192,10 @@ class Graph(ConfigurableWithName):
         if maker is None and collection.get(key) is not None:
             maker = collection.get(key)
         if maker is not None:
-            item = maker(self, key)
+            if isinstance(maker, expected_type):
+                item = maker
+            else:
+                item = maker(self, key)
             collection[key] = item
         return collection.get(key)
 

@@ -53,6 +53,18 @@ class TestGraph(TestCase):
         assert g.subgraph('subg').config('key') == 'value'
         self.assertNameEqual(g.subgraph('subg'), 'g/subg')
 
+    def test_subgraph_maker_directly_construct(self):
+        class TestSubGraph(Graph):
+            pass
+
+        class TestGraph(Graph):
+            def kernel(self):
+                self.subgraph('subg', TestSubGraph('test_subg'))
+
+        g = TestGraph('g')
+        assert isinstance(g.subgraph('subg'), TestSubGraph)
+        self.assertNameEqual(g.subgraph('subg').info, 'test_subg')
+
     def test_access_tensor(self):
         class TestGraph(Graph):
             def kernel(self):
