@@ -91,14 +91,6 @@ class Graph(ConfigurableWithName):
         self.tensors = tensors or dict()
         self._make_kernel_with_scope()
 
-    def _update_config_if_not_none(self, to_update, new_config):
-        if to_update is None:
-            to_update = {}
-        for k, v in new_config.items():
-            if v is not None:
-                to_update[k] = v
-        return to_update
-
     @classmethod
     def _parse_input_config(cls, config, input_config):
         if config is None:

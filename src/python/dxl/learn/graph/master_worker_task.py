@@ -43,7 +43,7 @@ class MasterWorkerTaskBase(Graph):
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
-        config = self._update_config_if_not_none(config, {
+        config = self._parse_input_config(config, {
             KC.JOB: job,
             KC.TASK_INDEX: task_index
         })
