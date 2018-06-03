@@ -25,3 +25,8 @@ class TestSummation(TestCase):
         v = s([x] * 3)
         with self.test_session() as sess:
             assert sess.run(v) == 3.0
+
+    def test_inputs(self):
+        x = Constant(1.0, 'x')
+        s = Summation('summation', [x] * 3)
+        assert s.tensor('input') == [x] * 3
