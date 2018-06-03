@@ -25,7 +25,7 @@ class TestSession:
     def run(self, fetches, feeds=None):
         if isinstance(fetches, (list, tuple)):
             is_tuple = isinstance(fetches, tuple)
-            fetches = [self.unbox(t) for t in fetches]
+            fetches = [current_backend().maybe_unbox(t) for t in fetches]
             if is_tuple:
                 fetches = tuple(fetches)
         fetches = current_backend().maybe_unbox(fetches)
