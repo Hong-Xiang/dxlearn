@@ -64,6 +64,62 @@ class Graph(ConfigurableWithName):
     - `g.config(key)`
 
 
+    Since our library targeting easily reuse and substibution of subgraph,
+    there would be four common cases when constructing Graph with subgraphs.
+
+    1. father graph is not going to be reused (e.g. for Graphs), subgraph is fixed
+    2. father graph is going to be reused (e.g. for Model), subgraph is fixed
+    3. father graph is not going to be reused, subgraph is configurable
+    4. father graph is going to be reused, subgraph is configurable
+    
+    For case 1:
+    just directly code it in kernel:
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = SomeGraph(self.info.child_scope('sub'), tensors={'x': x})
+        y = subg.tensor('y')
+    ```
+
+    For case 2:
+    Use `subgraphs` collection.
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = self.subgraph('sub', lambda g, n: SomeModel(g.info.child_scope('sub'), inputs={'x': x}))
+        y = subg()
+    ```
+
+    For case 3:
+    Use `SubgraphMakerFactory'
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = SubgraphMakerFactory.get(self.info.name/'sub')(x=x)(self, 'sub')
+        y = subg.tensor('y')
+    ```
+    Or, with short access
+    ```
+    subg = self.make_subgraph('sub')(x=x)
+    ```
+
+    For case 4:
+    Use `SubgraphMakerFactory` with `subgraphs` collection.
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = self.subgraph('sub', SubgraphMakerFactory.get(self.info.name/'sub')(x=x))
+        y = subg()
+    ```
+    Or, with short access
+    ```
+    subg = self.subgraph('sub', self.subgraph_maker('sub')(x=x))
+    ```
+    
+    When rigister a SubgraphMakerBuilder, you may use
+    ```
+    SubgraphMakerFactory.registe('g/subg', SomeGraph.maker_builder)
+    ```
     """
 
     class KEYS:

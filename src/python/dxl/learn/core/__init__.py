@@ -5,3 +5,4 @@ from .tensor import Tensor, Variable, Constant, NoOp
 from .graph import Graph
 from .model import Model
 from .network import Network
+from .maker_factory import SubgraphMakerFactory
