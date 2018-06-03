@@ -89,3 +89,42 @@ class TestGraph(TestCase):
 
     def test_run(self):
         pass
+
+    def get_graph_with_item_config(self, item=None, info=None, config=None):
+        if info is None:
+            info = 'g'
+
+        class TestConfigGraph(Graph):
+            def __init__(self, info, *, config, item=None):
+                print(self._parse_input_config(config, {'item': item}))
+                super().__init__(
+                    info,
+                    config=self._parse_input_config(config, {'item': item}))
+
+            @classmethod
+            def _default_config(cls):
+                return {'item': 0}
+
+        return TestConfigGraph(info, item=item, config=config)
+
+    def test_default_config(self):
+        g = self.get_graph_with_item_config()
+        assert g.config('item') == 0
+
+    def test_config_with_none(self):
+        g = self.get_graph_with_item_config(item=1)
+        assert g.config('item') == 1
+
+    def test_config_with_none_from_external(self):
+        update_config('g', {'item': 1})
+        g = self.get_graph_with_item_config()
+        assert g.config('item') == 1
+
+    def test_config_with_config(self):
+        g = self.get_graph_with_item_config(config={'item': 1})
+        assert g.config('item') == 1
+
+    def test_config_with_conflict(self):
+        update_config('g', {'item': 1})
+        g = self.get_graph_with_item_config(item=1)
+        assert g.config('item') == 1

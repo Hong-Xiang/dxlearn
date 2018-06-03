@@ -61,6 +61,7 @@ class Configurable:
     def __init__(self, config=None):
         if config is None:
             config = {}
+        config = {k: v for k, v in config.items() if v is not None}
         self.config = self._create_config(config)
         for k, v in self._default_config().items():
             if self.config(k) is None:
