@@ -91,16 +91,6 @@ class Graph(ConfigurableWithName):
         self.tensors = tensors or dict()
         self._make_kernel_with_scope()
 
-    @classmethod
-    def _parse_input_config(cls, config, input_config):
-        if config is None:
-            config = {}
-        config = dict(config)
-        for k, v in input_config.items():
-            if v is not None:
-                config[k] = v
-        return config
-
     def _name_for_configurable(self, info):
         if isinstance(info, (str, Path)):
             return info
