@@ -234,6 +234,13 @@ class SparseTensor(TensorFromExternalData):
 SparseMatrix = SparseTensor
 
 
+class AssignedTensor(Tensor):
+    def __init__(self, data, info, source=None, target=None):
+        super().__init__(data, info)
+        self.source = source
+        self.target = target
+
+
 class Variable(Tensor):
     def __init__(self, info, shape=None, dtype=None, initializer=None):
         shape, dtype, initializer = self._unified_shape_dtype_and_initializer(
@@ -274,7 +281,7 @@ class Variable(Tensor):
                 data = self.data.assign(t)
             else:
                 data = self.data.assign(t.data)
-            return Tensor(data, info)
+            return AssignedTensor(data, info, t, self)
 
     def assign_add(self, b, use_locking=None):
         with self.info.variable_scope():
