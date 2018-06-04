@@ -6,6 +6,8 @@ from pathlib import Path
 
 import warnings
 
+from .subgraph_maker import SubgraphPartialMaker, SubgraphMaker, SubgraphMakerTable
+
 
 class Graph(ConfigurableWithName):
     """
@@ -233,6 +235,9 @@ class Graph(ConfigurableWithName):
         return lambda g, n: raise_error(g, n, 'subgraph')
 
     def _get_or_create_item(self, collection, key, expected_type, maker):
+        result = self._make_subgraph_v2(key, maker)
+        if result is not None:
+            return result
         if not collection.get(key) is None:
             if isinstance(collection.get(key), expected_type):
                 return collection.get(key)
@@ -252,8 +257,32 @@ class Graph(ConfigurableWithName):
             collection[key] = item
         return collection.get(key)
 
+    def _make_subgraph_v2(self, key, maker):
+        value = self.subgraphs.get(key,
+                                   SubgraphMakerTable.get(
+                                       self.info.name / key))
+        if isinstance(value, Graph):
+            return value
+        if isinstance(value, SubgraphMaker):
+            self.subgraphs[key] = value()
+            return self.subgraph(key)
+        if isinstance(value, type) and issubclass(value, Graph) and isinstance(
+                maker, SubgraphPartialMaker):
+            self.subgraphs[key] = SubgraphMaker(value, maker)()
+            return self.subgraph(key)
+        if value is None and isinstance(maker, SubgraphMaker):
+            self.subgraphs[key] = maker()
+            return self.subgraph(key)
+        # raise TypeError(
+        #     "Can't find any solution to make subgraph: in self.subgraphs: {}, in table: {}, maker: {}".
+        #     format(
+        #         self.subgraphs.get(key), SubgraphMakerTable.get(key), maker))
+
     # def tensor(self, key, maker=None):
     # return self._get_or_create_item(self.tensors, key, Tensor, maker)
+
+    def subgraph_partial_maker(self, key, *args, **kwargs):
+        return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
 
     def tensor(self, key, maker=None):
         result = self.tensors.get(key)
