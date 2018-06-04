@@ -121,10 +121,17 @@ class Model(Graph):
                 return results[self.KEYS.TENSOR.OUTPUT]
         return results
 
+    def _output_cache_name_map(self, key):
+        return key
+
     def cache_outputs(self, results):
         if not self._created:
             for k, v in results.items():
                 self.outputs[k] = v
+                if self._output_cache_name_map(k) is not None:
+                    self.tensors[self._output_cache_name_map(k)] = v
+
+                # self.tensors['output/{}'.format(k)] = v
 
     def post_kernel(self, results):
         if not self._created and results is None:

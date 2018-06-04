@@ -23,6 +23,7 @@ class TestSession:
         self.data = backend_session
 
     def run(self, fetches, feeds=None):
+        from .tensor import Tensor
         if isinstance(fetches, (list, tuple)):
             is_tuple = isinstance(fetches, tuple)
             fetches = [current_backend().maybe_unbox(t) for t in fetches]
@@ -30,7 +31,16 @@ class TestSession:
                 fetches = tuple(fetches)
         fetches = current_backend().maybe_unbox(fetches)
         feeds = current_backend().maybe_unbox(feeds)
-        return self.data.run(fetches, feeds)
+        if feeds is not None:
+            feeds_with_raw_key = {}
+            for k in feeds:
+                if isinstance(k, Tensor):
+                    feeds_with_raw_key[k.data] = feeds[k]
+                else:
+                    feeds_with_raw_key[k] = feeds[k]
+        else:
+            feeds_with_raw_key = None
+        return self.data.run(fetches, feeds_with_raw_key)
 
 
 class SessionBase(ConfigurableWithName):
@@ -200,5 +210,8 @@ def default_session():
 
 
 def make_session(session_name='session'):
+    """
+    A quick helper function to make local session.
+    """
     ThisSession.set_session(Session(session_name))
     return ThisSession.session()

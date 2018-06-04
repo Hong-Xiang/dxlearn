@@ -18,9 +18,12 @@ class TestCase(current_backend().TestCase()):
     def tearDown(self):
         from dxl.learn.backend import current_backend, TensorFlow
         from dxl.learn.core.config import clear_config
+        from dxl.learn.core import SubgraphMakerFactory
         if isinstance(current_backend(), TensorFlow):
             current_backend().unbox().reset_default_graph()
         clear_config()
+        SubgraphMakerFactory.reset()
+        
 
     def make_dummy_tensor(self, info=None):
         from dxl.learn.core import Constant

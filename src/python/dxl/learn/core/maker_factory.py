@@ -3,11 +3,11 @@ class SubgraphMakerFactory:
 
     @classmethod
     def register(cls, path, func):
-        self._graph_maker_builders[str(path)] = func
+        cls._graph_maker_builders[str(path)] = func
 
     @classmethod
     def get(cls, path):
-        return self._graph_maker_builders[str(path)]
+        return cls._graph_maker_builders[str(path)]
 
     @classmethod
     def reset(cls):
