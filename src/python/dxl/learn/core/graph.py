@@ -120,6 +120,11 @@ class Graph(ConfigurableWithName):
     ```
     SubgraphMakerFactory.registe('g/subg', SomeGraph.maker_builder)
     ```
+    
+    As a summary, we have three order of using subgraphs:
+    1.  Graph object, direct/hard-coded in kernel.
+    2.  Graph maker function (SubgraphMaker), with fixed signature: Callable[[Graph, str], Graph]
+    3.  Graph maker builder function, with arbitary arguments: Callable[[*args, **kwargs], SubgraphMaker]
     """
 
     class KEYS:
@@ -247,8 +252,14 @@ class Graph(ConfigurableWithName):
             collection[key] = item
         return collection.get(key)
 
+    # def tensor(self, key, maker=None):
+    # return self._get_or_create_item(self.tensors, key, Tensor, maker)
+
     def tensor(self, key, maker=None):
-        return self._get_or_create_item(self.tensors, key, Tensor, maker)
+        result = self.tensors.get(key)
+        if result is None and maker is not None:
+            result = maker(self, key)
+        return result
 
     def subgraph(self, key, maker=None):
         return self._get_or_create_item(self.subgraphs, key, Graph, maker)

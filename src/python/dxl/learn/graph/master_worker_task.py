@@ -48,8 +48,8 @@ class MasterWorkerTaskBase(Graph):
             KC.TASK_INDEX: task_index
         })
 
-        super().__init__(info, config, tensors, subgraphs)
         self._cluster = cluster
+        super().__init__(info, config, tensors, subgraphs)
 
     @classmethod
     def _default_config(cls):

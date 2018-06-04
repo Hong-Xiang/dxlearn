@@ -93,7 +93,7 @@ class Tensor:
 
     @property
     def shape(self):
-        return self.data.shape
+        return self.data.shape.as_list()
 
     @property
     def dtype(self):
@@ -113,6 +113,12 @@ class Tensor:
         if isinstance(d, Tensor):
             return d
         return Tensor(d, self.info.erase_name())
+
+    def __mul__(self, x):
+        if isinstance(x, Tensor):
+            return Tensor(self.data * x.data)
+        else:
+            return Tensor(self.data * x)
 
     def matmul(self, m):
         d = tf.matmul(self.data, m.data)
@@ -174,6 +180,17 @@ class Tensor:
     def transpose(self, perm=None, name='transpose', conjugate=False):
         result = tf.transpose(self.data, perm, name, conjugate)
         return self.tensor_with_same_info_except_name(result)
+
+    def split_with_index(self, nb_partition, id_partition, axis=0):
+        with tf.name_scope('split_with_index'):
+            shape = list(self.shape)
+            start = [0 for _ in range(len(shape))]
+            shape[axis] = shape[axis] // nb_partition
+            start[axis] = id_partition * shape[axis]
+            shape = [s.data if isinstance(s, Tensor) else s for s in shape]
+            start = [s.data if isinstance(s, Tensor) else s for s in start]
+            result = tf.slice(self.data, start, shape)
+            return Tensor(result, self.info.erase_name())
 
 
 class TensorFromExternalData(Tensor):
