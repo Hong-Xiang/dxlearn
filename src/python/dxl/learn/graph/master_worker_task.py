@@ -30,6 +30,8 @@ class MasterWorkerTaskBase(Graph):
     def __init__(self,
                  info=None,
                  config=None,
+                 tensors=None,
+                 subgraphs=None,
                  *,
                  job=None,
                  task_index=None,
@@ -41,17 +43,13 @@ class MasterWorkerTaskBase(Graph):
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
-        if config is None:
-            config = {}
-        config.update({KC.JOB: job, KC.TASK_INDEX: task_index})
+        config = self._parse_input_config(config, {
+            KC.JOB: job,
+            KC.TASK_INDEX: task_index
+        })
 
-        super().__init__(info, config=config)
         self._cluster = cluster
-        self.subgraphs[self.KEYS.SUBGRAPH.MASTER] = self._make_master_graph()
-        self.subgraphs[self.KEYS.SUBGRAPH.WORKER] = []
-        for i in range(self.nb_workers):
-            self.subgraphs[self.KEYS.SUBGRAPH.WORKER].append(
-                self._make_worker_graph(i))
+        super().__init__(info, config, tensors, subgraphs)
 
     @classmethod
     def _default_config(cls):
@@ -102,17 +100,11 @@ class MasterWorkerTaskBase(Graph):
             self.config(self.KEYS.CONFIG.JOB),
             self.config(self.KEYS.CONFIG.TASK_INDEX))
 
-    def _make_master_graph(self) -> Graph:
-        """
-        User might want to overwrite this function.
-        """
-        pass
+    def master_info(self, name, scope=None):
+        return DistributeGraphInfo(name, self.master(), scope)
 
-    def _make_worker_graph(self, task_index) -> Graph:
-        """
-        User might want to overwrite this function.
-        """
-        pass
+    def worker_info(self, task_index, name, scope=None):
+        return DistributeGraphInfo(name, self.worker(task_index), scope)
 
     @classmethod
     def worker_only(cls, func):

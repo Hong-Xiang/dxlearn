@@ -1,22 +1,32 @@
 import tensorflow as tf
-from ..core import Model, GraphInfo, Tensor
+from ..core import Model, GraphInfo, Tensor, Constant
 from dxl.fs import Path
 
 
 class Summation(Model):
-    def __init__(self, name: Path, graph_info: GraphInfo):
-        super().__init__(name, inputs=None, submodels=None, graph_info=graph_info)
+    def __init__(self, info, inputs=None):
+        super().__init__(info, inputs)
+
+    def _maybe_unbox(self, t):
+        if isinstance(t, Tensor):
+            return t.data
+        if isinstance(t, tf.Tensor):
+            return t
+        raise TypeError("Unable to unbox {} object to tf.Tensor.".format(
+            type(t)))
 
     def kernel(self, inputs=None):
         if inputs is None or len(inputs) == 0:
             return None
+        inputs = inputs[self.KEYS.TENSOR.INPUT]
+        if inputs is None or len(inputs) == 0:
+            return None
+        tf_tensors = []
+        if isinstance(inputs, dict):
+            for v in inputs.values():
+                tf_tensors.append(self._maybe_unbox(v))
         else:
-            tf_tensors = []
-            if isinstance(inputs, dict):
-                for v in inputs.values():
-                    tf_tensors.append(self.tensorflow_tensor(v))
-            else:
-                for v in inputs:
-                    tf_tensors.append(self.tensorflow_tensor(v))
-            result = tf.add_n(tf_tensors)
-            return Tensor(result, None, self.graph_info.update(name=result.name))
+            for v in inputs:
+                tf_tensors.append(self._maybe_unbox(v))
+        result = tf.add_n(tf_tensors)
+        return Tensor(result, self.info.erase_name())

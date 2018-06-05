@@ -19,6 +19,9 @@ class Backend:
     def unbox(self):
         raise NotImplementedError
 
+    def maybe_unbox(self, t):
+        raise NotImplementedError
+
     @classmethod
     def TestCase(cls):
         raise NotImplementedError

@@ -61,10 +61,21 @@ class Configurable:
     def __init__(self, config=None):
         if config is None:
             config = {}
+        config = {k: v for k, v in config.items() if v is not None}
         self.config = self._create_config(config)
         for k, v in self._default_config().items():
             if self.config(k) is None:
                 self.config.update(k, v)
+
+    @classmethod
+    def _parse_input_config(cls, config, input_config):
+        if config is None:
+            config = {}
+        config = dict(config)
+        for k, v in input_config.items():
+            if v is not None:
+                config[k] = v
+        return config
 
 
 class ConfigurableWithName(Configurable):

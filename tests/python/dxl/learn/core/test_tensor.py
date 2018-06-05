@@ -35,6 +35,13 @@ class TestTensor(TestCase):
         t_copy = t_new.copy_to(h, maker=NewTensorType)
         self.assertIsInstance(t_copy, NewTensorType)
 
+    def test_construct_with_none_name(self):
+        with tf.variable_scope('scope') as scope:
+            a = tf.constant(1, name='a')
+        t = tensor.Tensor(a, GraphInfo(None, scope, False))
+        self.assertNameEqual(t.info, 'scope/a')
+        assert t.info.scope == scope
+
 
 class TestVariable(TestCase):
     def test_make_info(self):
@@ -61,6 +68,23 @@ class TestVariable(TestCase):
         x = tensor.Variable(GraphInfo('x'), initializer=x_)
         with self.variables_initialized_test_session() as sess:
             self.assertAllEqual(x.eval(), [1.0, 2.0, 3.0])
+
+    def test_construct_by_graph_info_name(self):
+        x = tensor.Variable(GraphInfo('x', 'scope', False), initializer=0)
+        assert x.data.name == 'scope/x:0'
+
+    def test_construct_by_graph_info_value(self):
+        x = tensor.Variable(GraphInfo('x', 'scope', False), initializer=0)
+        with self.variables_initialized_test_session() as sess:
+            assert sess.run(x.data) == 0
+
+    def test_assign_add(self):
+        x = tensor.Variable(GraphInfo('x', 'scope', False), initializer=1)
+        y = x.assign_add(10)
+        with self.variables_initialized_test_session() as sess:
+            assert sess.run(x.data) == 1
+            assert sess.run(y.data) == 11
+            assert sess.run(x.data) == 11
 
 
 class TestSparseMatrix(TestCase):

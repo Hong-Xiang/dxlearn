@@ -40,6 +40,9 @@ class Model(Graph):
             return inputs
         if isinstance(inputs, (Tensor, tf.Tensor)):
             return {self.KEYS.TENSOR.INPUT: inputs}
+        if isinstance(inputs, (list, tuple)) and all(
+                map(lambda t: isinstance(t, (Tensor, tf.Tensor)), inputs)):
+            return {self.KEYS.TENSOR.INPUT: inputs}
         raise TypeError("Invalid inputs {}.".format(inputs))
 
     def complete_inputs(self, inputs):
@@ -118,10 +121,17 @@ class Model(Graph):
                 return results[self.KEYS.TENSOR.OUTPUT]
         return results
 
+    def _output_cache_name_map(self, key):
+        return key
+
     def cache_outputs(self, results):
         if not self._created:
             for k, v in results.items():
                 self.outputs[k] = v
+                if self._output_cache_name_map(k) is not None:
+                    self.tensors[self._output_cache_name_map(k)] = v
+
+                # self.tensors['output/{}'.format(k)] = v
 
     def post_kernel(self, results):
         if not self._created and results is None:

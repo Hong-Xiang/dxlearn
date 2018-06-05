@@ -18,9 +18,12 @@ class TestCase(current_backend().TestCase()):
     def tearDown(self):
         from dxl.learn.backend import current_backend, TensorFlow
         from dxl.learn.core.config import clear_config
+        from dxl.learn.core import SubgraphMakerFactory, SubgraphMakerTable
         if isinstance(current_backend(), TensorFlow):
             current_backend().unbox().reset_default_graph()
         clear_config()
+        SubgraphMakerFactory.reset()
+        SubgraphMakerTable.reset()
 
     def make_dummy_tensor(self, info=None):
         from dxl.learn.core import Constant
@@ -53,8 +56,9 @@ class TestCase(current_backend().TestCase()):
     # @unittest.skip
     @contextmanager
     def test_session(self):
+        from dxl.learn.core.session import TestSession
         with super().test_session() as sess:
-            yield sess
+            yield TestSession(sess)
 
     @contextmanager
     def variables_initialized_test_session(self):

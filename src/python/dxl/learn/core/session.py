@@ -15,6 +15,33 @@ from .config import ConfigurableWithName
 from abc import ABCMeta, abstractmethod
 import warnings
 
+from ..backend import current_backend
+
+
+class TestSession:
+    def __init__(self, backend_session):
+        self.data = backend_session
+
+    def run(self, fetches, feeds=None):
+        from .tensor import Tensor
+        if isinstance(fetches, (list, tuple)):
+            is_tuple = isinstance(fetches, tuple)
+            fetches = [current_backend().maybe_unbox(t) for t in fetches]
+            if is_tuple:
+                fetches = tuple(fetches)
+        fetches = current_backend().maybe_unbox(fetches)
+        feeds = current_backend().maybe_unbox(feeds)
+        if feeds is not None:
+            feeds_with_raw_key = {}
+            for k in feeds:
+                if isinstance(k, Tensor):
+                    feeds_with_raw_key[k.data] = feeds[k]
+                else:
+                    feeds_with_raw_key[k] = feeds[k]
+        else:
+            feeds_with_raw_key = None
+        return self.data.run(fetches, feeds_with_raw_key)
+
 
 class SessionBase(ConfigurableWithName):
     _raw_session = None
@@ -37,6 +64,8 @@ class SessionBase(ConfigurableWithName):
 
     def __init__(self,
                  name='session',
+                 *,
+                 backend_session=None,
                  is_default=None,
                  is_allow_growth=None,
                  is_log_device_placement=None,
@@ -50,6 +79,8 @@ class SessionBase(ConfigurableWithName):
                 is_log_device_placement,
                 self.KEYS.CONFIG.IS_RUN_VAR_INIT: is_run_var_init
             })
+        if backend_session is not None:
+            self.data = backend_session
 
     def get_session_config(self):
         config = tf.ConfigProto()
@@ -179,5 +210,8 @@ def default_session():
 
 
 def make_session(session_name='session'):
+    """
+    A quick helper function to make local session.
+    """
     ThisSession.set_session(Session(session_name))
     return ThisSession.session()

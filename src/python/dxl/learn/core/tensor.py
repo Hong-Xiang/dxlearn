@@ -43,6 +43,9 @@ class Tensor:
         else:
             return data
 
+    def unbox(self):
+        return self.data
+
     @classmethod
     def _get_name(self, tensor, info):
         if isinstance(tensor, Tensor):
@@ -86,11 +89,11 @@ class Tensor:
         else:
             scope = self.parse_scope_from_name_hint(name_hint)
         reuse = info.reuse
-        return GraphInfo(name, scope, reuse)
+        return GraphInfo(name_hint, scope, reuse)
 
     @property
     def shape(self):
-        return self.data.shape
+        return self.data.shape.as_list()
 
     @property
     def dtype(self):
@@ -110,6 +113,12 @@ class Tensor:
         if isinstance(d, Tensor):
             return d
         return Tensor(d, self.info.erase_name())
+
+    def __mul__(self, x):
+        if isinstance(x, Tensor):
+            return Tensor(self.data * x.data)
+        else:
+            return Tensor(self.data * x)
 
     def matmul(self, m):
         d = tf.matmul(self.data, m.data)
@@ -172,6 +181,17 @@ class Tensor:
         result = tf.transpose(self.data, perm, name, conjugate)
         return self.tensor_with_same_info_except_name(result)
 
+    def split_with_index(self, nb_partition, id_partition, axis=0):
+        with tf.name_scope('split_with_index'):
+            shape = list(self.shape)
+            start = [0 for _ in range(len(shape))]
+            shape[axis] = shape[axis] // nb_partition
+            start[axis] = id_partition * shape[axis]
+            shape = [s.data if isinstance(s, Tensor) else s for s in shape]
+            start = [s.data if isinstance(s, Tensor) else s for s in start]
+            result = tf.slice(self.data, start, shape)
+            return Tensor(result, self.info.erase_name())
+
 
 class TensorFromExternalData(Tensor):
     def __init__(self, data, info):
@@ -231,6 +251,13 @@ class SparseTensor(TensorFromExternalData):
 SparseMatrix = SparseTensor
 
 
+class AssignedTensor(Tensor):
+    def __init__(self, data, info, source=None, target=None):
+        super().__init__(data, info)
+        self.source = source
+        self.target = target
+
+
 class Variable(Tensor):
     def __init__(self, info, shape=None, dtype=None, initializer=None):
         shape, dtype, initializer = self._unified_shape_dtype_and_initializer(
@@ -271,7 +298,12 @@ class Variable(Tensor):
                 data = self.data.assign(t)
             else:
                 data = self.data.assign(t.data)
-            return Tensor(data, info)
+            return AssignedTensor(data, info, t, self)
+
+    def assign_add(self, b, use_locking=None):
+        with self.info.variable_scope():
+            result = tf.assign_add(self.data, b, use_locking, 'assign_add')
+        return Tensor(result, self.info.erase_name())
 
     def init(self):
         return Tensor(self.data.initializer, self.info.erase_name())

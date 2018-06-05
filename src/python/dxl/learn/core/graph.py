@@ -6,6 +6,8 @@ from pathlib import Path
 
 import warnings
 
+from .subgraph_maker import SubgraphPartialMaker, SubgraphMaker, SubgraphMakerTable
+
 
 class Graph(ConfigurableWithName):
     """
@@ -64,6 +66,67 @@ class Graph(ConfigurableWithName):
     - `g.config(key)`
 
 
+    Since our library targeting easily reuse and substibution of subgraph,
+    there would be four common cases when constructing Graph with subgraphs.
+
+    1. father graph is not going to be reused (e.g. for Graphs), subgraph is fixed
+    2. father graph is going to be reused (e.g. for Model), subgraph is fixed
+    3. father graph is not going to be reused, subgraph is configurable
+    4. father graph is going to be reused, subgraph is configurable
+    
+    For case 1:
+    just directly code it in kernel:
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = SomeGraph(self.info.child_scope('sub'), tensors={'x': x})
+        y = subg.tensor('y')
+    ```
+
+    For case 2:
+    Use `subgraphs` collection.
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = self.subgraph('sub', lambda g, n: SomeModel(g.info.child_scope('sub'), inputs={'x': x}))
+        y = subg()
+    ```
+
+    For case 3:
+    Use `SubgraphMakerFactory'
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = SubgraphMakerFactory.get(self.info.name/'sub')(x=x)(self, 'sub')
+        y = subg.tensor('y')
+    ```
+    Or, with short access
+    ```
+    subg = self.make_subgraph('sub')(x=x)
+    ```
+
+    For case 4:
+    Use `SubgraphMakerFactory` with `subgraphs` collection.
+    ```
+    def kernel(self):
+        x = self.tensor('input')
+        subg = self.subgraph('sub', SubgraphMakerFactory.get(self.info.name/'sub')(x=x))
+        y = subg()
+    ```
+    Or, with short access
+    ```
+    subg = self.subgraph('sub', self.subgraph_maker('sub')(x=x))
+    ```
+    
+    When rigister a SubgraphMakerBuilder, you may use
+    ```
+    SubgraphMakerFactory.registe('g/subg', SomeGraph.maker_builder)
+    ```
+    
+    As a summary, we have three order of using subgraphs:
+    1.  Graph object, direct/hard-coded in kernel.
+    2.  Graph maker function (SubgraphMaker), with fixed signature: Callable[[Graph, str], Graph]
+    3.  Graph maker builder function, with arbitary arguments: Callable[[*args, **kwargs], SubgraphMaker]
     """
 
     class KEYS:
@@ -172,18 +235,60 @@ class Graph(ConfigurableWithName):
         return lambda g, n: raise_error(g, n, 'subgraph')
 
     def _get_or_create_item(self, collection, key, expected_type, maker):
-        if not collection.get(key) is None and isinstance(
-                collection.get(key), expected_type):
-            return collection.get(key)
+        result = self._make_subgraph_v2(key, maker)
+        if result is not None:
+            return result
+        if not collection.get(key) is None:
+            if isinstance(collection.get(key), expected_type):
+                return collection.get(key)
+            if isinstance(collection.get(key), (list, tuple)) and all(
+                    map(lambda x: isinstance(x, expected_type),
+                        collection.get(key))):
+                return collection.get(key)
+            if isinstance(collection.get(key), dict) and all(map(lambda k: isinstance(collection.get(key)[k], expected_type), collection.get(key))):
+                return collection.get(key)
         if maker is None and collection.get(key) is not None:
             maker = collection.get(key)
         if maker is not None:
-            item = maker(self, key)
+            if isinstance(maker, expected_type):
+                item = maker
+            else:
+                item = maker(self, key)
             collection[key] = item
         return collection.get(key)
 
+    def _make_subgraph_v2(self, key, maker):
+        value = self.subgraphs.get(key,
+                                   SubgraphMakerTable.get(
+                                       self.info.name / key))
+        if isinstance(value, Graph):
+            return value
+        if isinstance(value, SubgraphMaker):
+            self.subgraphs[key] = value()
+            return self.subgraph(key)
+        if isinstance(value, type) and issubclass(value, Graph) and isinstance(
+                maker, SubgraphPartialMaker):
+            self.subgraphs[key] = SubgraphMaker(value, maker)()
+            return self.subgraph(key)
+        if value is None and isinstance(maker, SubgraphMaker):
+            self.subgraphs[key] = maker()
+            return self.subgraph(key)
+        # raise TypeError(
+        #     "Can't find any solution to make subgraph: in self.subgraphs: {}, in table: {}, maker: {}".
+        #     format(
+        #         self.subgraphs.get(key), SubgraphMakerTable.get(key), maker))
+
+    # def tensor(self, key, maker=None):
+    # return self._get_or_create_item(self.tensors, key, Tensor, maker)
+
+    def subgraph_partial_maker(self, key, *args, **kwargs):
+        return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
+
     def tensor(self, key, maker=None):
-        return self._get_or_create_item(self.tensors, key, Tensor, maker)
+        result = self.tensors.get(key)
+        if result is None and maker is not None:
+            result = maker(self, key)
+        return result
 
     def subgraph(self, key, maker=None):
         return self._get_or_create_item(self.subgraphs, key, Graph, maker)
