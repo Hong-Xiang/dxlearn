@@ -42,6 +42,8 @@ class TestCase(current_backend().TestCase()):
         return Path(os.getenv('DEV_DXLEARN_TEST_RESOURCE_PATH'))
 
     def assertFloatArrayEqual(self, first, second, msg=None):
+        if msg is None:
+            msg = ''
         return np.testing.assert_array_almost_equal(
             np.array(first), np.array(second), err_msg=msg)
 

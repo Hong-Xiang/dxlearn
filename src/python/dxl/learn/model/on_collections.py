@@ -18,7 +18,8 @@ class Summation(Model):
     def kernel(self, inputs=None):
         if inputs is None or len(inputs) == 0:
             return None
-        inputs = inputs[self.KEYS.TENSOR.INPUT]
+        if self.KEYS.TENSOR.INPUT in inputs:
+            inputs = inputs[self.KEYS.TENSOR.INPUT]
         if inputs is None or len(inputs) == 0:
             return None
         tf_tensors = []

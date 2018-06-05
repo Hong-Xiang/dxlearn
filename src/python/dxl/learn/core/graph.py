@@ -66,6 +66,8 @@ class Graph(ConfigurableWithName):
     - `g.config(key)`
 
 
+    #### Old subgraph maker design
+
     Since our library targeting easily reuse and substibution of subgraph,
     there would be four common cases when constructing Graph with subgraphs.
 
@@ -127,6 +129,17 @@ class Graph(ConfigurableWithName):
     1.  Graph object, direct/hard-coded in kernel.
     2.  Graph maker function (SubgraphMaker), with fixed signature: Callable[[Graph, str], Graph]
     3.  Graph maker builder function, with arbitary arguments: Callable[[*args, **kwargs], SubgraphMaker]
+
+    #### subgraph maker design 0605
+    Search:
+    1. self.subgraphs
+    2. SubgraphMakerTable (should we change name to SubgraphTable or something else?)
+    3. maker
+
+    Construction:
+    SubgraphMaker(type(Graph) or GraphTypeMaker,  SubgraphPartialMaker) :: SubgraphMaker.__call__() -> Graph
+    SubgraphPartialMaker(*args, **kwargs) :: SubgraphPartialMaker(type) -> Graph
+    GraphTypeMaker :: GraphTypeMaker.__call__() -> type of Graph (constructor?)
     """
 
     class KEYS:

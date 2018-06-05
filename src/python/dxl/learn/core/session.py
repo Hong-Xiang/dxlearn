@@ -101,9 +101,9 @@ class SessionBase(ConfigurableWithName):
         pass
 
     def _post_session_created(self):
-        from .distribute import Cluster, ThisHost
+        from ..distribute import DefaultCluster, ThisHost
         if self.config(self.KEYS.CONFIG.IS_RUN_VAR_INIT):
-            if Cluster.cluster() is None:
+            if DefaultCluster.cluster() is None:
                 self.run(tf.global_variables_initializer())
             elif ThisHost.is_master():
                 self.run(tf.global_variables_initializer())
@@ -123,7 +123,7 @@ class SessionBase(ConfigurableWithName):
     def graph(self):
         return self.session().graph
 
-    def run(self, *args, **kwargs):
+    def run_old(self, *args, **kwargs):
         with ThisSession.session_scope(self):
             fetches = args[0]
             if isinstance(fetches, (list, tuple)):
@@ -140,6 +140,26 @@ class SessionBase(ConfigurableWithName):
                 fetches = fetches.data
             args_new = [fetches, args[1:]]
             return ThisSession.session().run(*args_new, **kwargs)
+
+    def run(self, fetches, feeds=None):
+        from .tensor import Tensor
+        if isinstance(fetches, (list, tuple)):
+            is_tuple = isinstance(fetches, tuple)
+            fetches = [current_backend().maybe_unbox(t) for t in fetches]
+            if is_tuple:
+                fetches = tuple(fetches)
+        fetches = current_backend().maybe_unbox(fetches)
+        feeds = current_backend().maybe_unbox(feeds)
+        if feeds is not None:
+            feeds_with_raw_key = {}
+            for k in feeds:
+                if isinstance(k, Tensor):
+                    feeds_with_raw_key[k.data] = feeds[k]
+                else:
+                    feeds_with_raw_key[k] = feeds[k]
+        else:
+            feeds_with_raw_key = None
+        return self.session().run(fetches, feeds_with_raw_key)
 
 
 class Session(SessionBase):
