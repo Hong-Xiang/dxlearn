@@ -5,4 +5,4 @@ from .tensor import Tensor, Variable, Constant, NoOp
 from .graph import Graph
 from .model import Model
 from .network import Network
-from .subgraph_maker import SubgraphMakerFactory, SubgraphMakerFinder, SubgraphMakerTable
+from .subgraph_maker import SubgraphMakerFactory, SubgraphMakerFinder, SubgraphMakerTable, SubgraphPartialMaker
