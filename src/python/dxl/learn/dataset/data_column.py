@@ -125,6 +125,33 @@ class NPZDataLoader(NDArrayColumns):
         return load_npz(data)
 
 
+class PyTablesColumns(DataColumns):
+    def __init__(self, path_file, path_dataset):
+        super().__init__((path_file, path_dataset))
+
+    def _process(self, data):
+        path_file, path_dataset = data
+        self._file = tb.open_file(str(path_file))
+        self._node = self._file.get_node(path_dataset)
+
+    def __getitem__(self, i):
+        result = {}
+        data = self._node[i]
+        for k in self.columns:
+            result[k] = np.array(data[k])
+        return result
+
+    @property
+    def columns(self):
+        return tuple(self._node.colnames)
+
+    def _calculate_capacity(self):
+        return self._node.shape[0]
+
+    def close(self):
+        self._file.close()
+
+
 def data_loader(path, *args, **kwargs):
     """
     Get a dataloader automatically.

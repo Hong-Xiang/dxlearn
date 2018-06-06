@@ -33,5 +33,5 @@ A typical example is
 `path_dataset' can be omitted, as this case, the name of column will be used.
 """
 
-from .data_column import ListColumns
+from .data_column import ListColumns, PyTablesColumns
 # from .api import get_dataset
