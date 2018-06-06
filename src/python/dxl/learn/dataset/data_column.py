@@ -1,0 +1,132 @@
+"""
+DataLoader utilities.
+
+Class DataLoader is for pre_processing and indexs providing.
+
+pre_processing include：filter, exclude etc. Then output indexs.
+
+example:
+
+"""
+import h5py
+import tables as tb
+import numpy as np
+from typing import Dict, Iterable
+from dxl.fs import Path
+
+from dxl.data.io import load_npz
+
+
+class DataColumns:
+    def __init__(self, data):
+        self.data = self._process(data)
+        self._capacity_cache = None
+
+    def _process(self, data):
+        return data
+
+    @property
+    def columns(self):
+        return self.data.keys()
+
+    def __getitem__(self, i):
+        raise NotImplementedError
+
+    def _calculate_capacity(self):
+        raise NotImplementedError
+
+    @property
+    def capacity(self):
+        if self._capacity_cache is not None:
+            return self._capacity_cache
+        else:
+            return self._calculate_capacity()
+
+
+class JointDataColumns(DataColumns):
+    def __init__(self, data, name_map):
+        super().__init__(data)
+        self.name_map = name_map
+
+    def __getitem__(self, i):
+        result = {}
+        for d, m in zip(self.data, self.name_map):
+            r = d[i]
+            for k, v in r.items():
+                if k in m:
+                    result[self.name_map[k]] = v
+        return result
+
+    def _calculate_capacity(self):
+        capacities = set(d._calculate_capacity() for d in self.data)
+        if len(capacities) != 1:
+            raise ValueError("Inconsistant capacities {}.".format(capacities))
+        return capacities[0]
+
+
+class NDArrayColumns(DataColumns):
+    def _calculate_capacity(self):
+        result = None
+        for k in self.columns:
+            current_capacity = self.data[k].shape[0]
+            if result is None:
+                result = current_capacity
+            else:
+                if result != current_capacity:
+                    raise ValueError(
+                        "Capacity of {} is not equal to previous.".format(k))
+        return result
+
+    def __getitem__(self, i):
+        result = {}
+        for k in self.columns:
+            result[k] = self.data[k][i, ...]
+
+
+class ListColumns(DataColumns):
+    def _calculate_capacity(self):
+        result = None
+        for k in self.columns:
+            current_capacity = len(self.data[k])
+            if result is None:
+                result = current_capacity
+            else:
+                if result != current_capacity:
+                    raise ValueError(
+                        "Capacity of {} is not equal to previous.".format(k))
+        return result
+
+    def __getitem__(self, i):
+        result = {}
+        for k in self.columns:
+            result[k] = self.data[k][i]
+
+
+class HDF5Data(NDArrayColumns):
+    def _process(self, data):
+        if isinstance(data, (str, Path)):
+            data = h5py.File(data)
+        return data
+
+    def close(self):
+        self.data.close()
+
+
+class NPYDataLoader(NDArrayColumns):
+    class K:
+        DATA = 'data'
+
+    def _process(self, data):
+        return {self.K.DATA: np.load(data)}
+
+
+class NPZDataLoader(NDArrayColumns):
+    def _process(self, data):
+        return load_npz(data)
+
+
+def data_loader(path, *args, **kwargs):
+    """
+    Get a dataloader automatically.
+    """
+    pass

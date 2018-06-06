@@ -19,7 +19,20 @@ If we create a Partition by:
 dataset = some_dataset_loader()
 >>> dataset.capacity('train')
 >>> 1000
-p = Partition(partitions={'train': range(dataset.capacity('train')), 'test': range(dataset.capacity('test'))})
+>>> p = Partition(range(dataset.capacity('train')))
+>>> next(p)
+0
+>>> next(p)
+1
+# ...
+>>> next(p)
+999
+>>> next(p)
+0
+```
+
+
+
 next(p['train']) # 0
 next(p['train']) # 1
 next(p['test']) # 0
@@ -52,115 +65,108 @@ next(p['train']) # 1
 next(p['test']) # 1000
 ```
 """
-from typing import Iterable, Dict
-from enum import Enum
+from collections import UserDict
+from typing import Dict, Iterable
+
+import numpy as np
 
 
-class PartGenerator:
-    def __init__(self, ids, nb_epochs=None):        
+class Partition:
+    def __init__(self, indices, nb_epochs=None):
+        self.indices = indices
         if nb_epochs is None:
-            nb_epochs = -1
+            nb_epochs = np.inf
         self.nb_epochs = nb_epochs
-        self.ids = ids
-        self._g = self._make_generator()
+        self._gen = None
+
+    def _make_index_generator(self):
+        current_epoch = 0
+        while current_epoch < self.nb_epochs:
+            for i in self.indices:
+                yield i
+            current_epoch += 1
+
+    @property
+    def capacity(self):
+        return len(self.indices) * self.nb_epochs
+
+    def __next__(self):
+        if self._gen is None:
+            self._gen = self._make_index_generator()
+        return next(self._gen)
 
     def __iter__(self):
         return self
 
-    def __next__(self):
-        return next(self._g)
 
-    def _make_generator(self):
-        current_epoch = 0
-        while self.nb_epochs == -1 or current_epoch < self.nb_epochs:
-            for i in self.ids:
-                yield i
-            current_epoch += 1
+class CrossValidatePartition(Partition):
+    def __init__(self, indices: Iterable, nb_blocks, in_blocks,
+                 nb_epochs=None):
+        super().__init__(
+            self._get_valid_indices(indices, nb_blocks, in_blocks),
+            nb_epochs=nb_epochs)
+
+    def _get_valid_indices(self, indices, nb_blocks, in_blocks):
+        if isinstance(in_blocks, int):
+            in_blocks = [in_blocks]
+        result = []
+        len_block = len(indices) // nb_blocks
+        for b in in_blocks:
+            result += [
+                indices[i] for i in range(b * len_block, (b + 1) * len_block)
+            ]
+        return tuple(result)
 
 
-class Partition:
-    class KEYS:
+class Train80Partition(CrossValidatePartition):
+    def __init__(self, indicies, is_train, nb_epochs=None):
+        nb_blocks, nb_train = 10, 8
+        if is_train:
+            in_blocks = range(nb_train)
+        else:
+            in_blocks = range(nb_train, nb_blocks)
+        super().__init__(indicies, nb_blocks, in_blocks, nb_epochs)
+
+
+class Partitions(UserDict):
+    class K:
         TRAIN = 'train'
         VALIDATE = 'validate'
         DEVELOP = 'develop'
         TEST = 'test'
         EVALUATE = 'evaluate'
 
-    def __init__(self, partitions:Dict[str, Iterable], nb_epochs=None):
-        if nb_epochs is None:
-            nb_epochs = -1
-        self.nb_epochs = nb_epochs
-        self.partitions = partitions
-        self.iterators = {
-            k: self.make_iterator(v)
-            for k, v in self.partitions.items()
-        }
-
-    def capacity_of(self, name):
-        if self.nb_epochs == -1:
-            return float('inf')
-        else:
-            return len(self.partitions[name])
-
-    def make_iterator(self, ids):
-        current_epoch = 0
-        while self.nb_epochs == -1 or current_epoch < self.nb_epochs:
-            for i in ids:
-                yield i
-            current_epoch += 1
-
-    def __getitem__(self, name):
-        return self.iterators[name]
-
-
-    # def ids(self, name) -> Iterable[int]:
-    #     raise NotImplementedError
-
-    # def partitions(self) -> Iterable[str]:
-    #     raise NotImplementedError
-
-class CrossValidate(Partition):
     def __init__(self,
-                 cross: Dict[str, Iterable],
-                 capacity=None,
-                 nb_blocks=None,
-                 nb_epochs=None):
-        self.cross = {}
-        nb_id_ablock, _ = divmod(capacity, nb_blocks)
-        for k, v in cross.items():
-            index = []
-            for id_block in v:
-                start = id_block * nb_id_ablock
-                end = start + nb_id_ablock
-                index.extend(list(range(start, end)))
-            self.cross.update({k, index})
-        super().__init__(self.cross, nb_epochs=nb_epochs)
+                 partitions: Dict[str, Partition] = None,
+                 *,
+                 train=None,
+                 test=None,
+                 develop=None,
+                 validate=None,
+                 evaluate=None):
+        if partitions is None:
+            partitions = {}
+        partitions.update(
+            self.__dict_filter_out_none({
+                self.K.TRAIN: train,
+                self.K.TEST: test,
+                self.K.DEVELOP: develop,
+                self.K.VALIDATE: validate,
+                self.K.EVALUATE: evaluate,
+            }))
+        self.data = partitions
 
+    @classmethod
+    @property
+    def KEYS(self):
+        return self.K
 
-class Train80(Partition):
-    def __init__(self, dataset, partition=None):
-        """
-        `dataset` Dataset object, with dataset.capacity property.
-        `partition` str, name of partition
-        """
-        nb_train = int(dataset.size * 0.8)
-        nb_test = dataset.size - nb_train
-        self._ids_train = range(nb_train)
-        self._ids_test = range(nb_train, dataset.size)
+    def __dict_filter_out_none(self, dct):
+        result = {}
+        for k, v in dct.items():
+            if v is not None:
+                result[k] = v
+        return result
 
-    def ids(self, name) -> Iterable[int]:
-        return {'train': self._ids_train, 'test': self._ids_test}[name]
-
-    def partitions(self):
-        return ('train', 'test')
-
-
-class ExplicitIds(Partition):
-    def __init__(self, ids_dict: dict):
-        self._ids_dict = ids_dict
-
-    def ids(self, name) -> Iterable[int]:
-        return tuple(self._ids_dict[name])
-
-    def partitions(self):
-        return tuple(self._ids_dict.keys())
+    def capacity_of(self, name) -> int:
+        return self.data[name].capacity()
