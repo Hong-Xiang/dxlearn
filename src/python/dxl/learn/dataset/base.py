@@ -13,12 +13,11 @@ class Dataset(Graph):
             pass 
 
     def __init__(self,
-                 name,
-                 tensors=None,
-                 subgraphs=None,
-                 info=None,
+                 info,
+                 columns,
+                 partiton,
                  config=None):
-        super.__init__(name, tensors, subgraphs, info, config)
+        super.__init__(name, config=config)
         self.construct(name)
 
     def construct(self, name):
