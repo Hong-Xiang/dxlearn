@@ -22,15 +22,13 @@ class Dataset(Graph):
                  config=None):
 
         super().__init__(
-            name,
-            config=self._parse_input_config({
-                self.KEYS.CONFIG.NB_EPOCHS:
-                nb_epochs,
-                self.KEYS.CONFIG.BATCHSIZE:
-                batch_size,
-                self.KEYS.CONFIG.IS_SHUFFLE:
-                is_shuffle
-            }))
+            info,
+            config=self._parse_input_config(
+                config, {
+                    self.KEYS.CONFIG.NB_EPOCHS: nb_epochs,
+                    self.KEYS.CONFIG.BATCH_SIZE: batch_size,
+                    self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
+                }))
 
     def _process_dataset(self, dataset):
         KC = self.KEYS.CONFIG
@@ -42,8 +40,8 @@ class Dataset(Graph):
 
 
 class DatasetFromColumns(Dataset):
-    class KEYS(Graph.KEYS):
-        class TENSOR(Graph.KEYS.TENSOR):
+    class KEYS(Dataset.KEYS):
+        class TENSOR(Dataset.KEYS.TENSOR):
             DATA = 'data'
 
     def __init__(self,
@@ -63,12 +61,18 @@ class DatasetFromColumns(Dataset):
             config=config)
 
     def _make_dataset_object(self):
-        return tf.data.Dataset.from_generator(self._columns.__iter__)
+        return tf.data.Dataset.from_generator(
+            self._columns.__iter__, self._columns.types, self._columns.shapes)
 
     def _make_dataset_tensor(self, dataset):
-        return Tensor(dataset.make_one_shot_iterator().get_next())
+        result = Tensor(dataset.make_one_shot_iterator().get_next())
+        if self.config(self.KEYS.CONFIG.BATCH_SIZE) is not None:
+            shape = result.data.shape.as_list()
+            shape[0] = self.config(self.KEYS.CONFIG.BATCH_SIZE)
+            result = Tensor(tf.reshape(result.data, shape))
+        return result
 
-    def _kernel(self):
+    def kernel(self):
         dataset = self._make_dataset_object()
         dataset = self._process_dataset(dataset)
         self.tensors[self.KEYS.TENSOR.DATA] = self._make_dataset_tensor(

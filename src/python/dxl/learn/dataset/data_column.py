@@ -33,6 +33,14 @@ class DataColumns:
         else:
             return self._calculate_capacity()
 
+    @property
+    def shapes(self):
+        raise NotImplementedError
+
+    @property
+    def types(self):
+        raise NotImplementedError
+
     def _make_iterator(self):
         raise NotImplementedError
 
@@ -45,13 +53,24 @@ class DataColumns:
         return self._make_iterator()
 
 
-class DataColumnsPartition:
+class DataColumnsPartition(DataColumns):
     def __init__(self, data: DataColumns, partitioner):
         super().__init__(data)
         self._partitioner = partitioner
 
     def _make_iterator(self):
         return self._partitioner.partition(self.data)
+
+    def _calculate_capacity(self):
+        return self._partitioner.get_capacity(self.data)
+
+    @property
+    def shapes(self):
+        return self.data.shapes
+
+    @property
+    def types(self):
+        return self.data.types
 
 
 class DataColumnsWithGetItem(DataColumns):
@@ -72,6 +91,14 @@ class RangeColumns(DataColumnsWithGetItem):
 
     def _calculate_capacity(self):
         return self.data
+
+    @property
+    def shapes(self):
+        return tuple()
+
+    @property
+    def types(self):
+        return np.int32
 
     def __getitem__(self, i):
         return i

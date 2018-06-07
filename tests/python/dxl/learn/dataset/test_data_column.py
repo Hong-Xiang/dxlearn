@@ -1,5 +1,6 @@
-from dxl.learn.dataset import ListColumns, PyTablesColumns, DataColumns, RangeColumns
+from dxl.learn.dataset import ListColumns, PyTablesColumns, DataColumns, RangeColumns, DataColumnsPartition, Train80Partitioner
 from dxl.learn.test import TestCase
+
 import unittest
 from pathlib import Path
 from contextlib import contextmanager
@@ -64,3 +65,24 @@ class TestDataColumnsIterator(unittest.TestCase):
         assert len(samples) == nb_samples
         for i in range(nb_samples):
             assert samples[i] == i
+
+
+class TestDataColumnsPartition(unittest.TestCase):
+    def get_columns(self):
+        nb_samples = 10
+        return DataColumnsPartition(
+            RangeColumns(nb_samples), Train80Partitioner(True))
+
+    def test_construct_train80_train(self):
+        c = self.get_columns()
+        assert c.capacity == 8
+
+    def test_sample_train80_train(self):
+        c = self.get_columns()
+        samples = [s for s in c]
+        assert samples == list(range(8))
+
+    def test_sample_train80_test(self):
+        c = self.get_columns()
+        samples = [s for s in c]
+        assert samples == list(range(8))

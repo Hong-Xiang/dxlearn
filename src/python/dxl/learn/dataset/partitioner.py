@@ -88,6 +88,9 @@ class Partitioner:
             data_column,
             self._get_valid_indices(self._get_original_indices(data_column)))
 
+    def get_capacity(self, data_columns):
+        raise NotImplementedError
+
 
 class CrossValidatePartitioner(Partitioner):
     def __init__(self, nb_blocks, in_blocks):
@@ -105,6 +108,10 @@ class CrossValidatePartitioner(Partitioner):
                 indices[i] for i in range(b * len_block, (b + 1) * len_block)
             ]
         return tuple(result)
+
+    def get_capacity(self, data_columns):
+        len_block = data_columns.capacity // self._nb_blocks
+        return len_block * len(self._in_blocks)
 
 
 class Train80Partitioner(CrossValidatePartitioner):
