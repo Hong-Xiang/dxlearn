@@ -45,6 +45,15 @@ class DataColumns:
         return self._make_iterator()
 
 
+class DataColumnsPartition:
+    def __init__(self, data: DataColumns, partitioner):
+        super().__init__(data)
+        self._partitioner = partitioner
+
+    def _make_iterator(self):
+        return self._partitioner.partition(self.data)
+
+
 class DataColumnsWithGetItem(DataColumns):
     def _make_iterator(self):
         return range(self.capacity)

@@ -1,54 +1,56 @@
-from dxl.learn.dataset.partition import Partition, CrossValidatePartition, Train80Partition
+from dxl.learn.dataset.partitioner import Partitioner, CrossValidatePartitioner, Train80Partitioner
+from dxl.learn.dataset.data_column import DataColumns
 import unittest
 import pytest
 
 
-class TestPartition(unittest.TestCase):
+class PartitionerTestCase(unittest.TestCase):
+    def get_data_column(self, nb_samples):
+        class RangeDataColumn(DataColumns):
+            def __init__(self, nb_samples):
+                super().__init__(range(nb_samples))
+                self._nb_samples = nb_samples
+
+            def _calculate_capacity(self):
+                return self._nb_samples
+
+            def __getitem__(self, i):
+                if i >= self._nb_samples:
+                    raise ValueError('{} exceed nb_sampels {}.'.format(
+                        i, self._nb_samples))
+                return i
+
+        return RangeDataColumn(nb_samples)
+
+
+class TestPartition(PartitionerTestCase):
     def test_next(self):
         nb_samples = 10
-        p = Partition(range(nb_samples))
-        nb_tests = 20
-        for i in range(nb_tests):
-            assert next(p) == i % nb_samples
-
-    def test_iter(self):
-        nb_samples = 10
-        nb_epoch = 2
-        p = Partition(range(nb_samples), nb_epoch)
-        result = []
-        sampled = 0
-        for i in p:
-            sampled += 1
-            result.append(i)
-            if sampled > nb_samples * nb_epoch:
-                self.fail('Should stop when exceeds nb_epoch')
-        expect = list(range(nb_samples)) * 2
-        assert result == expect
-
-    def test_capacity(self):
-        nb_samples = 10
-        nb_epoch = 2
-        p = Partition(range(nb_samples), nb_epoch)
-        assert p.capacity == nb_epoch * nb_samples
+        p = Partitioner().partition(self.get_data_column(nb_samples))
+        for i in range(nb_samples):
+            assert next(p) == i
 
 
-class TestCrossValidatePartition(unittest.TestCase):
+class TestCrossValidatePartition(PartitionerTestCase):
     def test_work(self):
-        nb_blocks = 10
         nb_samples = 20
+        nb_blocks = 10
         in_blocks = [2, 3]
-        nb_epochs = 1
-        p = CrossValidatePartition(range(nb_samples), nb_blocks, in_blocks)
-        assert list(p.indices) == list(range(2 * 2, 2 * 4))
+        it = CrossValidatePartitioner(nb_blocks, in_blocks).partition(
+            self.get_data_column(nb_samples))
+        data = list(it)
+        assert data == [4, 5, 6, 7]
 
 
-class TestTrain80Partition(unittest.TestCase):
+class TestTrain80Partitioner(PartitionerTestCase):
     def test_train(self):
         nb_samples = 21
-        p = Train80Partition(range(nb_samples), True)
-        assert list(p.indices) == list(range(16))
+        it = Train80Partitioner(True).partition(
+            self.get_data_column(nb_samples))
+        assert list(it) == list(range(16))
 
     def test_test(self):
         nb_samples = 21
-        p = Train80Partition(range(nb_samples), False)
-        assert list(p.indices) == list(range(16, 20))
+        it = Train80Partitioner(False).partition(
+            self.get_data_column(nb_samples))
+        assert list(it) == list(range(16, 20))
