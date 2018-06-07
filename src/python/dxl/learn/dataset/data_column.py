@@ -56,10 +56,25 @@ class DataColumnsPartition:
 
 class DataColumnsWithGetItem(DataColumns):
     def _make_iterator(self):
-        return range(self.capacity)
+        def it():
+            for i in range(self.capacity):
+                yield self.__getitem__(i)
+
+        return it()
 
     def __getitem__(self, i):
         raise NotImplementedError
+
+
+class RangeColumns(DataColumnsWithGetItem):
+    def __init__(self, nb_samples):
+        super().__init__(nb_samples)
+
+    def _calculate_capacity(self):
+        return self.data
+
+    def __getitem__(self, i):
+        return i
 
 
 class JointDataColumns(DataColumns):
@@ -121,7 +136,7 @@ class ListColumns(DataColumnsWithGetItem):
             result[k] = self.data[k][i]
 
 
-class HDF5Data(NDArrayColumns):
+class HDF5DataColumns(NDArrayColumns):
     def _process(self, data):
         if isinstance(data, (str, Path)):
             data = h5py.File(data)
@@ -131,7 +146,7 @@ class HDF5Data(NDArrayColumns):
         self.data.close()
 
 
-class NPYDataLoader(NDArrayColumns):
+class NPYDataColumns(NDArrayColumns):
     class K:
         DATA = 'data'
 
@@ -139,7 +154,7 @@ class NPYDataLoader(NDArrayColumns):
         return {self.K.DATA: np.load(data)}
 
 
-class NPZDataLoader(NDArrayColumns):
+class NPZDataColumns(NDArrayColumns):
     def _process(self, data):
         return load_npz(data)
 

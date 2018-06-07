@@ -1,4 +1,4 @@
-from dxl.learn.dataset import ListColumns, PyTablesColumns, DataColumns
+from dxl.learn.dataset import ListColumns, PyTablesColumns, DataColumns, RangeColumns
 from dxl.learn.test import TestCase
 import unittest
 from pathlib import Path
@@ -12,6 +12,18 @@ class TestListColumns(unittest.TestCase):
         y = [(x_**2, x_ + 10) for x_ in x]
         c = ListColumns({'x': x, 'y': y})
         assert c.capacity == 100
+
+
+class TestRangeColumns(unittest.TestCase):
+    def test_capacity(self):
+        c = RangeColumns(10)
+        assert c.capacity == 10
+
+    def test_sample(self):
+        nb_samples = 10
+        c = RangeColumns(nb_samples)
+        samples = [s for s in c]
+        assert samples == list(range(nb_samples))
 
 
 class TestPyTablesColumns(unittest.TestCase):
