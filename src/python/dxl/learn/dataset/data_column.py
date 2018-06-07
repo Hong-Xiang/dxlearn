@@ -151,7 +151,7 @@ class NPYDataColumns(NDArrayColumns):
         DATA = 'data'
 
     def _process(self, data):
-        return {self.K.DATA: np.load(data)}
+        return np.load(data)
 
 
 class NPZDataColumns(NDArrayColumns):
