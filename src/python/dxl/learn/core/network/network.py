@@ -27,16 +27,14 @@ class Network(Model):
 
     def __init__(self,
                  info='network',
-                 inputs=None,
-                 subgraphs=None,
-                 config=None,
                  *,
+                 tensors=None,
+                 graphs=None,
+                 config=None,
                  trainer=None,
                  metrics=None,
                  summaries=None,
-                 saver=None,
-                 is_add_trainer=None,
-                 is_add_saver=None):
+                 saver=None):
         """
         `objectives`: dict of Tensor/tf.tensor or callable. If objectives is a 
         dict of callables, these callables should have current Network
