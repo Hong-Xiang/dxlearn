@@ -69,6 +69,7 @@ from collections import UserDict
 from typing import Dict, Iterable
 
 import numpy as np
+from .data_column import DataColumns
 
 
 class Partition:
@@ -97,6 +98,11 @@ class Partition:
 
     def __iter__(self):
         return self
+
+
+class Partitioner:
+    def partition(self, data_column) -> DataColumns:
+        pass
 
 
 class CrossValidatePartition(Partition):

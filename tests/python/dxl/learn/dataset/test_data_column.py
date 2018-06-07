@@ -1,4 +1,4 @@
-from dxl.learn.dataset import ListColumns, PyTablesColumns
+from dxl.learn.dataset import ListColumns, PyTablesColumns, DataColumns
 from dxl.learn.test import TestCase
 import unittest
 from pathlib import Path
@@ -37,3 +37,18 @@ class TestPyTablesColumns(unittest.TestCase):
         with self.get_mnist_train_table() as c:
             assert tuple(c[0]['image'].shape) == (28, 28)
             assert tuple(c[0]['label'].shape) == tuple()
+
+
+class TestDataColumnsIterator(unittest.TestCase):
+    def test_next(self):
+        nb_samples = 10
+
+        class RangeColumns(DataColumns):
+            def _make_iterator(self):
+                return iter(range(nb_samples))
+
+        c = RangeColumns(None)
+        samples = [s for s in c]
+        assert len(samples) == nb_samples
+        for i in range(nb_samples):
+            assert samples[i] == i

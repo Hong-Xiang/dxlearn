@@ -32,6 +32,5 @@ A typical example is
 'path_file' can be omitted for some column, at these cases, if there is a `path_file` filed in root dict, it will be used.
 `path_dataset' can be omitted, as this case, the name of column will be used.
 """
-
-from .data_column import ListColumns, PyTablesColumns
+from .data_column import ListColumns, PyTablesColumns, DataColumns
 # from .api import get_dataset

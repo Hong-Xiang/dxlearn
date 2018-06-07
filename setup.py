@@ -10,5 +10,5 @@ setup(
     namespace_packages=['dxl'],
     packages=find_packages('src/python'),
     package_dir={'': 'src/python'},
-    install_requires=['dxl-fs', 'click', 'dxl-shape', 'dxl-core', 'dotenv'],
+    install_requires=['dxl-fs', 'click', 'dxl-shape', 'dxl-core'],
     zip_safe=False)

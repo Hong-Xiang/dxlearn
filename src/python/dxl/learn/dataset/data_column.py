@@ -1,12 +1,5 @@
 """
-DataLoader utilities.
-
-Class DataLoader is for pre_processing and indexs providing.
-
-pre_processing include：filter, exclude etc. Then output indexs.
-
-example:
-
+DataColumns, a representation of table-like data.
 """
 import h5py
 import tables as tb
@@ -21,6 +14,7 @@ class DataColumns:
     def __init__(self, data):
         self.data = self._process(data)
         self._capacity_cache = None
+        self._iterator = None
 
     def _process(self, data):
         return data
@@ -28,9 +22,6 @@ class DataColumns:
     @property
     def columns(self):
         return self.data.keys()
-
-    def __getitem__(self, i):
-        raise NotImplementedError
 
     def _calculate_capacity(self):
         raise NotImplementedError
@@ -41,6 +32,25 @@ class DataColumns:
             return self._capacity_cache
         else:
             return self._calculate_capacity()
+
+    def _make_iterator(self):
+        raise NotImplementedError
+
+    def __next__(self):
+        if self._iterator is None:
+            self._iterator = iter(self)
+        return next(self._iterator)
+
+    def __iter__(self):
+        return self._make_iterator()
+
+
+class DataColumnsWithGetItem(DataColumns):
+    def _make_iterator(self):
+        return range(self.capacity)
+
+    def __getitem__(self, i):
+        raise NotImplementedError
 
 
 class JointDataColumns(DataColumns):
@@ -64,7 +74,7 @@ class JointDataColumns(DataColumns):
         return capacities[0]
 
 
-class NDArrayColumns(DataColumns):
+class NDArrayColumns(DataColumnsWithGetItem):
     def _calculate_capacity(self):
         result = None
         for k in self.columns:
@@ -83,7 +93,7 @@ class NDArrayColumns(DataColumns):
             result[k] = self.data[k][i, ...]
 
 
-class ListColumns(DataColumns):
+class ListColumns(DataColumnsWithGetItem):
     def _calculate_capacity(self):
         result = None
         for k in self.columns:
@@ -125,7 +135,7 @@ class NPZDataLoader(NDArrayColumns):
         return load_npz(data)
 
 
-class PyTablesColumns(DataColumns):
+class PyTablesColumns(DataColumnsWithGetItem):
     def __init__(self, path_file, path_dataset):
         super().__init__((path_file, path_dataset))
 
