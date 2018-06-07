@@ -6,7 +6,7 @@ import tables as tb
 import numpy as np
 from typing import Dict, Iterable
 from dxl.fs import Path
-
+import tensorflow as tf
 from dxl.data.io import load_npz
 
 
@@ -98,7 +98,7 @@ class RangeColumns(DataColumnsWithGetItem):
 
     @property
     def types(self):
-        return np.int32
+        return tf.int32
 
     def __getitem__(self, i):
         return i

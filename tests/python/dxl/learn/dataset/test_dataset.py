@@ -5,7 +5,8 @@ import numpy as np
 
 
 class TestDatasetFromColumns(TestCase):
-    def get_dataset(nb_samples=100,
+    def get_dataset(self,
+                    nb_samples=100,
                     nb_epochs=1,
                     batch_size=32,
                     is_shuffle=False):
