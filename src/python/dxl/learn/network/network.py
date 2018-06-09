@@ -43,7 +43,7 @@ class Network(Model):
         outside managed scope.
 
         """
-        super().__init__(name, inputs, submodels, info, config)
+        super().__init__(info, tensors, graphs, config)
 
     @classmethod
     def _default_config(cls):
@@ -60,12 +60,12 @@ class Network(Model):
             group_name, name))
 
     def train(self, name=None, feeds=None):
+        """
+        `name`: name of trainer (in subgraph)
+        """
         trainer = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.TRAINERS,
                                                     name)
         trainer.train(feeds)
-
-    def train_multiple_steps(self, nb_steps=None, name=None, feeds=None):
-        pass
 
     def inference(self, name=None, feeds=None):
         t = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.INFERNECES,
@@ -77,10 +77,10 @@ class Network(Model):
         ThisSession.run(t, feeds)
 
     def save(self):
-        pass
+        self.saver.save()
 
     def load(self, step=None):
         """
         Restore saved models.
         """
-        pass
+        self.saver.load(step)

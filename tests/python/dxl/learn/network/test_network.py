@@ -1,7 +1,8 @@
 import unittest
 
-from dxl.learn.core import Network
+# from dxl.learn.core import Network
 import pytest
+
 
 @pytest.mark.skip(reason='not impl yet')
 class TestNetwork(unittest.TestCase):

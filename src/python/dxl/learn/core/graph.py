@@ -175,6 +175,8 @@ class Graph(ConfigurableWithName):
         raise TypeError("Invalid name or graph info: {}.".format(info))
 
     def make_info(self, info):
+        if info is None:
+            return info
         if isinstance(info, (Path, str)):
             return self._default_info(info)
         if not isinstance(info, GraphInfo):
@@ -384,3 +386,22 @@ class Graph(ConfigurableWithName):
         else:
             raise TypeError("Can not convert {} to tensorflow_tensor.".format(
                 type(t)))
+
+
+class MainGraph(Graph):
+    kernel_func = None
+
+    def __init__(self, config):
+        super().__init__(None, config=config)
+
+    def kernel(self):
+        self.kernel_func()
+
+    @classmethod
+    def make(cls):
+        self.kernel()
+        self._is_made = True
+
+    @classmethod
+    def set_kernel(cls, func):
+        cls.kernel_func = func
