@@ -12,6 +12,9 @@ class Saver(Graph):
             MODEL_DIR = 'model_dir'
             CHECKPOINT_NAME = 'checkpoint_name'
 
+        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+            SAVER = 'saver'
+
     def __init__(self,
                  info='saver',
                  variables=None,
@@ -20,7 +23,10 @@ class Saver(Graph):
                  model_dir=None,
                  ckpt_name=None,
                  save_interal=None):
-        self.saver = tf.train.Saver(variables)
+        super().__init__(info, tensors=variables)
+
+    def kernel(self):
+        self.subgraphs[self.KEYS.SUBGRAPH.SAVER] = tf.train.Saver(variables)
 
     def checkpoint_path(self, step=None):
         """

@@ -1,11 +1,11 @@
-from dxl.learn.core import Graph, NotTrainableVariable
+from dxl.learn.core import Graph, NotTrainableVariable, NoOp
 from dxl.learn.backend import current_backend
 import tensorflow as tf
 
 
 class Optimizer(Graph):
     def minimize(self, objective):
-        pass
+        return NoOp()
 
 
 class RMSPropOptimizer(Optimizer):
@@ -62,3 +62,11 @@ class RMSPropOptimizer(Optimizer):
     def minimize(self, *args, **kwargs):
         return self.tensor(self.KEYS.SUBGRAPH.OPTIMIZER).minimize(
             *args, **kwargs)
+
+    @property
+    def decay_learning_rate(self):
+        return self.tensor(self.KEYS.TENSOR.DECAY_LEARNING_RATE)
+
+    @property
+    def learning_rate(self):
+        return self.tensor(self.KEYS.TENSOR.LEARNING_RATE)

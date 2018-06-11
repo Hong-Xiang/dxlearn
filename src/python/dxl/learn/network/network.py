@@ -10,12 +10,13 @@ class Network(Model):
     """
     A network is a trainable Graph.
     A member maybe added.
+    A Network is restricted to has at most one objective/trainer/train_step.
     """
 
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             TRAIN = 'train'
-            OBJECTIVES = 'objectives'
+            OBJECTIVE = 'objective'
             METRICS = 'metrics'
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
@@ -43,7 +44,12 @@ class Network(Model):
         outside managed scope.
 
         """
-        super().__init__(info, tensors, graphs, config)
+        KS = self.KEYS.SUBGRAPH
+        super().__init__(
+            info,
+            tensors=tensors,
+            subgraphs=self._parse_input_config(graphs, {KS.TRAINER: trainer}),
+            config=config)
 
     @classmethod
     def _default_config(cls):
