@@ -265,11 +265,14 @@ class Variable(Tensor):
         data, info = self._make_data_and_info(shape, dtype, initializer, info)
         super().__init__(data, info)
 
+    def _construct_tf_variable(self, name, shape, dtype, initializer):
+        return tf.get_variable(name, shape, dtype, initializer)
+
     def _make_data_and_info(self, shape, dtype, initializer, info):
         if isinstance(info, (str, Path)):
-            return tf.get_variable(str(info), shape, dtype,
-                                   initializer), GraphInfo(
-                                       info, tf.get_variable_scope(), False)
+            return self._construct_tf_variable(
+                str(info), shape, dtype, initializer), GraphInfo(
+                    info, tf.get_variable_scope(), False)
         if not isinstance(info, GraphInfo):
             raise TypeError("Invalid info type {}.".format(type(info)))
         with info.variable_scope():
@@ -307,3 +310,7 @@ class Variable(Tensor):
 
     def init(self):
         return Tensor(self.data.initializer, self.info.erase_name())
+
+class NotTrainableVariable(Variable):
+    def _construct_tf_variable(self, name, shape, dtype, initializer):
+        return tf.get_variable(name, shape, dtype, initializer, trainable=False)

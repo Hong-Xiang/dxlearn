@@ -12,20 +12,30 @@ class Saver(Graph):
             MODEL_DIR = 'model_dir'
             CHECKPOINT_NAME = 'checkpoint_name'
 
-    def __init__(self, name='saver', variables=None, config=None,
+        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+            SAVER = 'saver'
+
+    def __init__(self,
+                 info='saver',
+                 variables=None,
+                 config=None,
                  *,
                  model_dir=None,
                  ckpt_name=None,
-                 save_interal=None
-                 ):
-        self.saver = tf.train.Saver(variables)
+                 save_interal=None):
+        super().__init__(info, tensors=variables)
+
+    def kernel(self):
+        self.subgraphs[self.KEYS.SUBGRAPH.SAVER] = tf.train.Saver(variables)
 
     def checkpoint_path(self, step=None):
         """
         Return full path of checkpoint directory, if step is not `None`,
         checkpoint with step will be returned.
         """
-        return Path(self.config(self.KEYS.CONFIG.MODEL_DIR)/self.config(self.KEYS.CONFIG.CHECKPOINT_NAME))
+        return Path(
+            self.config(self.KEYS.CONFIG.MODEL_DIR) / self.config(
+                self.KEYS.CONFIG.CHECKPOINT_NAME))
 
     def save(self, session=None):
         logger.info('Save model to {}.'.format(self.config()))
@@ -33,4 +43,3 @@ class Saver(Graph):
     def load(self, step=None, session=None):
         if session is None:
             session = ThisSession.session().data
-

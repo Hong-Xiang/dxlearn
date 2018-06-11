@@ -10,12 +10,13 @@ class Network(Model):
     """
     A network is a trainable Graph.
     A member maybe added.
+    A Network is restricted to has at most one objective/trainer/train_step.
     """
 
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             TRAIN = 'train'
-            OBJECTIVES = 'objectives'
+            OBJECTIVE = 'objective'
             METRICS = 'metrics'
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
@@ -27,16 +28,14 @@ class Network(Model):
 
     def __init__(self,
                  info='network',
-                 inputs=None,
-                 subgraphs=None,
-                 config=None,
                  *,
+                 tensors=None,
+                 graphs=None,
+                 config=None,
                  trainer=None,
                  metrics=None,
                  summaries=None,
-                 saver=None,
-                 is_add_trainer=None,
-                 is_add_saver=None):
+                 saver=None):
         """
         `objectives`: dict of Tensor/tf.tensor or callable. If objectives is a 
         dict of callables, these callables should have current Network
@@ -45,7 +44,12 @@ class Network(Model):
         outside managed scope.
 
         """
-        super().__init__(name, inputs, submodels, info, config)
+        KS = self.KEYS.SUBGRAPH
+        super().__init__(
+            info,
+            tensors=tensors,
+            subgraphs=self._parse_input_config(graphs, {KS.TRAINER: trainer}),
+            config=config)
 
     @classmethod
     def _default_config(cls):
@@ -62,12 +66,12 @@ class Network(Model):
             group_name, name))
 
     def train(self, name=None, feeds=None):
+        """
+        `name`: name of trainer (in subgraph)
+        """
         trainer = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.TRAINERS,
                                                     name)
         trainer.train(feeds)
-
-    def train_multiple_steps(self, nb_steps=None, name=None, feeds=None):
-        pass
 
     def inference(self, name=None, feeds=None):
         t = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.INFERNECES,
@@ -79,10 +83,10 @@ class Network(Model):
         ThisSession.run(t, feeds)
 
     def save(self):
-        pass
+        self.saver.save()
 
     def load(self, step=None):
         """
         Restore saved models.
         """
-        pass
+        self.saver.load(step)

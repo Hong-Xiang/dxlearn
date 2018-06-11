@@ -39,7 +39,9 @@ class TestCase(current_backend().TestCase()):
 
     @property
     def resource_path(self):
-        return Path(os.getenv('DEV_DXLEARN_TEST_RESOURCE_PATH'))
+        from .resource import test_resource_path
+        # return Path(os.getenv('DEV_DXLEARN_TEST_RESOURCE_PATH'))
+        return test_resource_path
 
     def assertFloatArrayEqual(self, first, second, msg=None):
         if msg is None:
