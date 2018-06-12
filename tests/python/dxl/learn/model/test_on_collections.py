@@ -29,4 +29,4 @@ class TestSummation(TestCase):
     def test_inputs(self):
         x = Constant(1.0, 'x')
         s = Summation('summation', [x] * 3)
-        assert s.tensor('input') == [x] * 3
+        assert s.tensors['input'] == [x] * 3

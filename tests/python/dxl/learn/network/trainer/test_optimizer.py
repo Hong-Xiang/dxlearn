@@ -12,15 +12,15 @@ import unittest
 class TestRMSPropOptimizer(TestCase):
     def test_learning_rate(self):
         o = RMSPropOptimizer('optimizer', learning_rate=1e-3)
-        assert isinstance(o.tensor('learning_rate'), NotTrainableVariable)
+        assert isinstance(o.tensors['learning_rate'], NotTrainableVariable)
         with self.variables_initialized_test_session() as sess:
-            self.assertAlmostEqual(sess.run(o.tensor('learning_rate')), 1e-3)
+            self.assertAlmostEqual(sess.run(o.tensors['learning_rate']), 1e-3)
 
     def test_learning_rate_decay(self):
         o = RMSPropOptimizer('optimizer', learning_rate=1e-3)
         with self.variables_initialized_test_session() as sess:
-            sess.run(o.tensor('decay_learning_rate'))
-            self.assertAlmostEqual(sess.run(o.tensor('learning_rate')), 1e-4)
+            sess.run(o.tensors['decay_learning_rate'])
+            self.assertAlmostEqual(sess.run(o.tensors['learning_rate']), 1e-4)
 
     def test_optimization(self):
         x = tf.placeholder(tf.float32, [None, 1])

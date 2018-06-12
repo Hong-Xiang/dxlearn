@@ -21,7 +21,7 @@ class TestDatasetFromColumns(TestCase):
 
     def test_construct(self):
         d = self.get_dataset()
-        assert d.tensor(d.KEYS.TENSOR.DATA).shape == [32]
+        assert d.tensors[d.KEYS.TENSOR.DATA].shape == [32]
 
     def test_sample(self):
         d = self.get_dataset()
@@ -29,7 +29,7 @@ class TestDatasetFromColumns(TestCase):
         nb_batch = 2
         with self.test_session() as sess:
             for i in range(nb_batch):
-                samples.append(sess.run(d.tensor(d.KEYS.TENSOR.DATA)))
+                samples.append(sess.run(d.tensors[d.KEYS.TENSOR.DATA]))
         samples = np.array(samples)
         expected = np.zeros([nb_batch, 32])
         for i in range(nb_batch):
