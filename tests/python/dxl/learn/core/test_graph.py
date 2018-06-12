@@ -37,6 +37,7 @@ class TestGraph(TestCase):
                 self.graphs['subg'] = Graph(self.name / 'subg')
 
         g = TestGraph('g')
+        g.make()
         self.assertNameEqual(g.graphs('subg'), 'g/subg')
 
     def test_config_of_subgraph(self):
@@ -54,7 +55,7 @@ class TestGraph(TestCase):
         assert g.subgraph('subg').config('key') == 'value'
         self.assertNameEqual(g.subgraph('subg'), 'g/subg')
 
-    def test_subgraph_maker_directly_construct(self):
+    def test_graphs_make_directly_construct(self):
         class TestSubGraph(Graph):
             pass
 
@@ -63,6 +64,7 @@ class TestGraph(TestCase):
                 self.graphs('subg', TestSubGraph('test_subg'))
 
         g = TestGraph('g')
+        g.make()
         assert isinstance(g.subgraph('subg'), TestSubGraph)
         self.assertNameEqual(g.subgraph('subg').info, 'test_subg')
 
