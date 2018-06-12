@@ -62,6 +62,11 @@ class Model(Graph):
         Returns:
             A dict of tensors.
         """
+        if self.is_made:
+            self.recall(inputs)
+        else:
+            self.make(inputs)
+            self.is_made = True
         return self.construct(inputs)
 
     def _make_kernel_with_scope(self):
