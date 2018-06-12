@@ -64,7 +64,7 @@ class Model(Graph):
         """
         if not self.is_made:
             self.make()
-
+            
         return self.construct(inputs)
 
     def _make_kernel_with_scope(self):
