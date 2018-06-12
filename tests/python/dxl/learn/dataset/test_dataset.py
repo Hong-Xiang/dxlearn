@@ -21,10 +21,12 @@ class TestDatasetFromColumns(TestCase):
 
     def test_construct(self):
         d = self.get_dataset()
+        d.make()
         assert d.tensors[d.KEYS.TENSOR.DATA].shape == [32]
 
     def test_sample(self):
         d = self.get_dataset()
+        d.make()
         samples = []
         nb_batch = 2
         with self.test_session() as sess:
