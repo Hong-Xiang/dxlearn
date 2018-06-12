@@ -69,10 +69,10 @@ class BlocksTest(TestCase):
             padding='same',
             activation='basic')
         y = stackedconv2d_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (1, 25, 25, 32))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (1, 25, 25, 32))
 
     def test_InceptionBlock(self):
         x = np.ones([2, 100, 100, 3], dtype="float32")
@@ -82,20 +82,20 @@ class BlocksTest(TestCase):
             paths=3,
             activation='incept')
         y = inceptionblock_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (2, 100, 100, 3))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (2, 100, 100, 3))
 
     def test_UnitBlock(self):
         x = np.ones([1, 100, 100, 3], dtype="float32")
         unitblock_ins = UnitBlock(
             'UnitBlock_test', input_tensor=tf.constant(x))
         y = unitblock_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y, x)
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y, x)
 
     def test_DownSampling2D_Def(self):
         x = np.ones([2, 100, 100, 3], dtype="float32")
@@ -104,10 +104,10 @@ class BlocksTest(TestCase):
             input_tensor=tf.constant(x),
             size=(0.5, 0.5))
         y = downsampling2d_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (2, 50, 50, 3))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (2, 50, 50, 3))
 
     def test_DownSampling2D_Inp(self):
         x = np.ones([2, 100, 100, 3], dtype="float32")
@@ -118,10 +118,10 @@ class BlocksTest(TestCase):
             is_scale=False,
             method=2)
         y = downsampling2d_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (2, 30, 30, 3))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (2, 30, 30, 3))
 
     def test_UpSampling2D_Def(self):
         x = np.ones([2, 100, 100, 3], dtype="float32")
@@ -130,10 +130,10 @@ class BlocksTest(TestCase):
             input_tensor=tf.constant(x),
             size=(1.5, 1.5))
         y = upsampling2d_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (2, 150, 150, 3))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (2, 150, 150, 3))
 
     def test_UpSampling2D_Inp(self):
         x = np.ones([2, 100, 100, 3], dtype="float32")
@@ -144,10 +144,10 @@ class BlocksTest(TestCase):
             is_scale=False,
             method=3)
         y = upsampling2d_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            y = sess.run(y)
-            self.assertAllEqual(y.shape, (2, 130, 130, 3))
+        # with self.test_session() as sess:
+        #     sess.run(tf.global_variables_initializer())
+        #     y = sess.run(y)
+        self.assertAllEqual(y.shape, (2, 130, 130, 3))
 
 
 if __name__ == "__main__":
