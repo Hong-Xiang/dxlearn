@@ -23,7 +23,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             input_tensor=tf.constant(x),
             ratio=ratio,
             sub_block=unitblock_ins)
-        y = residualincept_ins.outputs['main']
+        y = residualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -40,7 +40,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             input_tensor=tf.constant(x),
             ratio=ratio,
             sub_block=unitblock_ins)
-        y = residualstackedconv_ins.outputs['main']
+        y = residualstackedconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -61,7 +61,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             input_tensor=tf.constant(x),
             nb_layers=nb_layers,
             sub_block=unitblock_ins)
-        y = stackedResidualincept_ins.outputs['main']
+        y = stackedResidualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -83,7 +83,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             input_tensor=tf.constant(x),
             nb_layers=nb_layers,
             sub_block=unitblock_ins)
-        y = stackedresidualconv_ins.outputs['main']
+        y = stackedresidualconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -96,7 +96,7 @@ class ResidualTestDefaultBlock(tf.test.TestCase):
         ratio = 0.5
         residualincept_ins = ResidualIncept(
             'ResidualInceptDef_test', input_tensor=tf.constant(x), ratio=ratio)
-        y = residualincept_ins.outputs['main']
+        y = residualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -109,7 +109,7 @@ class ResidualTestDefaultBlock(tf.test.TestCase):
             'ResidualStackedConvDef_test',
             input_tensor=tf.constant(x),
             ratio=ratio)
-        y = residualstackedconv_ins.outputs['main']
+        y = residualstackedconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -123,7 +123,7 @@ class ResidualTestDefaultBlock(tf.test.TestCase):
             'StackedResidualInceptDef_test',
             input_tensor=tf.constant(x),
             nb_layers=nb_layers)
-        y = stackedResidualincept_ins.outputs['main']
+        y = stackedResidualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -137,7 +137,7 @@ class ResidualTestDefaultBlock(tf.test.TestCase):
             'StackedResidualConvDef_test',
             input_tensor=tf.constant(x),
             nb_layers=nb_layers)
-        y = stackedresidualconv_ins.outputs['main']
+        y = stackedresidualconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -158,7 +158,7 @@ class ResidualTestInputBlock(tf.test.TestCase):
             input_tensor=tf.constant(x),
             ratio=ratio,
             sub_block=sub_block)
-        y = residualincept_ins.outputs['main']
+        y = residualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -181,7 +181,7 @@ class ResidualTestInputBlock(tf.test.TestCase):
             input_tensor=tf.constant(x),
             ratio=ratio,
             sub_block=sub_block)
-        y = residualstackedconv_ins.outputs['main']
+        y = residualstackedconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -199,7 +199,7 @@ class ResidualTestInputBlock(tf.test.TestCase):
             input_tensor=tf.constant(x),
             nb_layers=nb_layers,
             sub_block=sub_block)
-        y = stackedResidualincept_ins.outputs['main']
+        y = stackedResidualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -219,7 +219,7 @@ class ResidualTestInputBlock(tf.test.TestCase):
             input_tensor=tf.constant(x),
             nb_layers=nb_layers,
             sub_block=sub_block)
-        y = stackedresidualconv_ins.outputs['main']
+        y = stackedresidualconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
