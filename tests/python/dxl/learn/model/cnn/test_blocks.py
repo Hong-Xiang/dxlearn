@@ -42,7 +42,9 @@ class TestConv2D(TestCase):
     def test_scope_fail(self):
         with pytest.raises(ValueError):
             m0 = self.make_model('conv0')
+            m0.make()
             m1 = self.make_model('conv0')
+            m1.make()
 
     def test_scope2(self):
         m2 = self.make_model('scope/conv0')
