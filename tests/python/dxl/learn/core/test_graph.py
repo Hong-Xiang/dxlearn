@@ -75,8 +75,8 @@ class TestGraph(TestCase):
 
         g = TestGraph('test_g')
         g.make()
-        assert isinstance(g.tensor('x'), Tensor)
-        self.assertNameEqual(g.tensor('x'), 'test_g/x')
+        assert isinstance(g.get_or_create_tensor('x'), Tensor)
+        self.assertNameEqual(g.get_or_create_tensor('x'), 'test_g/x')
 
     def test_access_config(self):
         update_config('g', {'key1': 1})
@@ -86,7 +86,7 @@ class TestGraph(TestCase):
     def test_required(self):
         g = Graph('g')
         with pytest.raises(TypeError):
-            g.tensor('x', Graph.required_tensor)
+            g.get_or_create_tensor('x', Graph.required_tensor)
 
     def test_find(self):
         pass
