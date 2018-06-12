@@ -155,7 +155,7 @@ class TestGraph(TestCase):
 
         x = Constant(1.0, 'x')
 
-       class TestGraph(Graph):
+        class TestGraph(Graph):
             def kernel(self):
                 self.get_or_create_graph('sub',
                                 TestSubGraph(
