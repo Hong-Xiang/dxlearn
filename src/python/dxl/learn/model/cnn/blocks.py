@@ -66,8 +66,7 @@ class Conv2D(Model):
             kernel_size=None,
             strides=None,
             padding=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},
@@ -140,8 +139,7 @@ class StackedConv2D(Model):
             kernel_size=None,
             strides=None,
             padding=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},
@@ -201,8 +199,7 @@ class InceptionBlock(Model):
             info='incept',
             input_tensor=None,
             paths=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},

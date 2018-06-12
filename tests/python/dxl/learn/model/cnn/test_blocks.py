@@ -30,7 +30,7 @@ class TestConv2D(TestCase):
     def test_shape(self):
         conv2d_ins = self.make_model()
         y = conv2d_ins()
-        # y = conv2d_ins.outputs['main']
+        # y = conv2d_ins()
         with self.variables_initialized_test_session() as sess:
             y = sess.run(y)
             self.assertAllEqual(y.shape, self.expected_output_shape())
@@ -68,7 +68,7 @@ class BlocksTest(TestCase):
             strides=(2, 2),
             padding='same',
             activation='basic')
-        y = stackedconv2d_ins.outputs['main']
+        y = stackedconv2d_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -81,7 +81,7 @@ class BlocksTest(TestCase):
             input_tensor=tf.constant(x),
             paths=3,
             activation='incept')
-        y = inceptionblock_ins.outputs['main']
+        y = inceptionblock_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -91,7 +91,7 @@ class BlocksTest(TestCase):
         x = np.ones([1, 100, 100, 3], dtype="float32")
         unitblock_ins = UnitBlock(
             'UnitBlock_test', input_tensor=tf.constant(x))
-        y = unitblock_ins.outputs['main']
+        y = unitblock_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -103,7 +103,7 @@ class BlocksTest(TestCase):
             "DownSampling2D_test",
             input_tensor=tf.constant(x),
             size=(0.5, 0.5))
-        y = downsampling2d_ins.outputs['main']
+        y = downsampling2d_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -117,7 +117,7 @@ class BlocksTest(TestCase):
             size=(30, 30),
             is_scale=False,
             method=2)
-        y = downsampling2d_ins.outputs['main']
+        y = downsampling2d_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -129,7 +129,7 @@ class BlocksTest(TestCase):
             "DownSampling2D_test",
             input_tensor=tf.constant(x),
             size=(1.5, 1.5))
-        y = upsampling2d_ins.outputs['main']
+        y = upsampling2d_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
@@ -143,7 +143,7 @@ class BlocksTest(TestCase):
             size=(130, 130),
             is_scale=False,
             method=3)
-        y = upsampling2d_ins.outputs['main']
+        y = upsampling2d_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             y = sess.run(y)
