@@ -52,6 +52,7 @@ class TestGraph(TestCase):
             graphs={
                 'subg': TestGraph('test')
             })
+        g.make()
         assert g.graphs['subg'].config('key') == 'value'
         self.assertNameEqual(g.graphs['subg'], 'g/subg')
 
