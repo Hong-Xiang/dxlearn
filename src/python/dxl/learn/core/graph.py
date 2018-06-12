@@ -211,17 +211,17 @@ class Graph(ConfigurableWithName):
     #     warnings.warn(DeprecationWarning())
     #     return self.tensors.__iter__()
 
-    # @classmethod
-    # def raise_error(g, key, expected_type):
-    #     raise TypeError('Required key {} of {}.{} is not found.'.format(
-    #         key, g, expected_type))
+    @classmethod
+    def raise_error(g, key, expected_type):
+        raise TypeError('Required key {} of {}.{} is not found.'.format(
+            key, g, expected_type))
 
     @classmethod
     def required_tensor(cls):
         return lambda g, n: raise_error(g, n, 'tensor')
 
     @classmethod
-    def required_subgraph(cls):
+    def required_graph(cls):
         return lambda g, n: raise_error(g, n, 'subgraph')
 
     # def _get_or_create_item(self, collection, key, expected_type, maker):
