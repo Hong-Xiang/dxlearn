@@ -158,7 +158,7 @@ class Graph(ConfigurableWithName):
             raise TypeError("Invalid info type for {}.".format(info))
         return info
 
-    def _make_kernel_with_scope(self, inputs):
+    def _make_kernel_with_scope(self, inputs=None):
         with self.info.variable_scope():
             self.kernel(inputs)
 
