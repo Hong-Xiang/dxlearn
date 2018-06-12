@@ -100,7 +100,7 @@ For case 4:
 ``` python
 def kernel(self):
     x = self.tensor('input')
-    subg = self.subgraph('sub')
+    subg = self.graph('sub')
     y = subg(x)
 ```
 

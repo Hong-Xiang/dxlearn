@@ -50,13 +50,6 @@ class Conv2D(Model):
             PADDING = 'padding'
             ACTIVATION = 'activation'
 
-    @classmethod
-    def _default_config(cls):
-        return {
-            cls.KEYS.CONFIG.PADDING: 'same',
-            cls.KEYS.CONFIG.STRIDES: (1, 1),
-            cls.KEYS.CONFIG.ACTIVATION: 'none',
-        }
 
     def __init__(
             self,
@@ -66,8 +59,7 @@ class Conv2D(Model):
             kernel_size=None,
             strides=None,
             padding=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},
@@ -82,10 +74,9 @@ class Conv2D(Model):
     @classmethod
     def _default_config(cls):
         return {
-            cls.KEYS.CONFIG.FILTERS: 5,
             cls.KEYS.CONFIG.STRIDES: (1, 1),
-            cls.KEYS.CONFIG.PADDING: 'valid',
-            cls.KEYS.CONFIG.ACTIVATION: 'linear'
+            cls.KEYS.CONFIG.PADDING: 'same',
+            cls.KEYS.CONFIG.ACTIVATION: 'none'
         }
 
     def kernel(self, inputs):
@@ -140,8 +131,7 @@ class StackedConv2D(Model):
             kernel_size=None,
             strides=None,
             padding=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},
@@ -195,14 +185,16 @@ class InceptionBlock(Model):
         class CONFIG:
             PATHS = 'paths'
             ACTIVATION = 'activation'
+            FILTERS = 'filters'
+            KERNEL_SIZE = 'kernel_size'
+            ACTIVATION = 'activation'
 
     def __init__(
             self,
             info='incept',
             input_tensor=None,
             paths=None,
-            activation=None,
-    ):
+            activation=None):
         super().__init__(
             info,
             inputs={self.KEYS.TENSOR.INPUT: input_tensor},
@@ -215,20 +207,13 @@ class InceptionBlock(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.PATHS: 2, cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
-    @classmethod
-    def sub_block_maker(cls, father, name, input_tensor, config):
-        # with tf.variable_scope(config['scop']) as scope:
-        info = father.info.child_scope(name)
-        print(info)
+    def sub_block_maker(self, name, input_tensor, config):
         sub_block = Conv2D(
-            info=father.info.child_scope(name),
+            info=self.info.child_scope(name),
             input_tensor=input_tensor,
-            filters=config['filters'],
-            kernel_size=config['kernel_size'],
-            padding='same',
-            activation=config['activation'],
-        )
-
+            filters=config[self.KEYS.CONFIG.FILTERS],
+            kernel_size=config[self.KEYS.CONFIG.KERNEL_SIZE],
+            activation=config[self.KEYS.CONFIG.ACTIVATION])
         return sub_block
 
     def kernel(self, inputs):
@@ -240,30 +225,31 @@ class InceptionBlock(Model):
         paths = []
         for i_path in range(self.config(self.KEYS.CONFIG.PATHS)):
             config = {
-                'filters': filters,
-                'kernel_size': 1,
-                'activation': 'linear'
+                self.KEYS.CONFIG.FILTERS: filters,
+                self.KEYS.CONFIG.KERNEL_SIZE: 1,
+                self.KEYS.CONFIG.ACTIVATION: 'linear'
             }
-            h = self.subgraph(
-                'conv_{}'.format(i_path),
-                lambda g, n: InceptionBlock.sub_block_maker(g, n, x, config))()
+            key = 'conv_{}'.format(i_path)
+            h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
             for j in range(i_path):
                 config = {
-                    'filters': filters,
-                    'kernel_size': 3,
-                    'activation': 'pre'
+                    self.KEYS.CONFIG.FILTERS: filters,
+                    self.KEYS.CONFIG.KERNEL_SIZE: 3,
+                    self.KEYS.CONFIG.ACTIVATION: 'pre'
                 }
-                h = self.subgraph(
-                    'conv2d_{}'.format(j+1),
-                    lambda g, n: InceptionBlock.sub_block_maker(g, n, h, config))()
+                key = 'conv2d_{}'.format(j+1)
+                h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
             paths.append(h)
         with tf.name_scope('concat'):
             x = tf.concat(paths, axis=-1)
 
-        config = {'filters': filters, 'kernel_size': 1, 'activation': 'pre'}
-        x = self.subgraph(
-            'conv_end',
-            lambda g, n: InceptionBlock.sub_block_maker(g, n, x, config))()
+        config = {
+            self.KEYS.CONFIG.FILTERS: filters,
+            self.KEYS.CONFIG.KERNEL_SIZE: 1,
+            self.KEYS.CONFIG.ACTIVATION: 'pre'
+        }
+        key = 'conv_end'
+        x = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
         return x
 
 
@@ -364,7 +350,7 @@ class DownSampling2D(Model):
                 size_w = ratio_size[1] * int(x_shape[2])
                 tag_size = [int(size_h), int(size_w)]
         else:
-            raise Exception("Donot support shape {}".format(x_shape))
+            raise Exception("Do not support shape {}".format(x_shape))
         with tf.name_scope('downsampling'):
             h = tf.image.resize_images(
                 images=x,
@@ -448,7 +434,7 @@ class UpSampling2D(Model):
                 size_w = ratio_size[1] * int(x_shape[2])
                 tag_size = [int(size_h), int(size_w)]
         else:
-            raise Exception("Donot support shape {}".format(x_shape))
+            raise Exception("Do not support shape {}".format(x_shape))
         with tf.name_scope('upsampling'):
             h = tf.image.resize_images(
                 images=x,

@@ -49,7 +49,7 @@ class SuperResolution2x(Model):
             BOUNDARY_CROP = 'boundary_crop'
 
         class SUB_BLOCK:
-            BUILDING = 'buildingblock'
+            NAME = 'buildingblock'
 
     def __init__(self,
                  info,
@@ -61,7 +61,7 @@ class SuperResolution2x(Model):
         super().__init__(
             info,
             inputs=inputs,
-            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
+            submodels={self.KEYS.SUB_BLOCK.NAME: sub_block},
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -76,13 +76,12 @@ class SuperResolution2x(Model):
             cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)
         }
 
-    @classmethod
-    def sub_block_maker(cls, graph, name, input_tensor):
+    def sub_block_maker(self, name, input_tensor):
         return StackedConv2D(
-            graph.info.child_scope(name),
+            self.info.child_scope(name),
             input_tensor=input_tensor,
-            nb_layers=graph.config(graph.KEYS.CONFIG.NB_LAYERS),
-            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+            nb_layers=self.config(self.KEYS.CONFIG.NB_LAYERS),
+            filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='same',
@@ -104,9 +103,8 @@ class SuperResolution2x(Model):
                     kernel_size=5,
                     name='stem0')
 
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.BUILDING,
-            lambda p, k: SuperResolution2x.sub_block_maker(p, k, r))
+        key = self.KEYS.SUB_BLOCK.NAME
+        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, r))
         x = sub_block({SRKeys.REPRESENTS: r})
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
@@ -174,7 +172,7 @@ class SuperResolutionBlock(Model):
             INTERP = 'interp'
 
         class SUB_BLOCK:
-            BUILDING = 'buildingblock'
+            NAME = 'buildingblock'
 
     def __init__(self,
                  info,
@@ -194,7 +192,7 @@ class SuperResolutionBlock(Model):
         super().__init__(
             info,
             inputs=inputs,
-            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
+            submodels={self.KEYS.SUB_BLOCK.NAME: sub_block},
             config={
                 self.KEYS.CONFIG.INTERP: interp,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -225,12 +223,11 @@ class SuperResolutionBlock(Model):
             cls.KEYS.CONFIG.DENORM_MEAN: 0.0
         }
 
-    @classmethod
-    def sub_block_maker(cls, graph, name, input_tensor):
+    def sub_block_maker(self, name, input_tensor):
         return StackedConv2D(
-            info=graph.info.child_scope(name),
+            info=self.info.child_scope(name),
             input_tensor=input_tensor,
-            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+            filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='valid',
@@ -341,9 +338,8 @@ class SuperResolutionBlock(Model):
         if self.config(self.KEYS.CONFIG.INTERP):
             return upsampled
 
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.BUILDING,
-            lambda p, k: SuperResolutionBlock.sub_block_maker(p, k, represents))
+        key = self.KEYS.SUB_BLOCK.NAME
+        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, represents))
         x = sub_block({SRKeys.REPRESENTS: represents})
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))

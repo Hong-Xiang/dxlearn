@@ -30,7 +30,7 @@ class Model(Graph):
         super().__init__(
             info,
             tensors=self.make_inputs(inputs),
-            subgraphs=submodels,
+            graphs=submodels,
             config=config)
 
     def make_inputs(self, inputs):
@@ -62,18 +62,20 @@ class Model(Graph):
         Returns:
             A dict of tensors.
         """
-        if self.is_made:
-            self.recall(inputs)
-        else:
+        if not self.is_made:
             self.make(inputs)
-            self.is_made = True
+            
         return self.construct(inputs)
 
-    def _make_kernel_with_scope(self):
+    def _make_kernel_with_scope(self, inputs):
         self._created = False
+        if inputs == None:
+            inputs = {}
+        if not isinstance(inputs, Dict):
+            inputs = {self.KEYS.TENSOR.INPUT: inputs}
         self.inputs = {}
         self.outputs = {}
-        inputs = dict(self.tensors)
+        inputs.update(self.tensors)
         self.construct(inputs)
         self._created = True
 

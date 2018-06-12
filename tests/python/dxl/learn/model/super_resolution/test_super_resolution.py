@@ -27,7 +27,7 @@ class SuperResolution2xTest(TestCase):
             nb_layers=2,
             filters=5,
             boundary_crop=[4, 4])
-        res = superRe2x_ins.outputs
+        res = superRe2x_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             for key, y in res.items():
@@ -54,7 +54,7 @@ class SuperResolution2xTest(TestCase):
             filters=5,
             boundary_crop=[4, 4],
             sub_block=src_ins)
-        res = superRe2x_ins.outputs
+        res = superRe2x_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             for key, y in res.items():
@@ -72,7 +72,7 @@ class SuperResolutionBlockTest(TestCase):
                 'input': tf.constant(x, tf.float32),
                 'label': tf.constant(l, tf.float32)
             })
-        res = superReBlk_ins.outputs
+        res = superReBlk_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
             for key, y in res.items():

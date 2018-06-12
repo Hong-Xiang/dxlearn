@@ -72,7 +72,7 @@ class DatasetFromColumns(Dataset):
             result = Tensor(tf.reshape(result.data, shape))
         return result
 
-    def kernel(self):
+    def kernel(self, inputs=None):
         dataset = self._make_dataset_object()
         dataset = self._process_dataset(dataset)
         self.tensors[self.KEYS.TENSOR.DATA] = self._make_dataset_tensor(

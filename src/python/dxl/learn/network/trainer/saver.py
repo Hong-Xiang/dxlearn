@@ -26,7 +26,7 @@ class Saver(Graph):
         super().__init__(info, tensors=variables)
 
     def kernel(self):
-        self.subgraphs[self.KEYS.SUBGRAPH.SAVER] = tf.train.Saver(variables)
+        self.graphs[self.KEYS.SUBGRAPH.SAVER] = tf.train.Saver(variables)
 
     def checkpoint_path(self, step=None):
         """

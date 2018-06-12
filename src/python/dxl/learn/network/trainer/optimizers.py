@@ -44,29 +44,29 @@ class RMSPropOptimizer(Optimizer):
 
     def _get_optimizer(self, name):
         return tf.train.RMSPropOptimizer(
-            self.tensor(self.KEYS.TENSOR.LEARNING_RATE).data)
+            self.tensors[self.KEYS.TENSOR.LEARNING_RATE].data)
 
     # TODO: rework to support different optimizer by class, not by name
-    def kernel(self):
+    def kernel(self, inputs=None):
         KT, KC, KS = self.KEYS.TENSOR, self.KEYS.CONFIG, self.KEYS.SUBGRAPH
         self.tensors[KT.LEARNING_RATE] = NotTrainableVariable(
             self.info.child_tensor(KT.LEARNING_RATE), [],
             current_backend().float32, self.config(KT.LEARNING_RATE))
-        self.tensors[KT.DECAY_LEARNING_RATE] = self.tensor(
-            KT.LEARNING_RATE).assign(
-                self.tensor(KT.LEARNING_RATE) * self.config(KC.DECAY_RATIO))
+        self.tensors[KT.DECAY_LEARNING_RATE] = self.tensors[
+            KT.LEARNING_RATE].assign(
+                self.tensors[KT.LEARNING_RATE] * self.config(KC.DECAY_RATIO))
 
         self.tensors[KS.OPTIMIZER] = self._get_optimizer(
             self.config(KC.OPTIMIZER_NAME))
 
     def minimize(self, *args, **kwargs):
-        return self.tensor(self.KEYS.SUBGRAPH.OPTIMIZER).minimize(
+        return self.tensors[self.KEYS.SUBGRAPH.OPTIMIZER].minimize(
             *args, **kwargs)
 
     @property
     def decay_learning_rate(self):
-        return self.tensor(self.KEYS.TENSOR.DECAY_LEARNING_RATE)
+        return self.tensors[self.KEYS.TENSOR.DECAY_LEARNING_RATE]
 
     @property
     def learning_rate(self):
-        return self.tensor(self.KEYS.TENSOR.LEARNING_RATE)
+        return self.tensors[self.KEYS.TENSOR.LEARNING_RATE]
