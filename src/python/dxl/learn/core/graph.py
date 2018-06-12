@@ -6,7 +6,7 @@ from pathlib import Path
 
 import warnings
 
-from .subgraph_maker import SubgraphPartialMaker, SubgraphMaker, SubgraphMakerTable
+# from .subgraph_maker import SubgraphPartialMaker, SubgraphMaker, SubgraphMakerTable
 
 
 class Graph(ConfigurableWithName):
@@ -325,7 +325,7 @@ class Graph(ConfigurableWithName):
         If name has '/' inlcuded, like 'a/x', return self.graphs('a').tensor('x')
         """
         if len(Path(name).parts) == 1:
-            return self.tensor(str(name))
+            return self.tensors[str(name)]
         return self.graphs(Path(name).parts[0]).find('/'.join(
             Path(name).parts[1:]))
 
@@ -375,20 +375,20 @@ class Graph(ConfigurableWithName):
                 type(t)))
 
 
-class MainGraph(Graph):
-    kernel_func = None
+# class MainGraph(Graph):
+#     kernel_func = None
 
-    def __init__(self, config):
-        super().__init__(None, config=config)
+#     def __init__(self, config):
+#         super().__init__(None, config=config)
 
-    def kernel(self):
-        self.kernel_func()
+#     def kernel(self):
+#         self.kernel_func()
 
-    @classmethod
-    def make(cls):
-        self.kernel()
-        self._is_made = True
+#     @classmethod
+#     def make(cls):
+#         self.kernel()
+#         self._is_made = True
 
-    @classmethod
-    def set_kernel(cls, func):
-        cls.kernel_func = func
+#     @classmethod
+#     def set_kernel(cls, func):
+#         cls.kernel_func = func
