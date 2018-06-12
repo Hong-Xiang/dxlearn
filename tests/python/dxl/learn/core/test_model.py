@@ -27,13 +27,13 @@ class TestModel(TestCase):
     def test_normal_inputs(self):
         x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', {'input': x})
-        m.make()
+        m.make({'input':x})
         self.assertDictIs(m.inputs_spy, {'input': x})
 
     def test_single_input(self):
         x = self.get_dummy_input()
         m = self.get_test_model_cls()('test', x)
-        m.make()
+        m.make(x)
         self.assertDictIs(m.inputs_spy, {'input': x})
 
     def test_single_output(self):
