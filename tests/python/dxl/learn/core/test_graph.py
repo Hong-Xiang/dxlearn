@@ -31,13 +31,13 @@ class TestGraph(TestCase):
     def test_make_info(self):
         pass
 
-    def test_name_of_subgraph(self):
+    def test_name_of_graphs(self):
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraphs['subg'] = Graph(self.name / 'subg')
+                self.graphs['subg'] = Graph(self.name / 'subg')
 
         g = TestGraph('g')
-        self.assertNameEqual(g.subgraph('subg'), 'g/subg')
+        self.assertNameEqual(g.graphs('subg'), 'g/subg')
 
     def test_config_of_subgraph(self):
         update_config('g/subg', {'key': 'value'})
@@ -72,6 +72,7 @@ class TestGraph(TestCase):
                 self.tensors['x'] = Tensor(tf.constant(1, name='x'))
 
         g = TestGraph('test_g')
+        g.make()
         assert isinstance(g.tensor('x'), Tensor)
         self.assertNameEqual(g.tensor('x'), 'test_g/x')
 

@@ -130,10 +130,10 @@ class Graph(ConfigurableWithName):
                  info: TypeVar('ConvertableToInfo', Path, GraphInfo),
                  config: Dict[str, 'Config'] = None,
                  tensors: Dict[str, Tensor] = None,
-                 subgraphs: Dict[str, 'Graph'] = None):
+                 graphs: Dict[str, 'Graph'] = None):
         super().__init__(self._name_for_configurable(info), config=config)
         self.info = self.make_info(info)
-        self.subgraphs = subgraphs or dict()
+        self.graphs = graphs or dict()
         self.tensors = tensors or dict()
         self.is_made = False
         
