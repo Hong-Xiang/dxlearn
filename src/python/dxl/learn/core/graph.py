@@ -211,18 +211,18 @@ class Graph(ConfigurableWithName):
     #     warnings.warn(DeprecationWarning())
     #     return self.tensors.__iter__()
 
-    @classmethod
-    def raise_error(g, key, expected_type):
-        raise TypeError('Required key {} of {}.{} is not found.'.format(
-            key, g, expected_type))
+    # @classmethod
+    # def raise_error(g, key, expected_type):
+    #     raise TypeError('Required key {} of {}.{} is not found.'.format(
+    #         key, g, expected_type))
 
-    @classmethod
-    def required_tensor(cls):
-        return lambda g, n: raise_error(g, n, 'tensor')
+    # @classmethod
+    # def required_tensor(cls):
+    #     return lambda g, n: raise_error(g, n, 'tensor')
 
-    @classmethod
-    def required_graph(cls):
-        return lambda g, n: raise_error(g, n, 'subgraph')
+    # @classmethod
+    # def required_graph(cls):
+    #     return lambda g, n: raise_error(g, n, 'graph')
 
     # def _get_or_create_item(self, collection, key, expected_type, maker):
     #     result = self._make_subgraph_v2(key, maker)
@@ -273,18 +273,23 @@ class Graph(ConfigurableWithName):
 
     # def subgraph_partial_maker(self, key, *args, **kwargs):
     #     return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
+    # def tensor(self, key):
+    #     return self.tensors.get(key)
 
-    def get_or_create_tensor(self, key, maker=None):
+    # def graph(self, key):
+    #     return self.graphs.get(key)
+
+    def get_or_create_tensor(self, key, create=None):
         result = self.tensors.get(key)
-        if result is None and maker is not None:
-            result = maker
+        if result is None and create is not None:
+            result = create
         return result
 
-    def get_or_create_graph(self, key, maker=None):
+    def get_or_create_graph(self, key, create=None):
         result = self.graphs.get(key)
-        if result is None and maker is not None:
-            self.graphs[key] = maker
-            result = maker
+        if result is None and create is not None:
+            self.graphs[key] = create
+            result = create
         return result
 
     def get_tensor(self, key,
