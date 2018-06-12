@@ -71,6 +71,8 @@ class Model(Graph):
         self._created = False
         if inputs == None:
             inputs = {}
+        if not isinstance(inputs, Dict):
+            inputs = {self.KEYS.TENSOR.INPUT: inputs}
         self.inputs = {}
         self.outputs = {}
         inputs.update(self.tensors)
