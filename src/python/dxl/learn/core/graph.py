@@ -282,6 +282,7 @@ class Graph(ConfigurableWithName):
     def get_or_create_tensor(self, key, create=None):
         result = self.tensors.get(key)
         if result is None and create is not None:
+            self.tensors[key] = create
             result = create
         return result
 
