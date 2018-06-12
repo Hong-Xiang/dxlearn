@@ -212,11 +212,9 @@ class InceptionBlock(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.PATHS: 2, cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
-    @classmethod
-    def sub_block_maker(cls, father, name, input_tensor, config):
+    def sub_block_maker(self, input_tensor):
         # with tf.variable_scope(config['scop']) as scope:
-        info = father.info.child_scope(name)
-        print(info)
+        # print(info)
         sub_block = Conv2D(
             info=father.info.child_scope(name),
             input_tensor=input_tensor,
@@ -241,9 +239,9 @@ class InceptionBlock(Model):
                 'kernel_size': 1,
                 'activation': 'linear'
             }
-            h = self.graphs(
+            h = self.get_or_create_graph(
                 'conv_{}'.format(i_path),
-                lambda g, n: InceptionBlock.sub_block_maker(g, n, x, config))()
+                self.sub_block_maker(g, n, x, config))()
             for j in range(i_path):
                 config = {
                     'filters': filters,

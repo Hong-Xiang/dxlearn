@@ -63,15 +63,17 @@ class Model(Graph):
             A dict of tensors.
         """
         if not self.is_made:
-            self.make()
+            self.make(inputs)
             
         return self.construct(inputs)
 
-    def _make_kernel_with_scope(self):
+    def _make_kernel_with_scope(self, inputs):
         self._created = False
+        if inputs == None:
+            inputs = {}
         self.inputs = {}
         self.outputs = {}
-        inputs = dict(self.tensors)
+        inputs.update(self.tensors)
         self.construct(inputs)
         self._created = True
 

@@ -137,9 +137,9 @@ class Graph(ConfigurableWithName):
         self.tensors = tensors or dict()
         self.is_made = False
         
-    def make(self):
+    def make(self, inputs):
         if not self.is_made:
-            self._make_kernel_with_scope()
+            self._make_kernel_with_scope(inputs)
             self.is_made = True
 
     def _name_for_configurable(self, info):
@@ -158,9 +158,9 @@ class Graph(ConfigurableWithName):
             raise TypeError("Invalid info type for {}.".format(info))
         return info
 
-    def _make_kernel_with_scope(self):
+    def _make_kernel_with_scope(self, inputs):
         with self.info.variable_scope():
-            self.kernel()
+            self.kernel(inputs)
 
     def kernel(self, inputs=None):
         """
