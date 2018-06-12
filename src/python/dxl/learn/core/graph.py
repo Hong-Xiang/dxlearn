@@ -280,7 +280,7 @@ class Graph(ConfigurableWithName):
             result = maker(self, key)
         return result
 
-    def subgraph(self, key, maker=None):
+    def get_or_create_graph(self, key, maker=None):
         return self._get_or_create_item(self.graphs, key, Graph, maker)
 
     def get_tensor(self, key,

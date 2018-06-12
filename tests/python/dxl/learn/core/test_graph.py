@@ -38,7 +38,7 @@ class TestGraph(TestCase):
 
         g = TestGraph('g')
         g.make()
-        self.assertNameEqual(g.graphs('subg'), 'g/subg')
+        self.assertNameEqual(g.get_or_create_graph('subg'), 'g/subg')
 
     def test_config_of_subgraph(self):
         update_config('g/subg', {'key': 'value'})
@@ -52,8 +52,8 @@ class TestGraph(TestCase):
             graphs={
                 'subg': lambda g, n: Graph.child_maker(g, n, Graph)
             })
-        assert g.subgraph('subg').config('key') == 'value'
-        self.assertNameEqual(g.subgraph('subg'), 'g/subg')
+        assert g.get_or_create_graph('subg').config('key') == 'value'
+        self.assertNameEqual(g.get_or_create_graph('subg'), 'g/subg')
 
     def test_graphs_make_directly_construct(self):
         class TestSubGraph(Graph):
@@ -61,12 +61,12 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.graphs('subg', TestSubGraph('test_subg'))
+                self.get_or_create_graph('subg', TestSubGraph('test_subg'))
 
         g = TestGraph('g')
         g.make()
-        assert isinstance(g.subgraph('subg'), TestSubGraph)
-        self.assertNameEqual(g.subgraph('subg').info, 'test_subg')
+        assert isinstance(g.get_or_create_graph('subg'), TestSubGraph)
+        self.assertNameEqual(g.get_or_create_graph('subg').info, 'test_subg')
 
     def test_access_tensor(self):
         class TestGraph(Graph):
@@ -146,8 +146,8 @@ class TestGraph(TestCase):
     #                               self.info.name / 'sub', tensors={'x': x}))
 
     #     g = TestGraph('g', graphs={'sub': TestSubGraph})
-    #     assert isinstance(g.subgraph('sub'), TestSubGraph)
-    #     assert g.subgraph('sub').tensor('x') is x
+    #     assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
+    #     assert g.get_or_create_graph('sub').tensor('x') is x
 
     # def test_subgraph_maker_via_graphs_subgraph_maker(self):
     #     class TestSubGraph(Graph):
@@ -166,8 +166,8 @@ class TestGraph(TestCase):
     #             SubgraphMaker(TestSubGraph,
     #                           SubgraphPartialMaker('sub', tensors={'x': x}))
     #         })
-    #     assert isinstance(g.subgraph('sub'), TestSubGraph)
-    #     assert g.subgraph('sub').tensor('x') is x
+    #     assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
+    #     assert g.get_or_create_graph('sub').tensor('x') is x
 
     # def test_subgraph_maker_via_cls_graphs_table(self):
     #     class TestSubGraph(Graph):
@@ -184,8 +184,8 @@ class TestGraph(TestCase):
     #                               self.info.name / 'sub', tensors={'x': x}))
 
     #     g = TestGraph('g', )
-    #     assert isinstance(g.subgraph('sub'), TestSubGraph)
-    #     assert g.subgraph('sub').tensor('x') is x
+    #     assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
+    #     assert g.get_or_create_graph('sub').tensor('x') is x
 
     # def test_subgraph_maker_via_cls_graphs_table(self):
     #     class TestSubGraph(Graph):
@@ -202,8 +202,8 @@ class TestGraph(TestCase):
     #                               self.info.name / 'sub', tensors={'x': x}))
 
     #     g = TestGraph('g', )
-    #     assert isinstance(g.subgraph('sub'), TestSubGraph)
-    #     assert g.subgraph('sub').tensor('x') is x
+    #     assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
+    #     assert g.get_or_create_graph('sub').tensor('x') is x
 
     # def test_subgraph_maker_quick(self):
     #     class TestSubGraph(Graph):
@@ -218,5 +218,5 @@ class TestGraph(TestCase):
     #                               'sub', tensors={'x': x}))
 
     #     g = TestGraph('g', graphs={'sub': TestSubGraph})
-    #     assert isinstance(g.subgraph('sub'), TestSubGraph)
-    #     assert g.subgraph('sub').tensor('x') is x
+    #     assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
+    #     assert g.get_or_create_graph('sub').tensor('x') is x
