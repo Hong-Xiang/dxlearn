@@ -244,7 +244,7 @@ class InceptionBlock(Model):
                 'kernel_size': 1,
                 'activation': 'linear'
             }
-            h = self.subgraph(
+            h = self.graphs(
                 'conv_{}'.format(i_path),
                 lambda g, n: InceptionBlock.sub_block_maker(g, n, x, config))()
             for j in range(i_path):
@@ -253,7 +253,7 @@ class InceptionBlock(Model):
                     'kernel_size': 3,
                     'activation': 'pre'
                 }
-                h = self.subgraph(
+                h = self.graphs(
                     'conv2d_{}'.format(j+1),
                     lambda g, n: InceptionBlock.sub_block_maker(g, n, h, config))()
             paths.append(h)
@@ -261,7 +261,7 @@ class InceptionBlock(Model):
             x = tf.concat(paths, axis=-1)
 
         config = {'filters': filters, 'kernel_size': 1, 'activation': 'pre'}
-        x = self.subgraph(
+        x = self.graphs(
             'conv_end',
             lambda g, n: InceptionBlock.sub_block_maker(g, n, x, config))()
         return x

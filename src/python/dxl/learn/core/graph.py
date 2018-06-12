@@ -182,9 +182,9 @@ class Graph(ConfigurableWithName):
         if domain == self.KEYS.DOMAIN.TENSOR:
             return self.tensor_keys()
         if domain == self.KEYS.DOMAIN.SUBGRAPH:
-            return self.subgraph_keys()
+            return self.graphs_keys()
         if domain is None:
-            return tuple(list(self.tensor_keys()) + list(self.subgraph_keys()))
+            return tuple(list(self.tensor_keys()) + list(self.graphs_keys()))
         raise ValueError("Unknown domain {}.".format(domain))
 
     @classmethod
@@ -196,8 +196,8 @@ class Graph(ConfigurableWithName):
         return self.tensors.keys()
 
     def subgraph_keys(self):
-        warnings.warn(DeprecationWarning('Use self.subgraphs.keys() instead.'))
-        return self.subgraphs.keys()
+        warnings.warn(DeprecationWarning('Use self.graphs.keys() instead.'))
+        return self.graphs.keys()
 
     def values(self):
         warnings.warn(DeprecationWarning())
@@ -248,25 +248,25 @@ class Graph(ConfigurableWithName):
         return collection.get(key)
 
     def _make_subgraph_v2(self, key, maker):
-        value = self.subgraphs.get(key,
+        value = self.graphs.get(key,
                                    SubgraphMakerTable.get(
                                        self.info.name / key))
         if isinstance(value, Graph):
             return value
         if isinstance(value, SubgraphMaker):
-            self.subgraphs[key] = value()
-            return self.subgraph(key)
+            self.graphs[key] = value()
+            return self.graphs(key)
         if isinstance(value, type) and issubclass(value, Graph) and isinstance(
                 maker, SubgraphPartialMaker):
-            self.subgraphs[key] = SubgraphMaker(value, maker)()
-            return self.subgraph(key)
+            self.graphs[key] = SubgraphMaker(value, maker)()
+            return self.graphs(key)
         if value is None and isinstance(maker, SubgraphMaker):
-            self.subgraphs[key] = maker()
-            return self.subgraph(key)
+            self.graphs[key] = maker()
+            return self.graphs(key)
         # raise TypeError(
-        #     "Can't find any solution to make subgraph: in self.subgraphs: {}, in table: {}, maker: {}".
+        #     "Can't find any solution to make subgraph: in self.graphs: {}, in table: {}, maker: {}".
         #     format(
-        #         self.subgraphs.get(key), SubgraphMakerTable.get(key), maker))
+        #         self.graphs.get(key), SubgraphMakerTable.get(key), maker))
 
     # def tensor(self, key, maker=None):
     # return self._get_or_create_item(self.tensors, key, Tensor, maker)
@@ -281,7 +281,7 @@ class Graph(ConfigurableWithName):
         return result
 
     def subgraph(self, key, maker=None):
-        return self._get_or_create_item(self.subgraphs, key, Graph, maker)
+        return self._get_or_create_item(self.graphs, key, Graph, maker)
 
     def get_tensor(self, key,
                    tensor_maker: Callable[['Graph'], Tensor] = None):
@@ -310,11 +310,11 @@ class Graph(ConfigurableWithName):
         """
         Helper function to get tensor with deep path.
         If name is a normal name, thus no '/' included, returns self.tensor(name);
-        If name has '/' inlcuded, like 'a/x', return self.subgraph('a').tensor('x')
+        If name has '/' inlcuded, like 'a/x', return self.graphs('a').tensor('x')
         """
         if len(Path(name).parts) == 1:
             return self.tensor(str(name))
-        return self.subgraph(Path(name).parts[0]).find('/'.join(
+        return self.graphs(Path(name).parts[0]).find('/'.join(
             Path(name).parts[1:]))
 
     def run(self, fetches=None, feeds=None):

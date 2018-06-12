@@ -62,7 +62,7 @@ class ResidualIncept(Model):
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.subgraph(
+        sub_block = self.graphs(
             self.KEYS.SUB_BLOCK.INCEPTION,
             lambda p, k: ResidualIncept.sub_block_maker(p, k, x))
         h = sub_block(inputs)
@@ -120,7 +120,7 @@ class ResidualStackedConv(Model):
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_block = self.subgraph(
+        sub_block = self.graphs(
             self.KEYS.SUB_BLOCK.STK_CONV2D,
             lambda p, k: ResidualStackedConv.sub_block_maker(p, k, x))
         h = sub_block(inputs)
@@ -174,7 +174,7 @@ class StackedResidualIncept(Model):
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            sub_block = self.subgraph(
+            sub_block = self.graphs(
                 self.KEYS.SUB_BLOCK.RES_INCEPT,
                 lambda p, k: StackedResidualIncept.sub_block_maker(p, k, x))
             x = sub_block(inputs)
@@ -226,7 +226,7 @@ class StackedResidualConv(Model):
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            sub_block = self.subgraph(
+            sub_block = self.graphs(
                 "{}_{}".format(self.KEYS.SUB_BLOCK.RES_STACKEDCONV, i),
                 lambda p, k: StackedResidualConv.sub_block_maker(p, k, x, i))
             x = sub_block(x)

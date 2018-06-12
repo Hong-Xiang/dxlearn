@@ -44,7 +44,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                subg = self.subgraph('subg')
+                subg = self.graphs('subg')
 
         g = Graph(
             'g',
@@ -60,7 +60,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('subg', TestSubGraph('test_subg'))
+                self.graphs('subg', TestSubGraph('test_subg'))
 
         g = TestGraph('g')
         assert isinstance(g.subgraph('subg'), TestSubGraph)
@@ -139,7 +139,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('sub',
+                self.graphs('sub',
                               SubgraphPartialMaker(
                                   self.info.name / 'sub', tensors={'x': x}))
 
@@ -155,7 +155,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('sub')
+                self.graphs('sub')
 
         g = TestGraph(
             'g',
@@ -177,7 +177,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('sub',
+                self.graphs('sub',
                               SubgraphPartialMaker(
                                   self.info.name / 'sub', tensors={'x': x}))
 
@@ -195,7 +195,7 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('sub',
+                self.graphs('sub',
                               SubgraphPartialMaker(
                                   self.info.name / 'sub', tensors={'x': x}))
 
@@ -211,8 +211,8 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.subgraph('sub',
-                              self.subgraph_partial_maker(
+                self.graphs('sub',
+                              self.graphs_partial_maker(
                                   'sub', tensors={'x': x}))
 
         g = TestGraph('g', subgraphs={'sub': TestSubGraph})

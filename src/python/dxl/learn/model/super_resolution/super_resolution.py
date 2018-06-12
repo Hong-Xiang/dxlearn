@@ -104,7 +104,7 @@ class SuperResolution2x(Model):
                     kernel_size=5,
                     name='stem0')
 
-        sub_block = self.subgraph(
+        sub_block = self.graphs(
             self.KEYS.SUB_BLOCK.BUILDING,
             lambda p, k: SuperResolution2x.sub_block_maker(p, k, r))
         x = sub_block({SRKeys.REPRESENTS: r})
@@ -341,7 +341,7 @@ class SuperResolutionBlock(Model):
         if self.config(self.KEYS.CONFIG.INTERP):
             return upsampled
 
-        sub_block = self.subgraph(
+        sub_block = self.graphs(
             self.KEYS.SUB_BLOCK.BUILDING,
             lambda p, k: SuperResolutionBlock.sub_block_maker(p, k, represents))
         x = sub_block({SRKeys.REPRESENTS: represents})
