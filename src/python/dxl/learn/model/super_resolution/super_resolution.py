@@ -192,7 +192,7 @@ class SuperResolutionBlock(Model):
         super().__init__(
             info,
             inputs=inputs,
-            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
+            submodels={self.KEYS.SUB_BLOCK.NAME: sub_block},
             config={
                 self.KEYS.CONFIG.INTERP: interp,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -338,7 +338,7 @@ class SuperResolutionBlock(Model):
         if self.config(self.KEYS.CONFIG.INTERP):
             return upsampled
 
-        key = self.KEYS.SUB_BLOCK.BUILDING
+        key = self.KEYS.SUB_BLOCK.NAME
         sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, represents))
         x = sub_block({SRKeys.REPRESENTS: represents})
         result = {SRKeys.REPRESENTS: x}
