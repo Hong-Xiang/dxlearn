@@ -47,7 +47,7 @@ class RMSPropOptimizer(Optimizer):
             self.tensors[self.KEYS.TENSOR.LEARNING_RATE].data)
 
     # TODO: rework to support different optimizer by class, not by name
-    def kernel(self):
+    def kernel(self, inputs=None):
         KT, KC, KS = self.KEYS.TENSOR, self.KEYS.CONFIG, self.KEYS.SUBGRAPH
         self.tensors[KT.LEARNING_RATE] = NotTrainableVariable(
             self.info.child_tensor(KT.LEARNING_RATE), [],
