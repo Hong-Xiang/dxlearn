@@ -50,7 +50,7 @@ class TestGraph(TestCase):
         g = Graph(
             'g',
             graphs={
-                'subg': TestGraph('test')
+                'subg': TestGraph('g/subg')
             })
         g.make()
         assert g.graphs['subg'].config('key') == 'value'
