@@ -144,7 +144,7 @@ class TestGraph(TestCase):
                subg = self.graphs['sub']
                subg.get_or_create_tensor('x', x)
 
-        g = TestGraph('g', graphs={'sub': TestSubGraph})
+        g = TestGraph('g', graphs={'sub': TestSubGraph('testsub')})
         g.make()
         assert isinstance(g.graphs['sub'], TestSubGraph)
         assert g.graphs['sub'].tensors['x'] is x
