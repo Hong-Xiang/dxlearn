@@ -92,9 +92,9 @@ class BlocksTest(TestCase):
         unitblock_ins = UnitBlock(
             'UnitBlock_test', input_tensor=tf.constant(x))
         y = unitblock_ins()
-        # with self.test_session() as sess:
-        #     sess.run(tf.global_variables_initializer())
-        #     y = sess.run(y)
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            y = sess.run(y)
         self.assertAllEqual(y, x)
 
     def test_DownSampling2D_Def(self):
