@@ -187,34 +187,34 @@ class Graph(ConfigurableWithName):
             return tuple(list(self.tensor_keys()) + list(self.graphs_keys()))
         raise ValueError("Unknown domain {}.".format(domain))
 
-    @classmethod
-    def child_maker(self, g, name, constructor):
-        return constructor(g.info.child_scope(name))
+    # @classmethod
+    # def child_maker(self, g, name, constructor):
+    #     return constructor(g.info.child_scope(name))
 
-    def tensor_keys(self):
-        warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))
-        return self.tensors.keys()
+    # def tensor_keys(self):
+    #     warnings.warn(DeprecationWarning('Use self.tensors.keys() instead.'))
+    #     return self.tensors.keys()
 
-    def subgraph_keys(self):
-        warnings.warn(DeprecationWarning('Use self.graphs.keys() instead.'))
-        return self.graphs.keys()
+    # def subgraph_keys(self):
+    #     warnings.warn(DeprecationWarning('Use self.graphs.keys() instead.'))
+    #     return self.graphs.keys()
 
-    def values(self):
-        warnings.warn(DeprecationWarning())
-        return self.tensors.values()
+    # def values(self):
+    #     warnings.warn(DeprecationWarning())
+    #     return self.tensors.values()
 
-    def items(self):
-        warnings.warn(DeprecationWarning())
-        return self.tensors.values()
+    # def items(self):
+    #     warnings.warn(DeprecationWarning())
+    #     return self.tensors.values()
 
-    def __iter__(self):
-        warnings.warn(DeprecationWarning())
-        return self.tensors.__iter__()
+    # def __iter__(self):
+    #     warnings.warn(DeprecationWarning())
+    #     return self.tensors.__iter__()
 
-    @classmethod
-    def raise_error(g, key, expected_type):
-        raise TypeError('Required key {} of {}.{} is not found.'.format(
-            key, g, expected_type))
+    # @classmethod
+    # def raise_error(g, key, expected_type):
+    #     raise TypeError('Required key {} of {}.{} is not found.'.format(
+    #         key, g, expected_type))
 
     @classmethod
     def required_tensor(cls):
@@ -224,45 +224,45 @@ class Graph(ConfigurableWithName):
     def required_subgraph(cls):
         return lambda g, n: raise_error(g, n, 'subgraph')
 
-    def _get_or_create_item(self, collection, key, expected_type, maker):
-        result = self._make_subgraph_v2(key, maker)
-        if result is not None:
-            return result
-        if not collection.get(key) is None:
-            if isinstance(collection.get(key), expected_type):
-                return collection.get(key)
-            if isinstance(collection.get(key), (list, tuple)) and all(
-                    map(lambda x: isinstance(x, expected_type),
-                        collection.get(key))):
-                return collection.get(key)
-            if isinstance(collection.get(key), dict) and all(map(lambda k: isinstance(collection.get(key)[k], expected_type), collection.get(key))):
-                return collection.get(key)
-        if maker is None and collection.get(key) is not None:
-            maker = collection.get(key)
-        if maker is not None:
-            if isinstance(maker, expected_type):
-                item = maker
-            else:
-                item = maker(self, key)
-            collection[key] = item
-        return collection.get(key)
+    # def _get_or_create_item(self, collection, key, expected_type, maker):
+    #     result = self._make_subgraph_v2(key, maker)
+    #     if result is not None:
+    #         return result
+    #     if not collection.get(key) is None:
+    #         if isinstance(collection.get(key), expected_type):
+    #             return collection.get(key)
+    #         if isinstance(collection.get(key), (list, tuple)) and all(
+    #                 map(lambda x: isinstance(x, expected_type),
+    #                     collection.get(key))):
+    #             return collection.get(key)
+    #         if isinstance(collection.get(key), dict) and all(map(lambda k: isinstance(collection.get(key)[k], expected_type), collection.get(key))):
+    #             return collection.get(key)
+    #     if maker is None and collection.get(key) is not None:
+    #         maker = collection.get(key)
+    #     if maker is not None:
+    #         if isinstance(maker, expected_type):
+    #             item = maker
+    #         else:
+    #             item = maker(self, key)
+    #         collection[key] = item
+    #     return collection.get(key)
 
-    def _make_subgraph_v2(self, key, maker):
-        value = self.graphs.get(key,
-                                   SubgraphMakerTable.get(
-                                       self.info.name / key))
-        if isinstance(value, Graph):
-            return value
-        if isinstance(value, SubgraphMaker):
-            self.graphs[key] = value()
-            return self.graphs(key)
-        if isinstance(value, type) and issubclass(value, Graph) and isinstance(
-                maker, SubgraphPartialMaker):
-            self.graphs[key] = SubgraphMaker(value, maker)()
-            return self.graphs(key)
-        if value is None and isinstance(maker, SubgraphMaker):
-            self.graphs[key] = maker()
-            return self.graphs(key)
+    # def _make_subgraph_v2(self, key, maker):
+    #     value = self.graphs.get(key,
+    #                                SubgraphMakerTable.get(
+    #                                    self.info.name / key))
+    #     if isinstance(value, Graph):
+    #         return value
+    #     if isinstance(value, SubgraphMaker):
+    #         self.graphs[key] = value()
+    #         return self.graphs(key)
+    #     if isinstance(value, type) and issubclass(value, Graph) and isinstance(
+    #             maker, SubgraphPartialMaker):
+    #         self.graphs[key] = SubgraphMaker(value, maker)()
+    #         return self.graphs(key)
+    #     if value is None and isinstance(maker, SubgraphMaker):
+    #         self.graphs[key] = maker()
+    #         return self.graphs(key)
         # raise TypeError(
         #     "Can't find any solution to make subgraph: in self.graphs: {}, in table: {}, maker: {}".
         #     format(
@@ -271,8 +271,8 @@ class Graph(ConfigurableWithName):
     # def tensor(self, key, maker=None):
     # return self._get_or_create_item(self.tensors, key, Tensor, maker)
 
-    def subgraph_partial_maker(self, key, *args, **kwargs):
-        return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
+    # def subgraph_partial_maker(self, key, *args, **kwargs):
+    #     return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
 
     def tensor(self, key, maker=None):
         result = self.tensors.get(key)
@@ -281,7 +281,13 @@ class Graph(ConfigurableWithName):
         return result
 
     def get_or_create_graph(self, key, maker=None):
-        return self._get_or_create_item(self.graphs, key, Graph, maker)
+        if self.graphs.get(key) == None:
+            self.graphs[key] = maker
+
+        if self.graphs.get(key) == None
+            raise KeyError("{} do not have a graph with key {}".format(self.name, key))
+    
+        return self.graphs.get(key)
 
     def get_tensor(self, key,
                    tensor_maker: Callable[['Graph'], Tensor] = None):
