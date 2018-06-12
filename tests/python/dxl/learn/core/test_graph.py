@@ -141,10 +141,11 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-               subg = self.get_or_create_graph('sub')
-               subg.get_or_create_tensor(x)
+               subg = self.graphs['sub']
+               subg.get_or_create_tensor('x', x)
 
         g = TestGraph('g', graphs={'sub': TestSubGraph})
+        g.make()
         assert isinstance(g.graphs['sub'], TestSubGraph)
         assert g.graphs['sub'].tensors['x'] is x
 
