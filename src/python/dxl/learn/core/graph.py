@@ -284,7 +284,7 @@ class Graph(ConfigurableWithName):
         if self.graphs.get(key) == None:
             self.graphs[key] = maker
 
-        if self.graphs.get(key) == None
+        if self.graphs.get(key) == None:
             raise KeyError("{} do not have a graph with key {}".format(self.name, key))
     
         return self.graphs.get(key)
