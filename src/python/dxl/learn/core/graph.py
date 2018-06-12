@@ -177,15 +177,15 @@ class Graph(ConfigurableWithName):
     def __hash__(self):
         return hash(str(self.info.name))
 
-    def keys(self, domain=None):
-        warnings.warn(DeprecationWarning())
-        if domain == self.KEYS.DOMAIN.TENSOR:
-            return self.tensor_keys()
-        if domain == self.KEYS.DOMAIN.SUBGRAPH:
-            return self.graphs_keys()
-        if domain is None:
-            return tuple(list(self.tensor_keys()) + list(self.graphs_keys()))
-        raise ValueError("Unknown domain {}.".format(domain))
+    # def keys(self, domain=None):
+    #     warnings.warn(DeprecationWarning())
+    #     if domain == self.KEYS.DOMAIN.TENSOR:
+    #         return self.tensor_keys()
+    #     if domain == self.KEYS.DOMAIN.SUBGRAPH:
+    #         return self.graphs_keys()
+    #     if domain is None:
+    #         return tuple(list(self.tensor_keys()) + list(self.graphs_keys()))
+    #     raise ValueError("Unknown domain {}.".format(domain))
 
     # @classmethod
     # def child_maker(self, g, name, constructor):
@@ -292,31 +292,31 @@ class Graph(ConfigurableWithName):
         if result is None and create is not None:
             self.graphs[key] = create
             result = create
-            
+
         return result
 
-    def get_tensor(self, key,
-                   tensor_maker: Callable[['Graph'], Tensor] = None):
-        """
-            """
-        warnings.warn(DeprecationWarning('Use self.tensor.'))
-        tensor = self.tensor(key)
-        if tensor is None:
-            self.tensors[key] = tensor_maker(self)
-        return self.tensors[key]
+    # def get_tensor(self, key,
+    #                tensor_maker: Callable[['Graph'], Tensor] = None):
+    #     """
+    #         """
+    #     warnings.warn(DeprecationWarning('Use self.tensor.'))
+    #     tensor = self.tensor(key)
+    #     if tensor is None:
+    #         self.tensors[key] = tensor_maker(self)
+    #     return self.tensors[key]
 
-    def parse_names_maybe(self, data):
-        warnings.warn(DeprecationWarning())
-        if isinstance(data, tf.Tensor):
-            return data
-        if isinstance(data, Tensor):
-            return data.data
-        if isinstance(data, (Path, str)):
-            name = Path(data)
-            if len(name.parts) == 1:
-                return self.tensor(str(name))
-            else:
-                pass
+    # def parse_names_maybe(self, data):
+    #     warnings.warn(DeprecationWarning())
+    #     if isinstance(data, tf.Tensor):
+    #         return data
+    #     if isinstance(data, Tensor):
+    #         return data.data
+    #     if isinstance(data, (Path, str)):
+    #         name = Path(data)
+    #         if len(name.parts) == 1:
+    #             return self.tensor(str(name))
+    #         else:
+    #             pass
 
     def find(self, name):
         """
@@ -341,7 +341,7 @@ class Graph(ConfigurableWithName):
         """
         inputs = feeds
         if fetches is None:
-            fetches = self.tensor(self.KEYS.TENSOR.MAIN)
+            fetches = self.tensors[self.KEYS.TENSOR.MAIN]
         if inputs is not None:
             valid_inputs = {
                 k: inputs[k]
@@ -351,7 +351,7 @@ class Graph(ConfigurableWithName):
             valid_inputs = dict()
         from .session import default_session
         feed_dict = {}
-        for k in self.tensor_keys(k):
+        for k in self.tensors.keys():
             if k in valid_inputs:
                 feed_dict.update(self.tensor(k), inputs[k])
         return default_session().run(feed_dict=feed_dict)
