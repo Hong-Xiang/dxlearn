@@ -135,7 +135,12 @@ class Graph(ConfigurableWithName):
         self.info = self.make_info(info)
         self.subgraphs = subgraphs or dict()
         self.tensors = tensors or dict()
-        self._make_kernel_with_scope()
+        self.is_made = False
+        
+    def make(self):
+        if not self.is_made:
+            self._make_kernel_with_scope()
+            self.is_made = True
 
     def _name_for_configurable(self, info):
         if isinstance(info, (str, Path)):
