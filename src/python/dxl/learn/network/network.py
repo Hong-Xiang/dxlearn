@@ -48,7 +48,7 @@ class Network(Model):
         super().__init__(
             info,
             tensors=tensors,
-            subgraphs=self._parse_input_config(graphs, {KS.TRAINER: trainer}),
+            graphs=self._parse_input_config(graphs, {KS.TRAINER: trainer}),
             config=config)
 
     @classmethod

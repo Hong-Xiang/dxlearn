@@ -30,7 +30,7 @@ class Model(Graph):
         super().__init__(
             info,
             tensors=self.make_inputs(inputs),
-            subgraphs=submodels,
+            graphs=submodels,
             config=config)
 
     def make_inputs(self, inputs):

@@ -48,7 +48,7 @@ class TestGraph(TestCase):
 
         g = Graph(
             'g',
-            subgraphs={
+            graphs={
                 'subg': lambda g, n: Graph.child_maker(g, n, Graph)
             })
         assert g.subgraph('subg').config('key') == 'value'
@@ -131,7 +131,7 @@ class TestGraph(TestCase):
         g = self.get_graph_with_item_config(item=1)
         assert g.config('item') == 1
 
-    def test_subgraph_maker_via_subgraphs_cls(self):
+    def test_subgraph_maker_via_graphs_cls(self):
         class TestSubGraph(Graph):
             pass
 
@@ -143,11 +143,11 @@ class TestGraph(TestCase):
                               SubgraphPartialMaker(
                                   self.info.name / 'sub', tensors={'x': x}))
 
-        g = TestGraph('g', subgraphs={'sub': TestSubGraph})
+        g = TestGraph('g', graphs={'sub': TestSubGraph})
         assert isinstance(g.subgraph('sub'), TestSubGraph)
         assert g.subgraph('sub').tensor('x') is x
 
-    def test_subgraph_maker_via_subgraphs_subgraph_maker(self):
+    def test_subgraph_maker_via_graphs_subgraph_maker(self):
         class TestSubGraph(Graph):
             pass
 
@@ -159,7 +159,7 @@ class TestGraph(TestCase):
 
         g = TestGraph(
             'g',
-            subgraphs={
+            graphs={
                 'sub':
                 SubgraphMaker(TestSubGraph,
                               SubgraphPartialMaker('sub', tensors={'x': x}))
@@ -167,7 +167,7 @@ class TestGraph(TestCase):
         assert isinstance(g.subgraph('sub'), TestSubGraph)
         assert g.subgraph('sub').tensor('x') is x
 
-    def test_subgraph_maker_via_cls_subgraphs_table(self):
+    def test_subgraph_maker_via_cls_graphs_table(self):
         class TestSubGraph(Graph):
             pass
 
@@ -185,7 +185,7 @@ class TestGraph(TestCase):
         assert isinstance(g.subgraph('sub'), TestSubGraph)
         assert g.subgraph('sub').tensor('x') is x
 
-    def test_subgraph_maker_via_cls_subgraphs_table(self):
+    def test_subgraph_maker_via_cls_graphs_table(self):
         class TestSubGraph(Graph):
             pass
 
@@ -215,6 +215,6 @@ class TestGraph(TestCase):
                               self.graphs_partial_maker(
                                   'sub', tensors={'x': x}))
 
-        g = TestGraph('g', subgraphs={'sub': TestSubGraph})
+        g = TestGraph('g', graphs={'sub': TestSubGraph})
         assert isinstance(g.subgraph('sub'), TestSubGraph)
         assert g.subgraph('sub').tensor('x') is x

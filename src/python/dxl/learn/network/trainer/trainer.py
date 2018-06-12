@@ -16,7 +16,7 @@ class Trainer(Graph):
             tensors={
                 self.KEYS.TENSOR.OBJECTIVE: objective,
             },
-            subgraphs={self.KEYS.SUBGRAPH.OPTIMIZER: optimizer})
+            graphs={self.KEYS.SUBGRAPH.OPTIMIZER: optimizer})
 
     def kernel(self):
         KT, KS = self.KEYS.TENSOR, self.KEYS.SUBGRAPH
