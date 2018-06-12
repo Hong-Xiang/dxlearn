@@ -137,7 +137,7 @@ class Graph(ConfigurableWithName):
         self.tensors = tensors or dict()
         self.is_made = False
         
-    def make(self, inputs):
+    def make(self, inputs=None):
         if not self.is_made:
             self._make_kernel_with_scope(inputs)
             self.is_made = True
