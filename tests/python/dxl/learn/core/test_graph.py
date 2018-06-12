@@ -133,7 +133,7 @@ class TestGraph(TestCase):
         g = self.get_graph_with_item_config(item=1)
         assert g.config('item') == 1
 
-    def test_graphs_directly(self):
+    def test_graphs_in_parameters(self):
         class TestSubGraph(Graph):
             pass
 
@@ -141,9 +141,8 @@ class TestGraph(TestCase):
 
         class TestGraph(Graph):
             def kernel(self):
-                self.get_or_create_graph('sub',
-                                TestSubGraph(
-                                  self.info.name / 'sub', tensors={'x': x}))
+               subg = self.get_or_create_graph('sub')
+               subg.get_or_create_tensor(x)
 
         g = TestGraph('g', graphs={'sub': TestSubGraph})
         assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
@@ -162,6 +161,7 @@ class TestGraph(TestCase):
                                   self.info.name / 'sub', tensors={'x': x}))
 
         g = TestGraph('g')
+        g.make()
         assert isinstance(g.get_or_create_graph('sub'), TestSubGraph)
         assert g.get_or_create_graph('sub').tensor('x') is x
 

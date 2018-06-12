@@ -274,20 +274,18 @@ class Graph(ConfigurableWithName):
     # def subgraph_partial_maker(self, key, *args, **kwargs):
     #     return SubgraphPartialMaker(self.info.name / key, *args, **kwargs)
 
-    def tensor(self, key, maker=None):
+    def get_or_create_tensor(self, key, maker=None):
         result = self.tensors.get(key)
         if result is None and maker is not None:
-            result = maker(self, key)
+            result = maker
         return result
 
     def get_or_create_graph(self, key, maker=None):
-        if self.graphs.get(key) == None:
+        result = self.graphs.get(key)
+        if result is None and maker is not None:
             self.graphs[key] = maker
-
-        if self.graphs.get(key) == None:
-            raise KeyError("{} do not have a graph with key {}".format(self.name, key))
-    
-        return self.graphs.get(key)
+            result = maker
+        return result
 
     def get_tensor(self, key,
                    tensor_maker: Callable[['Graph'], Tensor] = None):
