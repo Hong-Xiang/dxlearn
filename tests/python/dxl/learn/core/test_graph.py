@@ -33,7 +33,7 @@ class TestGraph(TestCase):
 
     def test_name_of_graphs(self):
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                 self.graphs['subg'] = Graph(self.name / 'subg')
 
         g = TestGraph('g')
@@ -44,7 +44,7 @@ class TestGraph(TestCase):
         update_config('g/subg', {'key': 'value'})
 
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                 self.graphs['subg'] = Graph(self.name / 'subg')
 
         g = Graph(
@@ -60,7 +60,7 @@ class TestGraph(TestCase):
             pass
 
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                 self.get_or_create_graph('subg', TestSubGraph('test_subg'))
 
         g = TestGraph('g')
@@ -70,7 +70,7 @@ class TestGraph(TestCase):
 
     def test_access_tensor(self):
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                 self.tensors['x'] = Tensor(tf.constant(1, name='x'))
 
         g = TestGraph('test_g')
@@ -140,7 +140,7 @@ class TestGraph(TestCase):
         x = Constant(1.0, 'x')
 
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                subg = self.graphs['sub']
                subg.get_or_create_tensor('x', x)
 
@@ -156,7 +156,7 @@ class TestGraph(TestCase):
         x = Constant(1.0, 'x')
 
         class TestGraph(Graph):
-            def kernel(self):
+            def kernel(self, inputs=None):
                 self.get_or_create_graph('sub',
                                 TestSubGraph(
                                   self.info.name / 'sub', tensors={'x': x}))
@@ -175,7 +175,7 @@ class TestGraph(TestCase):
     #     SubgraphMakerTable.register('g/sub', TestSubGraph)
 
     #     class TestGraph(Graph):
-    #         def kernel(self):
+    #         def kernel(self, inputs=None):
     #             self.graphs('sub',
     #                           SubgraphPartialMaker(
     #                               self.info.name / 'sub', tensors={'x': x}))
@@ -193,7 +193,7 @@ class TestGraph(TestCase):
     #     SubgraphMakerTable.register('g/sub', TestSubGraph)
 
     #     class TestGraph(Graph):
-    #         def kernel(self):
+    #         def kernel(self, inputs=None):
     #             self.graphs('sub',
     #                           SubgraphPartialMaker(
     #                               self.info.name / 'sub', tensors={'x': x}))
@@ -209,7 +209,7 @@ class TestGraph(TestCase):
     #     x = Constant(1.0, 'x')
 
     #     class TestGraph(Graph):
-    #         def kernel(self):
+    #         def kernel(self, inputs=None):
     #             self.graphs('sub',
     #                           self.graphs_partial_maker(
     #                               'sub', tensors={'x': x}))
