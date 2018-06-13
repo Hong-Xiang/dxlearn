@@ -1,5 +1,5 @@
-from .tensor import Tensor
-from .graph_info import GraphInfo
+from dxl.learn.core import Tensor
+from dxl.learn.core import GraphInfo
 import tensorflow as tf
 
 class GlobalStep(Tensor):
