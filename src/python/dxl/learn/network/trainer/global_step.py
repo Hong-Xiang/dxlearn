@@ -4,7 +4,7 @@ import tensorflow as tf
 
 class GlobalStep(Tensor):
     def __init__(self):
-        super().__init__(tf.train.get_or_create_globalstep(), None, GraphInfo())
+        super().__init__(tf.train.get_or_create_global_step(), None, GraphInfo())
 
     def increased(self):
         with tf.name_scope('global_step_increased'):
