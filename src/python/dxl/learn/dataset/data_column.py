@@ -212,9 +212,3 @@ class PyTablesColumns(DataColumnsWithGetItem):
     def close(self):
         self._file.close()
 
-
-def data_loader(path, *args, **kwargs):
-    """
-    Get a dataloader automatically.
-    """
-    pass
