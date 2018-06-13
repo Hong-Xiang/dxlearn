@@ -20,7 +20,7 @@ class Trainer(Graph):
 
     def kernel(self):
         KT, KS = self.KEYS.TENSOR, self.KEYS.SUBGRAPH
-        self.tensors[KT.TRAIN_STEP] = self.graphs(KS.OPTIMIZER).minimize(
+        self.tensors[KT.TRAIN_STEP] = self.graphs[KS.OPTIMIZER].minimize(
             self.tensors[KT.OBJECTIVE])
         self.tensors[KT.MAIN] = self.train_step
 
