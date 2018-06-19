@@ -24,13 +24,13 @@ class Model(Graph):
 
     def __init__(self,
                  info,
-                 inputs: Dict[str, Tensor] = None,
-                 submodels: Dict[str, 'Model'] = None,
+                 tensors: Dict[str, Tensor] = None,
+                 graphs: Dict[str, 'Model'] = None,
                  config: Dict[str, 'Config'] = None):
         super().__init__(
             info,
-            tensors=self.make_inputs(inputs),
-            graphs=submodels,
+            tensors=self.make_inputs(tensors),
+            graphs=graphs,
             config=config)
 
     def make_inputs(self, inputs):

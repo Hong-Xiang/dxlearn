@@ -23,7 +23,7 @@ class MasterWorkerTaskBase(Graph):
             TASK_INDEX = 'task_index'
             NB_WORKERS = 'nb_workers'
 
-        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+        class GRAPH(Graph.KEYS.GRAPH):
             MASTER = JOB_NAME.MASTER
             WORKER = JOB_NAME.WORKER
 
