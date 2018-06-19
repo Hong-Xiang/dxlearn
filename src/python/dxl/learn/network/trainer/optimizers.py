@@ -10,7 +10,7 @@ class Optimizer(Graph):
 
 class RMSPropOptimizer(Optimizer):
     class KEYS(Graph.KEYS):
-        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+        class GRAPH(Graph.KEYS.GRAPH):
             OPTIMIZER = 'optimizer'
 
         class TENSOR(Graph.KEYS.TENSOR):
@@ -48,19 +48,19 @@ class RMSPropOptimizer(Optimizer):
 
     # TODO: rework to support different optimizer by class, not by name
     def kernel(self, inputs=None):
-        KT, KC, KS = self.KEYS.TENSOR, self.KEYS.CONFIG, self.KEYS.SUBGRAPH
+        KT, KC, KS = self.KEYS.TENSOR, self.KEYS.CONFIG, self.KEYS.GRAPH
         self.tensors[KT.LEARNING_RATE] = NotTrainableVariable(
             self.info.child_tensor(KT.LEARNING_RATE), [],
             current_backend().float32, self.config(KT.LEARNING_RATE))
-        self.tensors[KT.DECAY_LEARNING_RATE] = self.tensors[
-            KT.LEARNING_RATE].assign(
+        self.tensors[
+            KT.DECAY_LEARNING_RATE] = self.tensors[KT.LEARNING_RATE].assign(
                 self.tensors[KT.LEARNING_RATE] * self.config(KC.DECAY_RATIO))
 
         self.tensors[KS.OPTIMIZER] = self._get_optimizer(
             self.config(KC.OPTIMIZER_NAME))
 
     def minimize(self, *args, **kwargs):
-        return self.tensors[self.KEYS.SUBGRAPH.OPTIMIZER].minimize(
+        return self.tensors[self.KEYS.GRAPH.OPTIMIZER].minimize(
             *args, **kwargs)
 
     @property

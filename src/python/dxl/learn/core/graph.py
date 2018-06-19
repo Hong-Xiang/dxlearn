@@ -120,7 +120,7 @@ class Graph(ConfigurableWithName):
         class TENSOR:
             MAIN = 'main'
 
-        class SUBGRAPH:
+        class GRAPH:
             pass
 
         class CONFIG:
@@ -136,7 +136,7 @@ class Graph(ConfigurableWithName):
         self.graphs = graphs or dict()
         self.tensors = tensors or dict()
         self.is_made = False
-        
+
     def make(self, inputs=None):
         if not self.is_made:
             self._make_kernel_with_scope(inputs)
@@ -263,10 +263,10 @@ class Graph(ConfigurableWithName):
     #     if value is None and isinstance(maker, SubgraphMaker):
     #         self.graphs[key] = maker()
     #         return self.graphs(key)
-        # raise TypeError(
-        #     "Can't find any solution to make subgraph: in self.graphs: {}, in table: {}, maker: {}".
-        #     format(
-        #         self.graphs.get(key), SubgraphMakerTable.get(key), maker))
+    # raise TypeError(
+    #     "Can't find any solution to make subgraph: in self.graphs: {}, in table: {}, maker: {}".
+    #     format(
+    #         self.graphs.get(key), SubgraphMakerTable.get(key), maker))
 
     # def tensor(self, key, maker=None):
     # return self._get_or_create_item(self.tensors, key, Tensor, maker)
