@@ -60,8 +60,8 @@ class SuperResolution2x(Model):
                  graph=None):
         super().__init__(
             info,
-            inputs=inputs,
-            tensors={self.KEYS.GRAPHS.SHORT_CUT: graph},
+            tensors=inputs,
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -191,8 +191,8 @@ class SuperResolutionBlock(Model):
                  denorm_mean=None):
         super().__init__(
             info,
-            inputs=inputs,
-            tensors={self.KEYS.GRAPHS.SHORT_CUT: graph},
+            tensors=inputs,
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={
                 self.KEYS.CONFIG.INTERP: interp,
                 self.KEYS.CONFIG.FILTERS: filters,
