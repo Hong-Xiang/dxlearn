@@ -2,16 +2,15 @@ import tensorflow as tf
 import numpy as np
 from typing import Dict
 from dxl.learn.core import Model, Tensor
-from dxl.learn.model.stack import StackedResidualIncept, StackedConv2D, StackedResidualConv
+from dxl.learn.model.stack import Stack
+from dxl.learn.model.residual import Residual
 from dxl.learn.model.crop import boundary_crop, align_crop, shape_as_list
-from dxl.learn.model.cnn import UpSampling2D
+from dxl.learn.model.cnn import UpSampling2D, Conv2D
 from dxl.learn.model.losses import mean_square_error, CombinedSupervisedLoss, poission_loss
 
 __all__ = [
     "SuperResolution2x",
-    "SuperResolutionBlock",
-    "SuperResolutionMultiScale",
-    "SuperResolutionMultiScalev2",
+    "SuperResolutionBlock"
 ]
 
 
@@ -77,15 +76,14 @@ class SuperResolution2x(Model):
         }
 
     def _short_cut(self, name, inputs):
-        return StackedConv2D(
-            self.info.child_scope(name),
-            inputs=inputs,
-            nb_layers=self.config(self.KEYS.CONFIG.NB_LAYERS),
+       conv2d_ins = Conv2D(
+            info="conv2d",
             filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='same',
             activation='basic')
+        return Stack(self.info.child_scope(name), conv2d_ins, 2)
 
     def kernel(self, inputs):
         with tf.variable_scope('input'):
@@ -224,14 +222,14 @@ class SuperResolutionBlock(Model):
         }
 
     def _short_cut(self, name, inputs):
-        return StackedConv2D(
-            info=self.info.child_scope(name),
-            inputs=inputs,
+        conv2d_ins = Conv2D(
+            info="conv2d",
             filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='valid',
             activation='basic')
+        return Stack(self.info.child_scope(name), conv2d_ins, 2)
 
     def _input(self, inputs):
         with tf.variable_scope('input'):
