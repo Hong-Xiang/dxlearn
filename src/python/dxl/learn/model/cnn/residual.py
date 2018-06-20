@@ -93,7 +93,7 @@ class ResidualStackedConv(Model):
                  graph: StackedConv2D = None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: inputs},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={self.KEYS.CONFIG.RATIO: ratio})
 
@@ -149,7 +149,7 @@ class StackedResidualIncept(Model):
                  graph: ResidualIncept = None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: inputs},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
