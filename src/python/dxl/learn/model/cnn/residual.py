@@ -13,6 +13,25 @@ __all__ = [
 ]
 
 
+class Residual(Model):
+    class KEYS(Model.KEYS):
+        class CONFIG(Model.KEYS.CONFIG):
+            RATIO = 'ratio'
+
+        class GRAPH(Model.KEYS.GRAPH):
+            SHORT_CUT = 'short_cut'
+
+    def __init__(self, info, tensor, short_cut, ratio, config):
+        super().__init__(
+            info,
+            tensors={self.KEYS.TENSOR.INPUT: tensor},
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: short_cut},
+            config=self._parse_input_config(config, {
+                self.KEYS.CONFIG.RATIO: ratio
+            })
+        )
+
+
 class ResidualIncept(Model):
     """ResidualIncept Block
     Arguments:
@@ -35,7 +54,7 @@ class ResidualIncept(Model):
 
     def __init__(self,
                  info,
-                 input_tensor=None,
+                 input=None,
                  ratio=None,
                  sub_block: InceptionBlock = None):
         super().__init__(
@@ -162,15 +181,14 @@ class StackedResidualIncept(Model):
 
     def sub_block_maker(self, name, input_tensor):
         return ResidualIncept(
-                self.info.child_scope(name),
-                input_tensor=input_tensor,
-                ratio=0.3)
+            self.info.child_scope(name), input_tensor=input_tensor, ratio=0.3)
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         key = self.KEYS.SUB_BLOCK.NAME
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, x))
+            sub_block = self.get_or_create_graph(key,
+                                                 self.sub_block_maker(key, x))
             x = sub_block(x)
         return x
 
@@ -193,7 +211,7 @@ class StackedResidualConv(Model):
             NB_LAYERS = 'nb_layers'
 
         class SUB_BLOCK:
-           NAME = 'ResidualStackedConv'
+            NAME = 'ResidualStackedConv'
 
     def __init__(self,
                  info,
@@ -212,14 +230,13 @@ class StackedResidualConv(Model):
 
     def sub_block_maker(self, name, input_tensor):
         return ResidualStackedConv(
-                self.info.child_scope(name),
-                input_tensor=input_tensor,
-                ratio=0.1)
+            self.info.child_scope(name), input_tensor=input_tensor, ratio=0.1)
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             key = "{}_{}".format(self.KEYS.SUB_BLOCK.NAME, i)
-            sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, x))
+            sub_block = self.get_or_create_graph(key,
+                                                 self.sub_block_maker(key, x))
             x = sub_block(x)
         return x
