@@ -75,7 +75,10 @@ class Model(Graph):
             inputs = {self.KEYS.TENSOR.INPUT: inputs}
         self.inputs = {}
         self.outputs = {}
-        inputs.update(self.tensors)
+        # inputs.update(self.tensors)
+        for k, v in self.tensors.items():
+            if v is not None and inputs.get(k) is None:
+                inputs[k] = v
         self.construct(inputs)
         self._created = True
 
