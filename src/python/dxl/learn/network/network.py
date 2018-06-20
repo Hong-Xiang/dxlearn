@@ -21,7 +21,7 @@ class Network(Model):
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
 
-        class SUBGRAPH(Model.KEYS.SUBGRAPH):
+        class GRAPH(Model.KEYS.GRAPH):
             TRAINER = 'trainer'
             SUMMARY_WRITER = 'summary_writer'
             SAVER = 'saver'
@@ -43,8 +43,11 @@ class Network(Model):
         must **NOT** create new variable in this function since it will be called
         outside managed scope.
 
+        `trainer` is trainer for self.tensor('objective')
+        `metrics` is a collection of scalar tensor
+        `summaries` is a collection of summaries, typically some scalar summaries of metrics
+        `saver` is saver object for save/load functionality
         """
-        KS = self.KEYS.SUBGRAPH
         super().__init__(
             info,
             tensors=tensors,
