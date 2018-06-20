@@ -85,9 +85,10 @@ class BlocksTest(TestCase):
         self.assertAllEqual(y.shape, (2, 100, 100, 3))
 
     def test_UnitBlock(self):
+        x = self.get_input()
         unitblock_ins = UnitBlock(
             'UnitBlock_test',
-            inputs=self.get_input())
+            inputs=x)
         y = unitblock_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
