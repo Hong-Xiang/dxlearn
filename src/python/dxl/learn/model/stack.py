@@ -30,14 +30,14 @@ class Stack(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def _parse_input_config(self, config, **kwargs):
+    def _parse_input_config(self, config, addcfg):
         if config is None:
             config = {}
-        return config.update(kwargs)
+        return config.update(addcfg)
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_graph = self.graphs[self.KEYS.GRAPH.SHORT_CUT]
+        sub_graph = self.graphs[self.KEYS.GRAPHS.SHORT_CUT]
         for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             x = sub_graph(x)
         return x

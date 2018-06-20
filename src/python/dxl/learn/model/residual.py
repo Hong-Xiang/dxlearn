@@ -26,15 +26,15 @@ class Residual(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.3}
 
-    def _parse_input_config(self, config, **kwargs):
+    def _parse_input_config(self, config, addcfg):
         if config is None:
             config = {}
         
-        return config.update(kwargs)
+        return config.update(addcfg)
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_graph = self.graphs[self.KEYS.GRAPH.SHORT_CUT]
+        sub_graph = self.graphs[self.KEYS.GRAPHS.SHORT_CUT]
         h = sub_graph(x)
         with tf.name_scope("add"):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
