@@ -21,10 +21,9 @@ class Stack(Model):
             info,
             tensors={self.KEYS.TENSOR.INPUT: inputs},
             graphs={self.KEYS.GRAPHS.SHORT_CUT: short_cut},
-            config=self._parse_input_config(config, {
-                self.KEYS.CONFIG.NB_LAYERS: nb_layers
-            })
+            config={self.KEYS.CONFIG.NB_LAYERS: nb_layers}
         )
+    
 
     @classmethod
     def _default_config(cls):
@@ -37,12 +36,6 @@ class Stack(Model):
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_graph = self.graphs[self.KEYS.GRAPHS.SHORT_CUT]
         for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = sub_graph(x)
+            x = self.graphs[self.KEYS.GRAPHS.SHORT_CUT](x)
         return x
-
-
-# ============================================================================
-#                          Special Stack
-# ============================================================================

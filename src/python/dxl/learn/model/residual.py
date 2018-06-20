@@ -12,30 +12,20 @@ class Residual(Model):
         class GRAPHS(Model.KEYS.GRAPH):
             SHORT_CUT = 'short_cut'
 
-    def __init__(self, info, inputs, short_cut, ratio, config=None):
+    def __init__(self, info, inputs, short_cut, ratio):
         super().__init__(
             info,
             tensors={self.KEYS.TENSOR.INPUT: inputs},
             graphs={self.KEYS.GRAPHS.SHORT_CUT: short_cut},
-            config=self._parse_input_config(config, {
-                self.KEYS.CONFIG.RATIO: ratio
-            })
-        )
+            config={self.KEYS.CONFIG.RATIO: ratio})
 
     @classmethod
     def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.3}
 
-    def _parse_input_config(self, config, addcfg):
-        if config is None:
-            config = {}
-        
-        return config.update(addcfg)
-
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        sub_graph = self.graphs[self.KEYS.GRAPHS.SHORT_CUT]
-        h = sub_graph(x)
+        h = self.graphs[self.KEYS.GRAPHS.SHORT_CUT](x)
         with tf.name_scope("add"):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
         return x
