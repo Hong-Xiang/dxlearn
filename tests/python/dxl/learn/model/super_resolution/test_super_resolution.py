@@ -4,8 +4,8 @@ import tensorflow as tf
 import numpy as np
 from dxl.learn.test import TestCase
 from dxl.learn.model.super_resolution import SuperResolution2x, SuperResolutionBlock
-from dxl.learn.model.cnn import ResidualIncept, ResidualStackedConv
-from dxl.learn.model.cnn import StackedResidualIncept, StackedResidualConv
+from dxl.learn.model.residual import ResidualIncept, ResidualStackedConv
+from dxl.learn.model.stack import StackedResidualIncept, StackedResidualConv
 
 import pytest
 
