@@ -27,7 +27,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'ResidualIncept_test',
             inputs=tf.constant(x),
             ratio=ratio,
-            graph=self.get_model()())
+            graph=self.get_model())
         y = residualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -43,7 +43,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'ResidualStackedConv_test',
             inputs=tf.constant(x),
             ratio=ratio,
-            graph=self.get_model()())
+            graph=self.get_model())
         y = residualstackedconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -63,7 +63,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'StackedResidualIncept_test',
             inputs=tf.constant(x),
             nb_layers=nb_layers,
-            graph=self.get_model()())
+            graph=self.get_model())
         y = stackedResidualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -83,7 +83,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'StackedResidualConv_test',
             inputs=tf.constant(x),
             nb_layers=nb_layers,
-            graph=self.get_model()())
+            graph=self.get_model())
         y = stackedresidualconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
