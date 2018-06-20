@@ -67,7 +67,7 @@ class TestSpecialStackDefaultBlock(TestCase):
     def get_input(self):
         return np.ones([1, 10, 10, 3], dtype="float32")
 
-     def test_StackedResidualInceptDef(self):
+    def test_StackedResidualInceptDef(self):
         x = self.get_input()
         nb_layers = 2
         # default ResidualIncept ratio=0.3
