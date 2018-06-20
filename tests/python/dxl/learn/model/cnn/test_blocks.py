@@ -5,7 +5,6 @@ import numpy as np
 from dxl.learn.test import TestCase
 from dxl.learn.model.cnn import Conv2D, InceptionBlock, DownSampling2D, UpSampling2D
 from dxl.learn.test import UnitBlock
-from dxl.learn.model.stack import  StackedConv2D
 import pytest
 
 

@@ -8,7 +8,6 @@ from .. import activation
 __all__ = [
     # 'Conv1D',
     'Conv2D',
-    'StackedConv2D',
     'InceptionBlock',
     # 'Conv3D',
     # 'DeConv2D',
