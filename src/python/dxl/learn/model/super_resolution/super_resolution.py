@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
 from typing import Dict
-from ...core import Model, Tensor
-from ..cnn import StackedResidualIncept
-from ..crop import boundary_crop, align_crop, shape_as_list
-from ..cnn import UpSampling2D, StackedConv2D, StackedResidualConv
-from ..losses import mean_square_error, CombinedSupervisedLoss, poission_loss
+from dxl.learn.core import Model, Tensor
+from dxl.learn.model.stack import StackedResidualIncept, StackedConv2D, StackedResidualConv
+from dxl.learn.model.crop import boundary_crop, align_crop, shape_as_list
+from dxl.learn.model.cnn import UpSampling2D
+from dxl.learn.model.losses import mean_square_error, CombinedSupervisedLoss, poission_loss
 
 __all__ = [
     "SuperResolution2x",
