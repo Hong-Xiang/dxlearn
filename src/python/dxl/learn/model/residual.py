@@ -1,7 +1,8 @@
 import tensorflow as tf 
 import numpy as np 
 from dxl.learn.core import Model
-from dxl.learn.model.cnn import StackedConv2D, InceptionBlock
+from dxl.learn.model.cnn import InceptionBlock
+from dxl.learn.model.stack import StackedConv2D
 
 class Residual(Model):
     class KEYS(Model.KEYS):
