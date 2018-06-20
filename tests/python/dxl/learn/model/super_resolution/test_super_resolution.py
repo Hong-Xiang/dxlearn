@@ -41,11 +41,11 @@ class SuperResolution2xTest(TestCase):
         ratio = 0.3
         rsc_ins = ResidualStackedConv(
             'sR/src/rsc',
-            input_tensor=tf.constant(x, dtype='float32'),
+            inputs=tf.constant(x, dtype='float32'),
             ratio=ratio)
         src_ins = StackedResidualConv(
             'sR/src',
-            input_tensor=tf.constant(x, dtype='float32'),
+            inputs=tf.constant(x, dtype='float32'),
             nb_layers=nb_layers,
             sub_block=rsc_ins)
         superRe2x_ins = SuperResolution2x(
