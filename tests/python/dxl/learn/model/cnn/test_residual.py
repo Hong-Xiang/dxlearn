@@ -53,11 +53,8 @@ class ResudualTestUniBlok(tf.test.TestCase):
     def test_StackedResidualIncept(self):
         x = self.get_input()
         nb_layers = 2
-        def_ratio = 0.3
-        # default ResidualIncept ratio=0.3
         y_ = x
-        # for i in range(nb_layers):
-        #     y_ += (y_ + y_ * def_ratio)
+        
 
         stackedResidualincept_ins = StackedResidualIncept(
             'StackedResidualIncept_test',
@@ -73,11 +70,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
     def test_StackedResidualConv(self):
         x = self.get_input()
         nb_layers = 2
-        def_ratio = 0.1
-        # default ResidualIncept ratio=0.1
         y_ = x
-        # for i in range(nb_layers):
-        #     y_ += (y_ + y_ * def_ratio)
 
         stackedresidualconv_ins = StackedResidualConv(
             'StackedResidualConv_test',
