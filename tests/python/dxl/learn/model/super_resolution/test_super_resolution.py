@@ -72,7 +72,7 @@ class TestSuperResolutionBlock(TestCase):
         res = superReBlk_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
-            for k, v in res.items():
+            for _, v in res.items():
                 y = sess.run(v)
 
     def test_SuperResolutionBlock(self):
@@ -86,7 +86,7 @@ class TestSuperResolutionBlock(TestCase):
         res = superReBlk_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
-            for k, v in res.items():
+            for _, v in res.items():
                 y = sess.run(v)
 
 if __name__ == '__main__':

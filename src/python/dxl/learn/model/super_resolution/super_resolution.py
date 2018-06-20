@@ -102,8 +102,7 @@ class SuperResolution2x(Model):
                     name='stem0')
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        sub_graph = self.get_or_create_graph(key, self._short_cut(key, r))
-        x = sub_graph(r)
+        x = self.get_or_create_graph(key, self._short_cut(key, r))()
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
                 inputs=x,
@@ -337,8 +336,7 @@ class SuperResolutionBlock(Model):
             return upsampled
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        sub_graph = self.get_or_create_graph(key, self._short_cut(key, represents))
-        x = sub_graph(represents)
+        x = self.get_or_create_graph(key, self._short_cut(key, represents))()
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
         result.update(self._loss(label, result[self.KEYS.TENSOR.INFERENCE]))
