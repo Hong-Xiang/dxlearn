@@ -24,7 +24,6 @@ class Stack(Model):
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers}
         )
     
-
     @classmethod
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
