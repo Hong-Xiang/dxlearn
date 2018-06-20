@@ -10,7 +10,6 @@ __all__ = [
     'Conv2D',
     'StackedConv2D',
     'InceptionBlock',
-    'UnitBlock',
     # 'Conv3D',
     # 'DeConv2D',
     # 'DeConv3D',

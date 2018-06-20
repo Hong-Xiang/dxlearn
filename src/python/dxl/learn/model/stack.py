@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from dxl.learn.core import Model 
 from dxl.learn.model.cnn import Conv2D, InceptionBlock
-from dxl.learn.model.residual import ResidualIncept, ResidualStackedConv
+from .residual import ResidualIncept, ResidualStackedConv
 
 __all__ = [
     'Stack', 
