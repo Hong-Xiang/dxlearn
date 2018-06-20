@@ -213,7 +213,7 @@ class StackedResidualConv(Model):
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            key = "{}_{}".format(self.KEYS.GRAPHS.SHORT_CUT, i)
+            key = self.KEYS.GRAPHS.SHORT_CUT
             sub_graph = self.get_or_create_graph(key,
                                                  self._short_cut(key, x))
             x = sub_graph(x)
