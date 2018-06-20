@@ -28,11 +28,6 @@ class Stack(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def _parse_input_config(self, config, addcfg):
-        if config is None:
-            config = {}
-        return config.update(addcfg)
-
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
