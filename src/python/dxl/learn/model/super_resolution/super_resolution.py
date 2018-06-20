@@ -85,7 +85,7 @@ class SuperResolution2x(Model):
             activation='basic')
         return Stack(
             info=self.info.child_scope(name),
-            short_cut=conv2d_ins,
+            models=conv2d_ins,
             nb_layers=2)
 
     def kernel(self, inputs):
@@ -233,7 +233,7 @@ class SuperResolutionBlock(Model):
             activation='basic')
         return Stack(
             info=self.info.child_scope(name),
-            short_cut=conv2d_ins,
+            models=conv2d_ins,
             nb_layers=2)
 
     def _input(self, inputs):

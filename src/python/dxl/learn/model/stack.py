@@ -14,13 +14,13 @@ class Stack(Model):
             NB_LAYERS = 'nb_layers'
 
         class GRAPHS(Model.KEYS.GRAPH):
-            SHORT_CUT = 'short_cut'
+            MODELS = 'models'
 
-    def __init__(self, info, inputs=None, short_cut=None, nb_layers=None):
+    def __init__(self, info, inputs=None, models=None, nb_layers=None):
         super().__init__(
             info,
             tensors={self.KEYS.TENSOR.INPUT: inputs},
-            graphs={self.KEYS.GRAPHS.SHORT_CUT: short_cut},
+            graphs={self.KEYS.GRAPHS.MODELS: models},
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers}
         )
     
@@ -31,5 +31,5 @@ class Stack(Model):
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = self.graphs[self.KEYS.GRAPHS.SHORT_CUT](x)
+            x = self.graphs[self.KEYS.GRAPHS.MODELS](x)
         return x
