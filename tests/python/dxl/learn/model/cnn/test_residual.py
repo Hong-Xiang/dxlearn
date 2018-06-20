@@ -15,8 +15,10 @@ class ResudualTestUniBlok(tf.test.TestCase):
     def get_input(self):
         return np.ones([1, 10, 10, 3], dtype="float32")
 
+    def get_model(self):
+        return UnitBlock("UnitBlock_test")
+
     def test_ResidualIncept(self):
-        unitblock_ins = UnitBlock('UnitBlock_test')
         x = self.get_input()
         ratio = 0.5
         y_ = x + ratio * x
@@ -25,7 +27,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'ResidualIncept_test',
             inputs=tf.constant(x),
             ratio=ratio,
-            graph=unitblock_ins)
+            graph=self.get_model()())
         y = residualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -33,7 +35,6 @@ class ResudualTestUniBlok(tf.test.TestCase):
             self.assertAllEqual(y, y_)
 
     def test_ResidualStackedConv(self):
-        unitblock_ins = UnitBlock('UnitBlock_test')
         x = self.get_input()
         ratio = 0.5
         y_ = x + ratio * x
@@ -42,7 +43,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'ResidualStackedConv_test',
             inputs=tf.constant(x),
             ratio=ratio,
-            graph=unitblock_ins)
+            graph=self.get_model()())
         y = residualstackedconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -50,7 +51,6 @@ class ResudualTestUniBlok(tf.test.TestCase):
             self.assertAllEqual(y, y_)
 
     def test_StackedResidualIncept(self):
-        unitblock_ins = UnitBlock('UnitBlock_test')
         x = self.get_input()
         nb_layers = 2
         def_ratio = 0.3
@@ -63,7 +63,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'StackedResidualIncept_test',
             inputs=tf.constant(x),
             nb_layers=nb_layers,
-            graph=unitblock_ins)
+            graph=self.get_model()())
         y = stackedResidualincept_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -71,7 +71,6 @@ class ResudualTestUniBlok(tf.test.TestCase):
             self.assertAllEqual(y, y_)
 
     def test_StackedResidualConv(self):
-        unitblock_ins = UnitBlock('UnitBlock_test')
         x = self.get_input()
         nb_layers = 2
         def_ratio = 0.1
@@ -84,7 +83,7 @@ class ResudualTestUniBlok(tf.test.TestCase):
             'StackedResidualConv_test',
             inputs=tf.constant(x),
             nb_layers=nb_layers,
-            graph=unitblock_ins)
+            graph=self.get_model()())
         y = stackedresidualconv_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
