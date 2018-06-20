@@ -1,7 +1,6 @@
 import tensorflow as tf
 import numpy as np
 from dxl.learn.model.stack import Stack, StackedConv2D
-from dxl.learn.model.stack import StackedResidualConv, StackedResidualIncept
 from dxl.learn.test import TestCase, UnitBlock
 
 
