@@ -6,8 +6,6 @@ from dxl.learn.model.cnn import Conv2D, InceptionBlock
 __all__ = [
     'Stack',
     'StackedConv2D'
-    'StackedResidualIncept',
-    'StackedResidualConv'
 ]
 
 class Stack(Model):
@@ -120,99 +118,99 @@ class StackedConv2D(Model):
         return x
 
 
-class StackedResidualIncept(Model):
-    """StackedResidual Block
-    Arguments:
-        name: Path := dxl.fs.
-        inputs: Tensor input.
-        nb_layers: Integer.
-        sub_graph: ResidualIncept Instance.
-        graph_info: GraphInfo or DistributeGraphInfo
-    """
+# class StackedResidualIncept(Model):
+#     """StackedResidual Block
+#     Arguments:
+#         name: Path := dxl.fs.
+#         inputs: Tensor input.
+#         nb_layers: Integer.
+#         sub_graph: ResidualIncept Instance.
+#         graph_info: GraphInfo or DistributeGraphInfo
+#     """
 
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
+#     class KEYS(Model.KEYS):
+#         class TENSOR(Model.KEYS.TENSOR):
+#             pass
 
-        class CONFIG:
-            NB_LAYERS = 'nb_layers'
+#         class CONFIG:
+#             NB_LAYERS = 'nb_layers'
 
-        class GRAPHS:
-            SHORT_CUT = 'ResidualIncept'
+#         class GRAPHS:
+#             SHORT_CUT = 'ResidualIncept'
 
-    def __init__(self,
-                 info,
-                 inputs=None,
-                 nb_layers=None,
-                 graph: ResidualIncept = None):
-        super().__init__(
-            info,
-            tensors={self.KEYS.TENSOR.INPUT: inputs},
-            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
-            config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
+#     def __init__(self,
+#                  info,
+#                  inputs=None,
+#                  nb_layers=None,
+#                  graph: ResidualIncept = None):
+#         super().__init__(
+#             info,
+#             tensors={self.KEYS.TENSOR.INPUT: inputs},
+#             graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
+#             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
-    @classmethod
-    def _default_config(cls):
-        return {cls.KEYS.CONFIG.NB_LAYERS: 2}
+#     @classmethod
+#     def _default_config(cls):
+#         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def _short_cut(self, name, inputs):
-        return ResidualIncept(
-            self.info.child_scope(name), inputs=inputs, ratio=0.3)
+#     def _short_cut(self, name, inputs):
+#         return ResidualIncept(
+#             self.info.child_scope(name), inputs=inputs, ratio=0.3)
 
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        key = self.KEYS.GRAPHS.SHORT_CUT
-        for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            sub_graph = self.get_or_create_graph(key,
-                                                 self._short_cut(key, x))
-            x = sub_graph(x)
-        return x
+#     def kernel(self, inputs):
+#         x = inputs[self.KEYS.TENSOR.INPUT]
+#         key = self.KEYS.GRAPHS.SHORT_CUT
+#         for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
+#             sub_graph = self.get_or_create_graph(key,
+#                                                  self._short_cut(key, x))
+#             x = sub_graph(x)
+#         return x
 
 
-class StackedResidualConv(Model):
-    """StackedResidual Block
-    Arguments:
-        name: Path := dxl.fs.
-        inputs: Tensor input.
-        nb_layers: Integer.
-        sub_graph: ResidualStackedConv Instance.
-        graph_info: GraphInfo or DistributeGraphInfo
-    """
+# class StackedResidualConv(Model):
+#     """StackedResidual Block
+#     Arguments:
+#         name: Path := dxl.fs.
+#         inputs: Tensor input.
+#         nb_layers: Integer.
+#         sub_graph: ResidualStackedConv Instance.
+#         graph_info: GraphInfo or DistributeGraphInfo
+#     """
 
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
+#     class KEYS(Model.KEYS):
+#         class TENSOR(Model.KEYS.TENSOR):
+#             pass
 
-        class CONFIG:
-            NB_LAYERS = 'nb_layers'
+#         class CONFIG:
+#             NB_LAYERS = 'nb_layers'
 
-        class GRAPHS:
-            SHORT_CUT = 'ResidualStackedConv'
+#         class GRAPHS:
+#             SHORT_CUT = 'ResidualStackedConv'
 
-    def __init__(self,
-                 info,
-                 inputs=None,
-                 nb_layers=None,
-                 graph: ResidualStackedConv = None):
-        super().__init__(
-            info,
-            tensors={self.KEYS.TENSOR.INPUT: inputs},
-            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
-            config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
+#     def __init__(self,
+#                  info,
+#                  inputs=None,
+#                  nb_layers=None,
+#                  graph: ResidualStackedConv = None):
+#         super().__init__(
+#             info,
+#             tensors={self.KEYS.TENSOR.INPUT: inputs},
+#             graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
+#             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
-    @classmethod
-    def _default_config(cls):
-        return {cls.KEYS.CONFIG.NB_LAYERS: 2}
+#     @classmethod
+#     def _default_config(cls):
+#         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def _short_cut(self, name, inputs):
-        return ResidualStackedConv(
-            self.info.child_scope(name), inputs=inputs, ratio=0.1)
+#     def _short_cut(self, name, inputs):
+#         return ResidualStackedConv(
+#             self.info.child_scope(name), inputs=inputs, ratio=0.1)
 
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            key = self.KEYS.GRAPHS.SHORT_CUT
-            sub_graph = self.get_or_create_graph(key,
-                                                 self._short_cut(key, x))
-            x = sub_graph(x)
-        return x
+#     def kernel(self, inputs):
+#         x = inputs[self.KEYS.TENSOR.INPUT]
+#         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
+#             key = self.KEYS.GRAPHS.SHORT_CUT
+#             sub_graph = self.get_or_create_graph(key,
+#                                                  self._short_cut(key, x))
+#             x = sub_graph(x)
+#         return x
