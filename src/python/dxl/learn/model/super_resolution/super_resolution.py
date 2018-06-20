@@ -76,7 +76,7 @@ class SuperResolution2x(Model):
         }
 
     def _short_cut(self, name, inputs):
-       conv2d_ins = Conv2D(
+        conv2d_ins = Conv2D(
             info="conv2d",
             filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
