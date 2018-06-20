@@ -94,79 +94,7 @@ class Conv2D(Model):
             reuse=self._created)
         x = activation.apply(acc, x, 'post')
         return x
-
-
-class StackedConv2D(Model):
-    """StackedConv2D convolution model
-    Arguments:
-        name: Path := dxl.fs.
-        inputs: Tensor input.
-        nb_layers: Integer, the number of stacked layers.
-        filters: Integer, the dimensionality of the output space.
-        kernel_size: An integer or tuple/list of 2 integers.
-        strides: An integer or tuple/list of 2 integers.
-        padding: One of "valid" or "same" (case-insensitive).
-        activation: Activation function. Set it to None to maintain a linear activation.
-        graph_info: GraphInfo or DistributeGraphInfo
-    """
-
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
-
-        class CONFIG:
-            NB_LAYERS = 'nb_layers'
-            FILTERS = 'filters'
-            KERNEL_SIZE = 'kernel_size'
-            STRIDES = 'strides'
-            PADDING = 'padding'
-            ACTIVATION = 'activation'
-
-    def __init__(
-            self,
-            info,
-            inputs=None,
-            nb_layers=None,
-            filters=None,
-            kernel_size=None,
-            strides=None,
-            padding=None,
-            activation=None):
-        super().__init__(
-            info,
-            tensors={self.KEYS.TENSOR.INPUT: inputs},
-            config={
-                self.KEYS.CONFIG.NB_LAYERS: nb_layers,
-                self.KEYS.CONFIG.FILTERS: filters,
-                self.KEYS.CONFIG.KERNEL_SIZE: kernel_size,
-                self.KEYS.CONFIG.STRIDES: strides,
-                self.KEYS.CONFIG.PADDING: padding,
-                self.KEYS.CONFIG.ACTIVATION: activation
-            })
-
-    @classmethod
-    def _default_config(cls):
-        return {
-            cls.KEYS.CONFIG.NB_LAYERS: 2,
-            cls.KEYS.CONFIG.FILTERS: 5,
-            cls.KEYS.CONFIG.STRIDES: (1, 1),
-            cls.KEYS.CONFIG.PADDING: 'valid',
-            cls.KEYS.CONFIG.ACTIVATION: 'linear'
-        }
-
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = Conv2D(
-                'conv2d_{}'.format(i),
-                inputs=x,
-                filters=self.config(self.KEYS.CONFIG.FILTERS),
-                kernel_size=self.config(self.KEYS.CONFIG.KERNEL_SIZE),
-                strides=self.config(self.KEYS.CONFIG.STRIDES),
-                padding=self.config(self.KEYS.CONFIG.PADDING),
-                activation=self.config(self.KEYS.CONFIG.ACTIVATION))()
-        return x
-
+        
 
 class InceptionBlock(Model):
     """InceptionBlock model
@@ -250,31 +178,6 @@ class InceptionBlock(Model):
         }
         key = 'conv_end'
         x = self.get_or_create_graph(key, self._short_cut(key, x, config))()
-        return x
-
-
-class UnitBlock(Model):
-    """UnitBlock block for test use.
-    Arguments:
-        name: Path := dxl.fs.
-        inputs: Tensor input.
-        graph_info: GraphInfo or DistributeGraphInfo
-    Return:
-        inputs
-    """
-
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
-
-        class CONFIG:
-            pass
-
-    def __init__(self, info='UnitBlock', inputs=None):
-        super().__init__(info, tensors={self.KEYS.TENSOR.INPUT: inputs})
-
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
         return x
 
 
