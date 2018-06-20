@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np 
 from dxl.learn.core import Model
 from dxl.learn.model.cnn import InceptionBlock
-from .stack import StackedConv2D
 
 class Residual(Model):
     class KEYS(Model.KEYS):
@@ -98,58 +97,58 @@ class ResidualIncept(Model):
         return x
 
 
-class ResidualStackedConv(Model):
-    """ ResidualStackedConv Block
-    Arguments:
-        name: Path := dxl.fs.
-        inputs: Tensor input.
-        ratio: The decimal.
-        sub_graph: StackedConv2D instance.
-        graph_info: GraphInfo or DistributeGraphInfo
-    """
+# class ResidualStackedConv(Model):
+#     """ ResidualStackedConv Block
+#     Arguments:
+#         name: Path := dxl.fs.
+#         inputs: Tensor input.
+#         ratio: The decimal.
+#         sub_graph: StackedConv2D instance.
+#         graph_info: GraphInfo or DistributeGraphInfo
+#     """
 
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
+#     class KEYS(Model.KEYS):
+#         class TENSOR(Model.KEYS.TENSOR):
+#             pass
 
-        class CONFIG:
-            RATIO = 'ratio'
+#         class CONFIG:
+#             RATIO = 'ratio'
 
-        class GRAPHS:
-            SHORT_CUT = 'StackedConv2DBlock'
+#         class GRAPHS:
+#             SHORT_CUT = 'StackedConv2DBlock'
 
-    def __init__(self,
-                 info,
-                 inputs=None,
-                 ratio=None,
-                 graph: StackedConv2D = None):
-        super().__init__(
-            info,
-            tensors={self.KEYS.TENSOR.INPUT: inputs},
-            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
-            config={self.KEYS.CONFIG.RATIO: ratio})
+#     def __init__(self,
+#                  info,
+#                  inputs=None,
+#                  ratio=None,
+#                  graph: StackedConv2D = None):
+#         super().__init__(
+#             info,
+#             tensors={self.KEYS.TENSOR.INPUT: inputs},
+#             graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
+#             config={self.KEYS.CONFIG.RATIO: ratio})
 
-    @classmethod
-    def _default_config(cls):
-        return {cls.KEYS.CONFIG.RATIO: 0.1}
+#     @classmethod
+#     def _default_config(cls):
+#         return {cls.KEYS.CONFIG.RATIO: 0.1}
 
-    def _short_cut(self, name, inputs):
-        return StackedConv2D(
-            self.info.child_scope(name),
-            inputs=inputs,
-            nb_layers=2,
-            filters=1,
-            kernel_size=(1, 1),
-            strides=(1, 1),
-            padding='same',
-            activation='basic')
+#     def _short_cut(self, name, inputs):
+#         return StackedConv2D(
+#             self.info.child_scope(name),
+#             inputs=inputs,
+#             nb_layers=2,
+#             filters=1,
+#             kernel_size=(1, 1),
+#             strides=(1, 1),
+#             padding='same',
+#             activation='basic')
 
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        key = self.KEYS.GRAPHS.SHORT_CUT
-        sub_graph = self.get_or_create_graph(key, self._short_cut(key, x))
-        h = sub_graph(x)
-        with tf.name_scope('add'):
-            x = x + h * self.config(self.KEYS.CONFIG.RATIO)
-        return x
+#     def kernel(self, inputs):
+#         x = inputs[self.KEYS.TENSOR.INPUT]
+#         key = self.KEYS.GRAPHS.SHORT_CUT
+#         sub_graph = self.get_or_create_graph(key, self._short_cut(key, x))
+#         h = sub_graph(x)
+#         with tf.name_scope('add'):
+#             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
+#         return x
 

@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from dxl.learn.model.residual import Residual
 from dxl.learn.test import TestCase, UnitBlock
-from dxl.learn.model.residual import ResidualIncept, ResidualStackedConv
+from dxl.learn.model.residual import ResidualIncept
 
 class TestResidual(TestCase):
     def get_input(self):
@@ -46,20 +46,20 @@ class TestSpecialResidual(TestCase):
             y = sess.run(y)
             self.assertAllEqual(y, y_)
 
-    def test_ResidualStackedConv(self):
-        x = self.get_input()
-        ratio = 0.5
-        y_ = x + ratio * x
+    # def test_ResidualStackedConv(self):
+    #     x = self.get_input()
+    #     ratio = 0.5
+    #     y_ = x + ratio * x
 
-        residualstackedconv_ins = ResidualStackedConv(
-            'ResidualStackedConv_test',
-            tf.constant(x),
-            ratio,
-            self.get_model())
-        y = residualstackedconv_ins()
-        with self.variables_initialized_test_session() as sess:
-            y = sess.run(y)
-            self.assertAllEqual(y, y_)
+    #     residualstackedconv_ins = ResidualStackedConv(
+    #         'ResidualStackedConv_test',
+    #         tf.constant(x),
+    #         ratio,
+    #         self.get_model())
+    #     y = residualstackedconv_ins()
+    #     with self.variables_initialized_test_session() as sess:
+    #         y = sess.run(y)
+    #         self.assertAllEqual(y, y_)
 
 
 class TestSpecialResidualDefaultBlock(TestCase):
@@ -74,14 +74,14 @@ class TestSpecialResidualDefaultBlock(TestCase):
         y = residualincept_ins()
         self.assertAllEqual(y.shape, (1, 10, 10, 3))
 
-    def test_ResidualStackedConvDef(self):
-        x = self.get_input()
-        ratio = 0.5
-        residualstackedconv_ins = ResidualStackedConv(
-            'ResidualStackedConvDef_test',
-            tf.constant(x),
-            ratio)
-        y = residualstackedconv_ins()
-        self.assertAllEqual(y.shape, (1, 10, 10, 3))
+    # def test_ResidualStackedConvDef(self):
+    #     x = self.get_input()
+    #     ratio = 0.5
+    #     residualstackedconv_ins = ResidualStackedConv(
+    #         'ResidualStackedConvDef_test',
+    #         tf.constant(x),
+    #         ratio)
+    #     y = residualstackedconv_ins()
+    #     self.assertAllEqual(y.shape, (1, 10, 10, 3))
 
     
