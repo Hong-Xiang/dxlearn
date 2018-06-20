@@ -20,7 +20,7 @@ class SRKeys:
 
 class SuperResolution2xTest(TestCase):
     def test_SuperResolution2xDef(self):
-        # test default sub_block
+        # test default graph
         x = np.random.randint(0, 255, [2, 32, 32, 3])
         superRe2x_ins = SuperResolution2x(
             'superRe2x_test',
@@ -35,7 +35,7 @@ class SuperResolution2xTest(TestCase):
                 y = sess.run(y)
 
     def test_SuperResolution2xInp(self):
-        # test input sub_block
+        # test input graph
         x = np.random.randint(0, 255, [2, 32, 32, 3])
         nb_layers = 2
         ratio = 0.3
@@ -47,14 +47,14 @@ class SuperResolution2xTest(TestCase):
             'sR/src',
             inputs=tf.constant(x, dtype='float32'),
             nb_layers=nb_layers,
-            sub_block=rsc_ins)
+            graph=rsc_ins)
         superRe2x_ins = SuperResolution2x(
             'sR',
             inputs={'input': tf.constant(x, dtype='float32')},
             nb_layers=2,
             filters=5,
             boundary_crop=[4, 4],
-            sub_block=src_ins)
+            graph=src_ins)
         res = superRe2x_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -64,7 +64,7 @@ class SuperResolution2xTest(TestCase):
 
 class SuperResolutionBlockTest(TestCase):
     def test_SuperResolutionBlockDef(self):
-        # test default sub_block
+        # test default graph
         x = np.random.randint(0, 255, [2, 32, 32, 3])
         l = np.random.randint(0, 255, [2, 64, 64, 3])
         superReBlk_ins = SuperResolutionBlock(
