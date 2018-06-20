@@ -8,9 +8,7 @@ from .. import activation
 __all__ = [
     # 'Conv1D',
     'Conv2D',
-    'StackedConv2D',
     'InceptionBlock',
-    'UnitBlock',
     # 'Conv3D',
     # 'DeConv2D',
     # 'DeConv3D',
@@ -30,7 +28,7 @@ class Conv2D(Model):
     """2D convolution model
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         filters: Integer, the dimensionality of the output space.
         kernel_size: An integer or tuple/list of 2 integers.
         strides: An integer or tuple/list of 2 integers.
@@ -54,7 +52,7 @@ class Conv2D(Model):
     def __init__(
             self,
             info='conv2d',
-            input_tensor=None,
+            inputs=None,
             filters=None,
             kernel_size=None,
             strides=None,
@@ -62,7 +60,7 @@ class Conv2D(Model):
             activation=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.FILTERS: filters,
                 self.KEYS.CONFIG.KERNEL_SIZE: kernel_size,
@@ -94,85 +92,13 @@ class Conv2D(Model):
             reuse=self._created)
         x = activation.apply(acc, x, 'post')
         return x
-
-
-class StackedConv2D(Model):
-    """StackedConv2D convolution model
-    Arguments:
-        name: Path := dxl.fs.
-        input_tensor: Tensor input.
-        nb_layers: Integer, the number of stacked layers.
-        filters: Integer, the dimensionality of the output space.
-        kernel_size: An integer or tuple/list of 2 integers.
-        strides: An integer or tuple/list of 2 integers.
-        padding: One of "valid" or "same" (case-insensitive).
-        activation: Activation function. Set it to None to maintain a linear activation.
-        graph_info: GraphInfo or DistributeGraphInfo
-    """
-
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
-
-        class CONFIG:
-            NB_LAYERS = 'nb_layers'
-            FILTERS = 'filters'
-            KERNEL_SIZE = 'kernel_size'
-            STRIDES = 'strides'
-            PADDING = 'padding'
-            ACTIVATION = 'activation'
-
-    def __init__(
-            self,
-            info,
-            input_tensor=None,
-            nb_layers=None,
-            filters=None,
-            kernel_size=None,
-            strides=None,
-            padding=None,
-            activation=None):
-        super().__init__(
-            info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
-            config={
-                self.KEYS.CONFIG.NB_LAYERS: nb_layers,
-                self.KEYS.CONFIG.FILTERS: filters,
-                self.KEYS.CONFIG.KERNEL_SIZE: kernel_size,
-                self.KEYS.CONFIG.STRIDES: strides,
-                self.KEYS.CONFIG.PADDING: padding,
-                self.KEYS.CONFIG.ACTIVATION: activation
-            })
-
-    @classmethod
-    def _default_config(cls):
-        return {
-            cls.KEYS.CONFIG.NB_LAYERS: 2,
-            cls.KEYS.CONFIG.FILTERS: 5,
-            cls.KEYS.CONFIG.STRIDES: (1, 1),
-            cls.KEYS.CONFIG.PADDING: 'valid',
-            cls.KEYS.CONFIG.ACTIVATION: 'linear'
-        }
-
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = Conv2D(
-                'conv2d_{}'.format(i),
-                input_tensor=x,
-                filters=self.config(self.KEYS.CONFIG.FILTERS),
-                kernel_size=self.config(self.KEYS.CONFIG.KERNEL_SIZE),
-                strides=self.config(self.KEYS.CONFIG.STRIDES),
-                padding=self.config(self.KEYS.CONFIG.PADDING),
-                activation=self.config(self.KEYS.CONFIG.ACTIVATION))()
-        return x
-
+        
 
 class InceptionBlock(Model):
     """InceptionBlock model
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         paths: Integer.
         activation: Activation function. Set it to None to maintain a linear activation.
         graph_info: GraphInfo or DistributeGraphInfo
@@ -192,12 +118,12 @@ class InceptionBlock(Model):
     def __init__(
             self,
             info='incept',
-            input_tensor=None,
+            inputs=None,
             paths=None,
             activation=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.PATHS: paths,
                 self.KEYS.CONFIG.ACTIVATION: activation
@@ -207,14 +133,14 @@ class InceptionBlock(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.PATHS: 2, cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
-    def sub_block_maker(self, name, input_tensor, config):
-        sub_block = Conv2D(
+    def _short_cut(self, name, inputs, config):
+        shortcut = Conv2D(
             info=self.info.child_scope(name),
-            input_tensor=input_tensor,
+            inputs=inputs,
             filters=config[self.KEYS.CONFIG.FILTERS],
             kernel_size=config[self.KEYS.CONFIG.KERNEL_SIZE],
             activation=config[self.KEYS.CONFIG.ACTIVATION])
-        return sub_block
+        return shortcut
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
@@ -230,7 +156,7 @@ class InceptionBlock(Model):
                 self.KEYS.CONFIG.ACTIVATION: 'linear'
             }
             key = 'conv_{}'.format(i_path)
-            h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
+            h = self.get_or_create_graph(key, self._short_cut(key, x, config))()
             for j in range(i_path):
                 config = {
                     self.KEYS.CONFIG.FILTERS: filters,
@@ -238,7 +164,7 @@ class InceptionBlock(Model):
                     self.KEYS.CONFIG.ACTIVATION: 'pre'
                 }
                 key = 'conv2d_{}'.format(j+1)
-                h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
+                h = self.get_or_create_graph(key, self._short_cut(key, x, config))()
             paths.append(h)
         with tf.name_scope('concat'):
             x = tf.concat(paths, axis=-1)
@@ -249,32 +175,7 @@ class InceptionBlock(Model):
             self.KEYS.CONFIG.ACTIVATION: 'pre'
         }
         key = 'conv_end'
-        x = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
-        return x
-
-
-class UnitBlock(Model):
-    """UnitBlock block for test use.
-    Arguments:
-        name: Path := dxl.fs.
-        input_tensor: Tensor input.
-        graph_info: GraphInfo or DistributeGraphInfo
-    Return:
-        input_tensor
-    """
-
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
-
-        class CONFIG:
-            pass
-
-    def __init__(self, info='UnitBlock', input_tensor=None):
-        super().__init__(info, inputs={self.KEYS.TENSOR.INPUT: input_tensor})
-
-    def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
+        x = self.get_or_create_graph(key, self._short_cut(key, x, config))()
         return x
 
 
@@ -283,7 +184,7 @@ class DownSampling2D(Model):
     Arguments:
         name: Path := dxl.fs.
             A unique block name.
-        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        inputs: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
         size: tuple of int/float
             (height, width) scale factor or new size of height and width.
         is_scale: boolean
@@ -310,14 +211,14 @@ class DownSampling2D(Model):
 
     def __init__(self,
                  info='downsample2d',
-                 input_tensor=None,
+                 inputs=None,
                  size=None,
                  is_scale=None,
                  method=None,
                  align_corners=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.SIZE: size,
                 self.KEYS.CONFIG.IS_SCALE: is_scale,
@@ -367,7 +268,7 @@ class UpSampling2D(Model):
         Arguments:
         name: Path := dxl.fs.
             A unique block name.
-        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        inputs: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
         size: tuple of int/float
             (height, width) scale factor or new size of height and width.
         is_scale: boolean
@@ -394,14 +295,14 @@ class UpSampling2D(Model):
 
     def __init__(self,
                  info='upsample2d',
-                 input_tensor=None,
+                 inputs=None,
                  size=None,
                  is_scale=None,
                  method=None,
                  align_corners=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.SIZE: size,
                 self.KEYS.CONFIG.IS_SCALE: is_scale,

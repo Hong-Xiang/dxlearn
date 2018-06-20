@@ -61,10 +61,10 @@ class Network(Model):
         return c
 
     def _fetech_tensor_maybe_in_dict(self, group_name, name=None):
-        if isinstance(self.tensor(group_name), dict) and name is not None:
-            return self.tensor(group_name)[name]
+        if isinstance(self.tensors[group_name], dict) and name is not None:
+            return self.tensors[group_name][name]
         if name is None:
-            return self.tensor(group_name)
+            return self.tensors[group_name]
         raise ValueError("Invalid feteching tensor: {}/{}.".format(
             group_name, name))
 

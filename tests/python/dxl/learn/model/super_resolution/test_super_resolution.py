@@ -4,10 +4,9 @@ import tensorflow as tf
 import numpy as np
 from dxl.learn.test import TestCase
 from dxl.learn.model.super_resolution import SuperResolution2x, SuperResolutionBlock
-from dxl.learn.model.cnn import ResidualIncept, ResidualStackedConv
-from dxl.learn.model.cnn import StackedResidualIncept, StackedResidualConv
-
+from dxl.learn.test import UnitBlock
 import pytest
+
 
 class SRKeys:
     REPRESENTS = 'reps'
@@ -18,69 +17,77 @@ class SRKeys:
     MSE_LOSS = 'mse_loss'
 
 
-@pytest.mark.skip('Not fixed yet')
-class SuperResolution2xTest(TestCase):
+class TestSuperResolution2x(TestCase):
+    def get_input(self):
+        return tf.constant(np.ones([2, 100, 100, 3], dtype="float32"))
+    
+    def make_model(self):
+        return UnitBlock("unitblock_test")
+
     def test_SuperResolution2xDef(self):
-        # test default sub_block
-        x = np.random.randint(0, 255, [2, 32, 32, 3])
+        x = self.get_input()
         superRe2x_ins = SuperResolution2x(
             'superRe2x_test',
-            inputs={'input': tf.constant(x, dtype='float32')},
+            {'input': x},
             nb_layers=2,
             filters=5,
             boundary_crop=[4, 4])
         res = superRe2x_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            for key, y in res.items():
-                y = sess.run(y)
+        with self.variables_initialized_test_session() as sess:
+            for k, v in res.items():
+                y = sess.run(v)
 
-    def test_SuperResolution2xInp(self):
-        # test input sub_block
-        x = np.random.randint(0, 255, [2, 32, 32, 3])
-        nb_layers = 2
-        ratio = 0.3
-        rsc_ins = ResidualStackedConv(
-            'sR/src/rsc',
-            input_tensor=tf.constant(x, dtype='float32'),
-            ratio=ratio)
-        src_ins = StackedResidualConv(
-            'sR/src',
-            input_tensor=tf.constant(x, dtype='float32'),
-            nb_layers=nb_layers,
-            sub_block=rsc_ins)
+    def test_SuperResolution2x(self):
+        x = self.get_input()
         superRe2x_ins = SuperResolution2x(
             'sR',
-            inputs={'input': tf.constant(x, dtype='float32')},
+            inputs={'input': x},
             nb_layers=2,
             filters=5,
             boundary_crop=[4, 4],
-            sub_block=src_ins)
+            graph=self.make_model())
         res = superRe2x_ins()
-        with self.test_session() as sess:
-            sess.run(tf.global_variables_initializer())
-            for key, y in res.items():
-                y = sess.run(y)
+        with self.variables_initialized_test_session() as sess:
+            for k, v in res.items():
+                y = sess.run(v)
 
 
-@pytest.mark.skip('Not fixed yet')
-class SuperResolutionBlockTest(TestCase):
+class TestSuperResolutionBlock(TestCase):
+    def get_input(self):
+        x = tf.constant(np.ones([2, 32, 32, 3], dtype="float32"))
+        y = tf.constant(np.ones([2, 64, 64, 3], dtype="float32"))
+        return (x, y)
+    
+    def make_model(self):
+        return UnitBlock("unitblock_test")
+
     def test_SuperResolutionBlockDef(self):
-        # test default sub_block
-        x = np.random.randint(0, 255, [2, 32, 32, 3])
-        l = np.random.randint(0, 255, [2, 64, 64, 3])
+        # test default graph
+        x, y = self.get_input()
         superReBlk_ins = SuperResolutionBlock(
             'superReBlk_test',
             inputs={
-                'input': tf.constant(x, tf.float32),
-                'label': tf.constant(l, tf.float32)
-            })
+            'input': x,
+            'label': y})
         res = superReBlk_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
-            for key, y in res.items():
-                y = sess.run(y)
+            for _, v in res.items():
+                y = sess.run(v)
 
+    def test_SuperResolutionBlock(self):
+        x, y = self.get_input()
+        superReBlk_ins = SuperResolutionBlock(
+            'superReBlk_test',
+            inputs={
+             'input': x,
+             'label': y},
+            graph=self.make_model())
+        res = superReBlk_ins()
+        with self.test_session() as sess:
+            sess.run(tf.global_variables_initializer())
+            for _, v in res.items():
+                y = sess.run(v)
 
 if __name__ == '__main__':
     tf.test.main()
