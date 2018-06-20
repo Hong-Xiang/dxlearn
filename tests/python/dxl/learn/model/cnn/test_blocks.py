@@ -85,7 +85,7 @@ class BlocksTest(TestCase):
         self.assertAllEqual(y.shape, (2, 100, 100, 3))
 
     def test_UnitBlock(self):
-        x = self.get_input()
+        x = np.ones([2, 100, 100, 3])
         unitblock_ins = UnitBlock(
             'UnitBlock_test',
             inputs=x)
