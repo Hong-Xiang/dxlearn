@@ -9,7 +9,7 @@ class Residual(Model):
         class CONFIG(Model.KEYS.CONFIG):
             RATIO = 'ratio'
 
-        class GRAPH(Model.KEYS.GRAPH):
+        class GRAPHS(Model.KEYS.GRAPH):
             SHORT_CUT = 'short_cut'
 
     def __init__(self, info, inputs, short_cut, ratio, config=None):

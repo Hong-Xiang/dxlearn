@@ -7,6 +7,7 @@ __all__ = [
     'Stack'
 ]
 
+
 class Stack(Model):
     class KEYS(Model.KEYS):
         class CONFIG(Model.KEYS.CONFIG):

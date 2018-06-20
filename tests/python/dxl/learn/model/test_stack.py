@@ -13,11 +13,11 @@ class TestStack(TestCase):
 
     def test_Stack(self):
         x = self.get_input()
-        nb_layer = 2
+        nb_layers = 2
         y_ = x
 
         stack_ins = Stack(
-            'Stack_test', tf.constant(x), self.make_model(), nb_layer)
+            'Stack_test', tf.constant(x), self.make_model(), nb_layers)
         y = stack_ins()
         with self.variables_initialized_test_session() as sess:
             y = sess.run(y)
