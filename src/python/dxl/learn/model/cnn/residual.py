@@ -188,8 +188,8 @@ class StackedResidualConv(Model):
         class CONFIG:
             NB_LAYERS = 'nb_layers'
 
-        class SUB_BLOCK:
-            NAME = 'ResidualStackedConv'
+        class GRAPHS:
+            SHORT_CUT = 'ResidualStackedConv'
 
     def __init__(self,
                  info,
@@ -199,7 +199,7 @@ class StackedResidualConv(Model):
         super().__init__(
             info,
             tensors={self.KEYS.TENSOR.INPUT: inputs},
-            graphs={self.KEYS.SUB_BLOCK.NAME: graph},
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers})
 
     @classmethod
