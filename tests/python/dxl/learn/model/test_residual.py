@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from dxl.learn.model.residual import Residual
 from dxl.learn.test import TestCase, UnitBlock
-from dxl.learn.model.residual import ResidualIncept
 
 class TestResidual(TestCase):
     def get_input(self):
