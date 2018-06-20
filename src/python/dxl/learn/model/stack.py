@@ -16,7 +16,7 @@ class Stack(Model):
         class GRAPHS(Model.KEYS.GRAPH):
             SHORT_CUT = 'short_cut'
 
-    def __init__(self, info, inputs, short_cut, nb_layers, config=None):
+    def __init__(self, info, inputs=None, short_cut=None, nb_layers=None):
         super().__init__(
             info,
             tensors={self.KEYS.TENSOR.INPUT: inputs},

@@ -75,7 +75,7 @@ class SuperResolution2x(Model):
             cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)
         }
 
-    def _short_cut(self, name, inputs):
+    def _short_cut(self, name):
         conv2d_ins = Conv2D(
             info="conv2d",
             filters=self.config(self.KEYS.CONFIG.FILTERS),
@@ -83,7 +83,10 @@ class SuperResolution2x(Model):
             strides=(1, 1),
             padding='same',
             activation='basic')
-        return Stack(self.info.child_scope(name), inputs, conv2d_ins, 2)
+        return Stack(
+            info=self.info.child_scope(name),
+            short_cut=conv2d_ins,
+            nb_layers=2)
 
     def kernel(self, inputs):
         with tf.variable_scope('input'):
@@ -102,7 +105,7 @@ class SuperResolution2x(Model):
                     name='stem0')
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        x = self.get_or_create_graph(key, self._short_cut(key, r))()
+        x = self.get_or_create_graph(key, self._short_cut(key))(r)
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
                 inputs=x,
@@ -220,7 +223,7 @@ class SuperResolutionBlock(Model):
             cls.KEYS.CONFIG.DENORM_MEAN: 0.0
         }
 
-    def _short_cut(self, name, inputs):
+    def _short_cut(self, name):
         conv2d_ins = Conv2D(
             info="conv2d",
             filters=self.config(self.KEYS.CONFIG.FILTERS),
@@ -228,7 +231,10 @@ class SuperResolutionBlock(Model):
             strides=(1, 1),
             padding='valid',
             activation='basic')
-        return Stack(self.info.child_scope(name), inputs, conv2d_ins, 2)
+        return Stack(
+            info=self.info.child_scope(name),
+            short_cut=conv2d_ins,
+            nb_layers=2)
 
     def _input(self, inputs):
         with tf.variable_scope('input'):
@@ -304,7 +310,7 @@ class SuperResolutionBlock(Model):
                             self.KEYS.TENSOR.INPUT: inferd,
                             self.KEYS.TENSOR.LABEL: labeld
                         })()
-                    result.update({SRKeys.ALIGNED_LABEL: aligned_label})
+                    result.update({SRKeys.ALIGNED_LABEL: align_label})
                     result.update({
                         self.KEYS.TENSOR.LOSS:
                         result[self.KEYS.TENSOR.OUTPUT]
@@ -336,7 +342,7 @@ class SuperResolutionBlock(Model):
             return upsampled
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        x = self.get_or_create_graph(key, self._short_cut(key, represents))()
+        x = self.get_or_create_graph(key, self._short_cut(key))(represents)
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
         result.update(self._loss(label, result[self.KEYS.TENSOR.INFERENCE]))
