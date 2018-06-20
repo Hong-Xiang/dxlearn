@@ -8,7 +8,6 @@ from dxl.learn.model.cnn import DownSampling2D, UpSampling2D
 import pytest
 
 
-@pytest.mark.skip('Not fixed yet')
 class TestConv2D(TestCase):
     def get_input(self):
         return tf.constant(np.ones([1, 100, 100, 3], dtype="float32"))
@@ -18,7 +17,7 @@ class TestConv2D(TestCase):
             name = 'conv2d_test'
         return Conv2D(
             name,
-            input_tensor=self.get_input(),
+            inputs=self.get_input(),
             filters=32,
             kernel_size=[5, 5],
             strides=(2, 2),
@@ -59,13 +58,14 @@ class TestConv2D(TestCase):
             self.assertAllEqual(yt.shape, self.expected_output_shape())
 
 
-@pytest.mark.skip('Not fixed yet')
 class BlocksTest(TestCase):
+    def get_input(self):
+        return tf.constant(np.ones([2, 100, 100, 3], dtype="float32"))
+
     def test_StackedConv2D(self):
-        x = np.ones([1, 100, 100, 3], dtype="float32")
         stackedconv2d_ins = StackedConv2D(
             'StackedConv2D_test',
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             nb_layers=2,
             filters=32,
             kernel_size=[5, 5],
@@ -73,22 +73,21 @@ class BlocksTest(TestCase):
             padding='same',
             activation='basic')
         y = stackedconv2d_ins()
-        self.assertAllEqual(y.shape, (1, 25, 25, 32))
+        self.assertAllEqual(y.shape, (2, 25, 25, 32))
 
     def test_InceptionBlock(self):
-        x = np.ones([2, 100, 100, 3], dtype="float32")
         inceptionblock_ins = InceptionBlock(
             'InceptionBlock_test',
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             paths=3,
             activation='incept')
         y = inceptionblock_ins()
         self.assertAllEqual(y.shape, (2, 100, 100, 3))
 
     def test_UnitBlock(self):
-        x = np.ones([1, 100, 100, 3], dtype="float32")
         unitblock_ins = UnitBlock(
-            'UnitBlock_test', input_tensor=tf.constant(x))
+            'UnitBlock_test',
+            inputs=self.get_input())
         y = unitblock_ins()
         with self.test_session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -96,19 +95,17 @@ class BlocksTest(TestCase):
         self.assertAllEqual(y, x)
 
     def test_DownSampling2D_Def(self):
-        x = np.ones([2, 100, 100, 3], dtype="float32")
         downsampling2d_ins = DownSampling2D(
             "DownSampling2D_test",
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             size=(0.5, 0.5))
         y = downsampling2d_ins()
         self.assertAllEqual(y.shape, (2, 50, 50, 3))
 
     def test_DownSampling2D_Inp(self):
-        x = np.ones([2, 100, 100, 3], dtype="float32")
         downsampling2d_ins = DownSampling2D(
             "DownSampling2D_test",
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             size=(30, 30),
             is_scale=False,
             method=2)
@@ -116,19 +113,17 @@ class BlocksTest(TestCase):
         self.assertAllEqual(y.shape, (2, 30, 30, 3))
 
     def test_UpSampling2D_Def(self):
-        x = np.ones([2, 100, 100, 3], dtype="float32")
         upsampling2d_ins = UpSampling2D(
             "DownSampling2D_test",
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             size=(1.5, 1.5))
         y = upsampling2d_ins()
         self.assertAllEqual(y.shape, (2, 150, 150, 3))
 
     def test_UpSampling2D_Inp(self):
-        x = np.ones([2, 100, 100, 3], dtype="float32")
         upsampling2d_ins = UpSampling2D(
             "DownSampling2D_test",
-            input_tensor=tf.constant(x),
+            inputs=self.get_input(),
             size=(130, 130),
             is_scale=False,
             method=3)

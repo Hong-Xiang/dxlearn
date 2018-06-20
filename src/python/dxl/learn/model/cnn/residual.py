@@ -18,7 +18,7 @@ class Residual(Model):
         class CONFIG(Model.KEYS.CONFIG):
             RATIO = 'ratio'
 
-        class GRAPH(Model.KEYS.GRAPH):
+        class GRAPHS(Model.KEYS.GRAPH):
             SHORT_CUT = 'short_cut'
 
     def __init__(self, info, tensor, short_cut, ratio, config):
@@ -69,19 +69,19 @@ class ResidualIncept(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.3}
 
-    def sub_block_maker(self, name, input_tensor):
-        sub_block = InceptionBlock(
+    def _short_cut(self, name, input_tensor):
+        shortcut = InceptionBlock(
             self.info.child_scope(name),
             input_tensor=input_tensor,
             paths=3,
             activation='incept')
 
-        return sub_block
+        return shortcut
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         key = self.KEYS.SUB_BLOCK.NAME
-        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, x))
+        sub_block = self.get_or_create_graph(key, self._short_cut(key, x))
         h = sub_block(x)
         with tf.name_scope('add'):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
@@ -123,7 +123,7 @@ class ResidualStackedConv(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.RATIO: 0.1}
 
-    def sub_block_maker(self, name, input_tensor):
+    def _short_cut(self, name, input_tensor):
         return StackedConv2D(
             self.info.child_scope(name),
             input_tensor=input_tensor,
@@ -137,7 +137,7 @@ class ResidualStackedConv(Model):
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
         key = self.KEYS.SUB_BLOCK.NAME
-        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, x))
+        sub_block = self.get_or_create_graph(key, self._short_cut(key, x))
         h = sub_block(x)
         with tf.name_scope('add'):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
@@ -179,7 +179,7 @@ class StackedResidualIncept(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def sub_block_maker(self, name, input_tensor):
+    def _short_cut(self, name, input_tensor):
         return ResidualIncept(
             self.info.child_scope(name), input_tensor=input_tensor, ratio=0.3)
 
@@ -188,7 +188,7 @@ class StackedResidualIncept(Model):
         key = self.KEYS.SUB_BLOCK.NAME
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             sub_block = self.get_or_create_graph(key,
-                                                 self.sub_block_maker(key, x))
+                                                 self._short_cut(key, x))
             x = sub_block(x)
         return x
 
@@ -228,7 +228,7 @@ class StackedResidualConv(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
-    def sub_block_maker(self, name, input_tensor):
+    def _short_cut(self, name, input_tensor):
         return ResidualStackedConv(
             self.info.child_scope(name), input_tensor=input_tensor, ratio=0.1)
 
@@ -237,6 +237,6 @@ class StackedResidualConv(Model):
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             key = "{}_{}".format(self.KEYS.SUB_BLOCK.NAME, i)
             sub_block = self.get_or_create_graph(key,
-                                                 self.sub_block_maker(key, x))
+                                                 self._short_cut(key, x))
             x = sub_block(x)
         return x

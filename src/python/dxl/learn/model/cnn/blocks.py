@@ -30,7 +30,7 @@ class Conv2D(Model):
     """2D convolution model
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         filters: Integer, the dimensionality of the output space.
         kernel_size: An integer or tuple/list of 2 integers.
         strides: An integer or tuple/list of 2 integers.
@@ -54,7 +54,7 @@ class Conv2D(Model):
     def __init__(
             self,
             info='conv2d',
-            input_tensor=None,
+            inputs=None,
             filters=None,
             kernel_size=None,
             strides=None,
@@ -62,7 +62,7 @@ class Conv2D(Model):
             activation=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.FILTERS: filters,
                 self.KEYS.CONFIG.KERNEL_SIZE: kernel_size,
@@ -100,7 +100,7 @@ class StackedConv2D(Model):
     """StackedConv2D convolution model
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         nb_layers: Integer, the number of stacked layers.
         filters: Integer, the dimensionality of the output space.
         kernel_size: An integer or tuple/list of 2 integers.
@@ -125,7 +125,7 @@ class StackedConv2D(Model):
     def __init__(
             self,
             info,
-            input_tensor=None,
+            inputs=None,
             nb_layers=None,
             filters=None,
             kernel_size=None,
@@ -134,7 +134,7 @@ class StackedConv2D(Model):
             activation=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -159,7 +159,7 @@ class StackedConv2D(Model):
         for i in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
             x = Conv2D(
                 'conv2d_{}'.format(i),
-                input_tensor=x,
+                inputs=x,
                 filters=self.config(self.KEYS.CONFIG.FILTERS),
                 kernel_size=self.config(self.KEYS.CONFIG.KERNEL_SIZE),
                 strides=self.config(self.KEYS.CONFIG.STRIDES),
@@ -172,7 +172,7 @@ class InceptionBlock(Model):
     """InceptionBlock model
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         paths: Integer.
         activation: Activation function. Set it to None to maintain a linear activation.
         graph_info: GraphInfo or DistributeGraphInfo
@@ -192,12 +192,12 @@ class InceptionBlock(Model):
     def __init__(
             self,
             info='incept',
-            input_tensor=None,
+            inputs=None,
             paths=None,
             activation=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.PATHS: paths,
                 self.KEYS.CONFIG.ACTIVATION: activation
@@ -207,14 +207,14 @@ class InceptionBlock(Model):
     def _default_config(cls):
         return {cls.KEYS.CONFIG.PATHS: 2, cls.KEYS.CONFIG.ACTIVATION: 'linear'}
 
-    def sub_block_maker(self, name, input_tensor, config):
-        sub_block = Conv2D(
+    def _short_cut(self, name, inputs, config):
+        shortcut = Conv2D(
             info=self.info.child_scope(name),
-            input_tensor=input_tensor,
+            inputs=inputs,
             filters=config[self.KEYS.CONFIG.FILTERS],
             kernel_size=config[self.KEYS.CONFIG.KERNEL_SIZE],
             activation=config[self.KEYS.CONFIG.ACTIVATION])
-        return sub_block
+        return shortcut
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
@@ -230,7 +230,7 @@ class InceptionBlock(Model):
                 self.KEYS.CONFIG.ACTIVATION: 'linear'
             }
             key = 'conv_{}'.format(i_path)
-            h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
+            h = self.get_or_create_graph(key, self._short_cut(key, x, config))()
             for j in range(i_path):
                 config = {
                     self.KEYS.CONFIG.FILTERS: filters,
@@ -238,7 +238,7 @@ class InceptionBlock(Model):
                     self.KEYS.CONFIG.ACTIVATION: 'pre'
                 }
                 key = 'conv2d_{}'.format(j+1)
-                h = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
+                h = self.get_or_create_graph(key, self._short_cut(key, x, config))()
             paths.append(h)
         with tf.name_scope('concat'):
             x = tf.concat(paths, axis=-1)
@@ -249,7 +249,7 @@ class InceptionBlock(Model):
             self.KEYS.CONFIG.ACTIVATION: 'pre'
         }
         key = 'conv_end'
-        x = self.get_or_create_graph(key, self.sub_block_maker(key, x, config))()
+        x = self.get_or_create_graph(key, self._short_cut(key, x, config))()
         return x
 
 
@@ -257,10 +257,10 @@ class UnitBlock(Model):
     """UnitBlock block for test use.
     Arguments:
         name: Path := dxl.fs.
-        input_tensor: Tensor input.
+        inputs: Tensor input.
         graph_info: GraphInfo or DistributeGraphInfo
     Return:
-        input_tensor
+        inputs
     """
 
     class KEYS(Model.KEYS):
@@ -270,8 +270,8 @@ class UnitBlock(Model):
         class CONFIG:
             pass
 
-    def __init__(self, info='UnitBlock', input_tensor=None):
-        super().__init__(info, inputs={self.KEYS.TENSOR.INPUT: input_tensor})
+    def __init__(self, info='UnitBlock', inputs=None):
+        super().__init__(info, tensors={self.KEYS.TENSOR.INPUT: inputs})
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
@@ -283,7 +283,7 @@ class DownSampling2D(Model):
     Arguments:
         name: Path := dxl.fs.
             A unique block name.
-        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        inputs: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
         size: tuple of int/float
             (height, width) scale factor or new size of height and width.
         is_scale: boolean
@@ -310,14 +310,14 @@ class DownSampling2D(Model):
 
     def __init__(self,
                  info='downsample2d',
-                 input_tensor=None,
+                 inputs=None,
                  size=None,
                  is_scale=None,
                  method=None,
                  align_corners=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.SIZE: size,
                 self.KEYS.CONFIG.IS_SCALE: is_scale,
@@ -367,7 +367,7 @@ class UpSampling2D(Model):
         Arguments:
         name: Path := dxl.fs.
             A unique block name.
-        input_tensor: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
+        inputs: 4-D Tensor in the shape of (batch, height, width, channels) or 3-D Tensor in the shape of (height, width, channels).
         size: tuple of int/float
             (height, width) scale factor or new size of height and width.
         is_scale: boolean
@@ -394,14 +394,14 @@ class UpSampling2D(Model):
 
     def __init__(self,
                  info='upsample2d',
-                 input_tensor=None,
+                 inputs=None,
                  size=None,
                  is_scale=None,
                  method=None,
                  align_corners=None):
         super().__init__(
             info,
-            inputs={self.KEYS.TENSOR.INPUT: input_tensor},
+            tensors={self.KEYS.TENSOR.INPUT: inputs},
             config={
                 self.KEYS.CONFIG.SIZE: size,
                 self.KEYS.CONFIG.IS_SCALE: is_scale,

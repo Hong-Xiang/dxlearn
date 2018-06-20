@@ -76,7 +76,7 @@ class SuperResolution2x(Model):
             cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)
         }
 
-    def sub_block_maker(self, name, input_tensor):
+    def _default_graph(self, name, input_tensor):
         return StackedConv2D(
             self.info.child_scope(name),
             input_tensor=input_tensor,
@@ -104,7 +104,7 @@ class SuperResolution2x(Model):
                     name='stem0')
 
         key = self.KEYS.SUB_BLOCK.NAME
-        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, r))
+        sub_block = self.get_or_create_graph(key, self._default_graph(key, r))
         x = sub_block({SRKeys.REPRESENTS: r})
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
@@ -223,7 +223,7 @@ class SuperResolutionBlock(Model):
             cls.KEYS.CONFIG.DENORM_MEAN: 0.0
         }
 
-    def sub_block_maker(self, name, input_tensor):
+    def _default_graph(self, name, input_tensor):
         return StackedConv2D(
             info=self.info.child_scope(name),
             input_tensor=input_tensor,
@@ -339,7 +339,7 @@ class SuperResolutionBlock(Model):
             return upsampled
 
         key = self.KEYS.SUB_BLOCK.NAME
-        sub_block = self.get_or_create_graph(key, self.sub_block_maker(key, represents))
+        sub_block = self.get_or_create_graph(key, self._default_graph(key, represents))
         x = sub_block({SRKeys.REPRESENTS: represents})
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
