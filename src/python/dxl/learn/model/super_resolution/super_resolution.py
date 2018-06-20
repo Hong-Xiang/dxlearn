@@ -83,7 +83,7 @@ class SuperResolution2x(Model):
             strides=(1, 1),
             padding='same',
             activation='basic')
-        return Stack(self.info.child_scope(name), conv2d_ins, 2)
+        return Stack(self.info.child_scope(name), inputs, conv2d_ins, 2)
 
     def kernel(self, inputs):
         with tf.variable_scope('input'):
@@ -102,8 +102,8 @@ class SuperResolution2x(Model):
                     name='stem0')
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        graph = self.get_or_create_graph(key, self._short_cut(key, r))
-        x = graph({SRKeys.REPRESENTS: r})
+        sub_graph = self.get_or_create_graph(key, self._short_cut(key, r))
+        x = sub_graph(r)
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
                 inputs=x,
@@ -229,7 +229,7 @@ class SuperResolutionBlock(Model):
             strides=(1, 1),
             padding='valid',
             activation='basic')
-        return Stack(self.info.child_scope(name), conv2d_ins, 2)
+        return Stack(self.info.child_scope(name), inputs, conv2d_ins, 2)
 
     def _input(self, inputs):
         with tf.variable_scope('input'):
@@ -337,8 +337,8 @@ class SuperResolutionBlock(Model):
             return upsampled
 
         key = self.KEYS.GRAPHS.SHORT_CUT
-        graph = self.get_or_create_graph(key, self._short_cut(key, represents))
-        x = graph({SRKeys.REPRESENTS: represents})
+        sub_graph = self.get_or_create_graph(key, self._short_cut(key, represents))
+        x = sub_graph(represents)
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
         result.update(self._loss(label, result[self.KEYS.TENSOR.INFERENCE]))
