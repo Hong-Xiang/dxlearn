@@ -29,7 +29,7 @@ class TestTrainer(TestCase):
         trainer.make()
         train_step = trainer.train_step
         with self.variables_initialized_test_session() as sess:
-            sess.run(train_step)
-        self.assertEqual(train_step, 1)
+            t = sess.run(train_step)
+        self.assertEqual(t, 1)
 
             
