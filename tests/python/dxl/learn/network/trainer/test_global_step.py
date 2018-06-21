@@ -12,10 +12,11 @@ class TestGlobalStep(TestCase):
         return g_step.increased()
 
     def test_global_step(self):
-        train_step = 10
+        train_step = 5
         g_step = self.make_global_step()
         train_step = self.imitate_train(g_step)
         with self.variables_initialized_test_session() as sess:
             for i in range(train_step):                
-                gt = sess.run(train_step)
+                sess.run(train_step)
+                gt = sess.run(g_step.current_step())
                 self.assertEqual(gt, i+1)
