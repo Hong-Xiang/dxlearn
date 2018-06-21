@@ -18,4 +18,4 @@ class TestGlobalStep(TestCase):
             for i in range(train_step):
                 g_step = self.imitate_train(g_step)
                 gt = sess.run(g_step)
-                self.assertEqual(gt, i)
+                self.assertEqual(gt, i+1)
