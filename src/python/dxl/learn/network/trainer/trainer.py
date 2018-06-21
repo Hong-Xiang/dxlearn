@@ -7,21 +7,23 @@ class Trainer(Graph):
             OBJECTIVE = 'objective'
             TRAIN_STEP = 'train_step'
 
-        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+        class GRAPH(Graph.KEYS.GRAPH):
             OPTIMIZER = 'optimier'
 
-    def __init__(self, info, objective, optimizer, *, config):
+    def __init__(self, info, optimizer, objective=None):
         super().__init__(
             info,
             tensors={
                 self.KEYS.TENSOR.OBJECTIVE: objective,
             },
-            graphs={self.KEYS.SUBGRAPH.OPTIMIZER: optimizer})
+            graphs={self.KEYS.GRAPH.OPTIMIZER: optimizer})
 
-    def kernel(self):
-        KT, KS = self.KEYS.TENSOR, self.KEYS.SUBGRAPH
+    def kernel(self, inputs=None):
+        KT, KS = self.KEYS.TENSOR, self.KEYS.GRAPH
+        objective = self.get_or_create_tensor(KT.OBJECTIVE,
+                                              inputs[KT.OBJECTIVE])
         self.tensors[KT.TRAIN_STEP] = self.graphs[KS.OPTIMIZER].minimize(
-            self.tensors[KT.OBJECTIVE])
+            objective)
         self.tensors[KT.MAIN] = self.train_step
 
     @property
@@ -33,8 +35,8 @@ class Trainer(Graph):
         return self.tensors[self.KEYS.TENSOR.TRAIN_STEP]
 
     def learning_rate(self):
-        return self.graphs[self.KEYS.SUBGRAPH.OPTIMIZER].learning_rate
+        return self.graphs[self.KEYS.GRAPH.OPTIMIZER].learning_rate
 
     @property
     def decay_learning_rate(self, step=1):
-        return self.graphs[self.KEYS.SUBGRAPH.OPTIMIZER].decay_learning_rate
+        return self.graphs[self.KEYS.GRAPH.OPTIMIZER].decay_learning_rate
