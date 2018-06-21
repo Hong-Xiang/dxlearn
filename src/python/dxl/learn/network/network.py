@@ -88,7 +88,7 @@ class Network(Model):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
         self.graphs[KG.TRAINER](objective)
         self.tensors[KT.TRAIN] = self.graphs[KG.TRAINER].train_step
-        self.tensors[KT.STEP] = GlobalStep
+        self.tensors[KT.STEP] = GlobalStep()
 
     def train(self, name=None, feeds=None):
         """
