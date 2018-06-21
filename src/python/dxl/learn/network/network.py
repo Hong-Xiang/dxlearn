@@ -1,9 +1,11 @@
 """
 Trainable Graph
 """
-from ..model import Model
-from ..session import ThisSession
-from ...utils import logger
+from dxl.learn.model import Model
+from dxl.learn.session import ThisSession
+from dxl.learn.utils import logger
+from .trainer.global_step import GlobalStep
+
 
 
 class Network(Model):
@@ -21,6 +23,7 @@ class Network(Model):
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
             LABEL = 'label'
+            STEP = 'step'
 
         class GRAPH(Model.KEYS.GRAPH):
             MAIN = 'main'
@@ -85,6 +88,7 @@ class Network(Model):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
         self.graphs[KG.TRAINER](objective)
         self.tensors[KT.TRAIN] = self.graphs[KG.TRAINER].train_step
+        self.tensors[KT.STEP] = GlobalStep
 
     def train(self, name=None, feeds=None):
         """
@@ -93,10 +97,12 @@ class Network(Model):
         if not self.is_made:
             self.make()
 
-        t = self.tensors[self.KEYS.TENSOR.TRAIN]
-        ThisSession.run(t, feeds)
+        KT = self.KEYS.TENSOR
+        trainer = self.tensors[self.KEYS.TENSOR.TRAIN]
+        ThisSession.run(trainer, feeds)
+        step = ThisSession.run(self.tensors[KT.STEP].increased())
 
-        self.on_end_step(t)
+        self.on_end_step(step)
 
     def inference(self, name=None, feeds=None):
         t = self.tensors[self.KEYS.TENSOR.INFERNECES]
