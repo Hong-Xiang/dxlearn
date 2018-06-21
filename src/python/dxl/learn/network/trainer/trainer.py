@@ -22,6 +22,7 @@ class Trainer(Graph):
         KT, KS = self.KEYS.TENSOR, self.KEYS.GRAPH
         objective = self.get_or_create_tensor(KT.OBJECTIVE,
                                               inputs[KT.OBJECTIVE])
+        self.graphs[KS.OPTIMIZER].make()
         self.tensors[KT.TRAIN_STEP] = self.graphs[KS.OPTIMIZER].minimize(
             objective)
         self.tensors[KT.MAIN] = self.train_step
