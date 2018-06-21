@@ -9,7 +9,7 @@ class TestGlobalStep(TestCase):
         return GlobalStep()
 
     def test_global_step(self):
-        train_step = 5
+        train_step = 2
         g_step = self.make_global_step()
         with self.variables_initialized_test_session() as sess:
             for i in range(train_step):                
