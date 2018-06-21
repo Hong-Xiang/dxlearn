@@ -8,7 +8,7 @@ class GlobalStep(Tensor):
 
     def increased(self):
         with tf.name_scope('global_step_increased'):
-            self.data = tf.assign_add(self.data, 1)
+            return tf.assign_add(self.data, 1)
     
     def current_step(self):
         return self.data
