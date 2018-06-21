@@ -17,12 +17,15 @@ class Network(Model):
         class TENSOR(Model.KEYS.TENSOR):
             TRAIN = 'train'
             OBJECTIVE = 'objective'
-            METRICS = 'metrics'
+            ACCURACY = 'accuracy'
             INFERNECES = 'inferences'
             EVALUATE = 'evaluate'
+            LABEL = 'label'
 
-        class SUBGRAPH(Model.KEYS.SUBGRAPH):
+        class GRAPH(Model.KEYS.GRAPH):
+            MAIN = 'main'
             TRAINER = 'trainer'
+            METRICS = 'metrics'
             SUMMARY_WRITER = 'summary_writer'
             SAVER = 'saver'
 
@@ -48,8 +51,14 @@ class Network(Model):
         super().__init__(
             info,
             tensors=tensors,
-            graphs=self._parse_input_config(graphs, {KS.TRAINER: trainer}),
-            config=config)
+            graphs=self._parse_input_config(graphs, {
+                KS.TRAINER: trainer,
+                KS.METRICS: metrics,
+                KS.SUMMARY_WRITER: summaries,
+                KS.SAVER: saver}
+            ),
+            config=config
+        )
 
     @classmethod
     def _default_config(cls):
@@ -57,36 +66,60 @@ class Network(Model):
         c.update({})
         return c
 
-    def _fetech_tensor_maybe_in_dict(self, group_name, name=None):
-        if isinstance(self.tensors[group_name], dict) and name is not None:
-            return self.tensors[group_name][name]
-        if name is None:
-            return self.tensors[group_name]
-        raise ValueError("Invalid feteching tensor: {}/{}.".format(
-            group_name, name))
+    def kernel(self, inputs):
+        return {}
+    
+    def post_kernel_in_scope(self, results):
+        KT = self.KEYS.TENSOR
+        objective = self.apply_metrics(results[KT.INFERNECES])
+        self.apply_trainer(objective)
+
+    def apply_metrics(self, infer):
+        KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
+        loss, acc = self.graphs[KG.METRICS](infer)
+        self.tensors[KT.OBJECTIVE] = loss
+        self.tensors[KT.ACCURACY] = acc
+        return loss
+
+    def apply_trainer(self, objective):
+        KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
+        self.graphs[KG.TRAINER](objective)
+        self.tensors[KT.TRAIN] = self.graphs[KG.TRAINER].train_step
 
     def train(self, name=None, feeds=None):
         """
         `name`: name of trainer (in subgraph)
         """
-        trainer = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.TRAINERS,
-                                                    name)
-        trainer.train(feeds)
+        if not self.is_made:
+            self.make()
+
+        t = self.tensors[self.KEYS.TENSOR.TRAIN]
+        ThisSession.run(t, feeds)
+
+        self.on_end_step(t)
 
     def inference(self, name=None, feeds=None):
-        t = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.INFERNECES,
-                                              name)
+        t = self.tensors[self.KEYS.TENSOR.INFERNECES]
         ThisSession.run(t, feeds)
 
     def evaluate(self, name=None, feeds=None):
-        t = self._fetech_tensor_maybe_in_dict(self.KEYS.TENSOR.EVALUATE, name)
+        t = self.tensors[self.KEYS.TENSOR.EVALUATE]
         ThisSession.run(t, feeds)
-
-    def save(self):
-        self.saver.save()
 
     def load(self, step=None):
         """
         Restore saved models.
         """
         self.saver.load(step)
+
+    def on_end_step(self, step):
+        KG = self.KEYS.GRAPH
+        summary_step = self.graphs[KG.SUMMARY_WRITER].summary_step
+        if step % summary_step == 0:
+            self.graphs[KG.SUMMARY_WRITER].write()
+
+        save_step = self.graphs[KG.SAVER].save_step
+        if step % save_step == 0:
+            self.graphs[KG.SAVER].save()
+            
+
