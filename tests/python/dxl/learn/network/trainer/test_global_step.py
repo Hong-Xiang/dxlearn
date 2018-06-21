@@ -12,7 +12,7 @@ class TestGlobalStep(TestCase):
         g_step.increased()
 
     def test_global_step(self):
-        train_step = 2
+        train_step = 1
         g_step = self.make_global_step()
         with self.variables_initialized_test_session() as sess:
             for i in range(train_step):
