@@ -159,6 +159,14 @@ class Graph(ConfigurableWithName):
         return info
 
     def _make_kernel_with_scope(self, inputs=None):
+        if inputs is None:
+            inputs = {}
+        if not isinstance(inputs, Dict):
+            inputs = {self.KEYS.TENSOR.MAIN: inputs}
+        for k, v in self.tensors.items():
+            if v is not None and inputs.get(k) is None:
+                inputs[k] = v
+
         with self.info.variable_scope():
             self.kernel(inputs)
 
