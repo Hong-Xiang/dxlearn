@@ -1,7 +1,0 @@
-{
-    "filters": 32,
-    "kernel_size": [2,2],
-    "strides": [1,1],
-    "padding": "valid",
-    "activation": "basic"
-}
