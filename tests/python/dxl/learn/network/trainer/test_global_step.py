@@ -15,5 +15,5 @@ class TestGlobalStep(TestCase):
             for i in range(train_step):                
                 gt = sess.run(g_step.increased())
                 cgt = sess.run(g_step.current_step())
-                self.assertEqual(cgt, 0)
+                self.assertEqual(cgt, i+1)
                 self.assertEqual(gt, i+1)
