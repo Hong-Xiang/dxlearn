@@ -211,7 +211,8 @@ class PyTablesColumns(DataColumnsWithGetItem):
         result = {}
         coltypes = self._node.coltypes
         for k, v in coltypes.items():
-            result.update({k: tf.as_dtype(v)})
+            # result.update({k: tf.as_dtype(v)})
+            result.update({k: tf.float32})
         return result
     
     @property

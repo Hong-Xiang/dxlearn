@@ -37,7 +37,7 @@ class Dense(Model):
         return {
             KC.N_UNITS: 64,
             KC.W_INIT: tf.truncated_normal_initializer(stddev=0.1),
-            KC.B_INIT: tf.constant_initializer(value=0)
+            KC.B_INIT: tf.constant_initializer(value=0.0)
         }
 
     def kernel(self, inputs):
@@ -47,6 +47,7 @@ class Dense(Model):
             raise AssertionError("The input dimension must be rank 2")
         
         n_in = x.shape.as_list()[-1]
+
         with tf.variable_scope("init_w_b"):
             w = tf.get_variable(name='w', 
                                 shape=(n_in, self.config(KC.N_UNITS)),
