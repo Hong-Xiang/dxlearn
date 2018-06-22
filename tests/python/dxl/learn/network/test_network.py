@@ -44,15 +44,21 @@ class TestNetwork(TestCase):
         class DNNWith2Layers(Network):
             def kernel(self, inputs):
                 x = inputs['image']
+                label = inputs['label']
+
                 h = self.get_or_create_graph('layer0', 
                         Dense('dense0', n_units=self.config('h0_units'),
                               activation='relu'))(tf.layers.flatten(x.data))
                 y_ = self.get_or_create_graph('layer1', 
                         Dense('dense1', n_units=self.config('h1_units'),
                               activation='relu'))(h)
+                
+                y = self.get_or_create_graph('layer3', 
+                        Dense('dense2', n_units=self.config('h1_units'),
+                              activation='relu'))(label)
                 return {
                     self.KEYS.TENSOR.INFERENCES: y_,
-                    self.KEYS.TENSOR.LABEL: inputs['label']
+                    self.KEYS.TENSOR.LABEL: y
                 }
 
         dataset = self.get_dataset()
