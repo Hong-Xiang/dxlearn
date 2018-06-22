@@ -68,6 +68,7 @@ class TestNetwork(TestCase):
 
     def test_train(self):
         network = self.create_network()
+        network.make()
         with self.test_session() as sess:
             losses = []
             for i in range(1000):
