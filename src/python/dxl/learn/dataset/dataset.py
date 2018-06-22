@@ -64,13 +64,21 @@ class DatasetFromColumns(Dataset):
         return tf.data.Dataset.from_generator(
             self._columns.__iter__, self._columns.types, self._columns.shapes)
 
-    def _make_dataset_tensor(self, dataset):
-        result = Tensor(dataset.make_one_shot_iterator().get_next())
+    def _convert(self, v):
+        result = Tensor(v)
         if self.config(self.KEYS.CONFIG.BATCH_SIZE) is not None:
             shape = result.data.shape.as_list()
             shape[0] = self.config(self.KEYS.CONFIG.BATCH_SIZE)
             result = Tensor(tf.reshape(result.data, shape))
         return result
+
+    def _make_dataset_tensor(self, dataset):
+        result = dataset.make_one_shot_iterator().get_next()
+        if not isinstance(result, dict):
+            result = {'data': result}
+        return {k: self._convert(v) for k, v in result.items()}
+        
+        
 
     def kernel(self, inputs=None):
         dataset = self._make_dataset_object()
