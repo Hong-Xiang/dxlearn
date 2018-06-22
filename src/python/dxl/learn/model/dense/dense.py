@@ -50,14 +50,12 @@ class Dense(Model):
         with tf.variable_scope("init_w_b"):
             w = tf.get_variable(name='w', 
                                 shape=(n_in, self.config(KC.N_UNITS)),
-                                initializer=self.config(KC.W_INIT),
-                                dtype=x.dtype)
+                                initializer=self.config(KC.W_INIT))
             y = tf.matmul(x, w)
             if self.config(KC.B_INIT):
                 b = tf.get_variable(name='b',
                                     shape=(self.config(KC.N_UNITS),),
-                                    initializer=self.config(KC.B_INIT),
-                                    dtype=x.dtype)
+                                    initializer=self.config(KC.B_INIT))
             y = tf.nn.bias_add(y, b, name='bias_add')
 
         return y
