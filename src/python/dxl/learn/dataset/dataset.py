@@ -81,8 +81,7 @@ class DatasetFromColumns(Dataset):
     def kernel(self, inputs=None):
         dataset = self._make_dataset_object()
         dataset = self._process_dataset(dataset)
-        self.tensors[self.KEYS.TENSOR.DATA] = self._make_dataset_tensor(
-            dataset)
+        self.tensors.update(self._make_dataset_tensor(dataset))
 
 
 # class HDF5Dataset(Dataset):
