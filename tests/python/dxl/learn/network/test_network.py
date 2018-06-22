@@ -13,7 +13,6 @@ from dxl.learn.network.trainer.optimizers import RMSPropOptimizer
 from dxl.learn.network.trainer import Trainer
 
 
-@pytest.mark.skip(reason=" No gradients provided for any variable")
 class TestNetwork(TestCase):
     DATA_PATH = test_resource_path() / 'dataset' / 'mnist.h5'
 
