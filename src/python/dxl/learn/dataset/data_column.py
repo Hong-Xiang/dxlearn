@@ -205,16 +205,16 @@ class PyTablesColumns(DataColumnsWithGetItem):
     @property
     def columns(self):
         return tuple(self._node.colnames)
-    
+
     @property
     def types(self):
         result = {}
         coltypes = self._node.coltypes
         for k, v in coltypes.items():
-            # result.update({k: tf.as_dtype(v)})
-            result.update({k: tf.float32})
+            result.update({k: tf.as_dtype(v)})
+            # result.update({k: tf.float32})
         return result
-    
+
     @property
     def shapes(self):
         result = {}
@@ -228,4 +228,3 @@ class PyTablesColumns(DataColumnsWithGetItem):
 
     def close(self):
         self._file.close()
-
