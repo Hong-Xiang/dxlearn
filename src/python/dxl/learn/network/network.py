@@ -74,12 +74,13 @@ class Network(Model):
     
     def post_kernel_in_scope(self, results):
         KT = self.KEYS.TENSOR
-        objective = self.apply_metrics(results[KT.INFERNECES])
+        objective = self.apply_metrics(results[KT.LABEL],
+                                       results[KT.INFERNECES])
         self.apply_trainer(objective)
 
-    def apply_metrics(self, infer):
+    def apply_metrics(self, label, infer):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        loss, acc = self.graphs[KG.METRICS](infer)
+        loss, acc = self.graphs[KG.METRICS](label, infer)
         self.tensors[KT.OBJECTIVE] = loss
         self.tensors[KT.ACCURACY] = acc
         return loss
