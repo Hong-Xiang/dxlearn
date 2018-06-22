@@ -74,6 +74,8 @@ class DatasetFromColumns(Dataset):
 
     def _make_dataset_tensor(self, dataset):
         result = dataset.make_one_shot_iterator().get_next()
+        if not isinstance(result, dict):
+            result = {self.KEYS.TENSOR.DATA : result}
         return {k: self._convert(v) for k, v in result.items()}
         
         
