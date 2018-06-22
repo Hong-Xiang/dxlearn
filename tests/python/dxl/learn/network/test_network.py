@@ -16,7 +16,8 @@ from dxl.learn.network.trainer import Trainer
 class TestNetwork(TestCase):
     CONFIG = {
         'h0_units': 32,
-        'h1_units': 10
+        'h1_units': 10,
+        'batch_size': 32
     }
     DATA_PATH = test_resource_path() / 'dataset' / 'mnist.h5'
 
@@ -45,6 +46,7 @@ class TestNetwork(TestCase):
             def kernel(self, inputs):
                 x = inputs['image']
                 label = inputs['label']
+                label = tf.reshape(label.data, (32,1))
 
                 h = self.get_or_create_graph('layer0', 
                         Dense('dense0', n_units=self.config('h0_units'),
@@ -55,7 +57,7 @@ class TestNetwork(TestCase):
                 
                 y = self.get_or_create_graph('layer3', 
                         Dense('dense2', n_units=self.config('h1_units'),
-                              activation='relu'))(tf.layers.flatten(label.data))
+                              activation='relu'))(label)
                 return {
                     self.KEYS.TENSOR.INFERENCES: y_,
                     self.KEYS.TENSOR.LABEL: y
