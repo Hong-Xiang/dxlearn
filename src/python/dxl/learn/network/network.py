@@ -7,7 +7,6 @@ from dxl.learn.utils import logger
 from .trainer.global_step import GlobalStep
 
 
-
 class Network(Model):
     """
     A network is a trainable Graph.
@@ -58,14 +57,14 @@ class Network(Model):
         super().__init__(
             info,
             tensors=tensors,
-            graphs=self._parse_input_config(graphs, {
-                KS.TRAINER: trainer,
-                KS.METRICS: metrics,
-                KS.SUMMARY_WRITER: summaries,
-                KS.SAVER: saver}
-            ),
-            config=config
-        )
+            graphs=self._parse_input_config(
+                graphs, {
+                    KS.TRAINER: trainer,
+                    KS.METRICS: metrics,
+                    KS.SUMMARY_WRITER: summaries,
+                    KS.SAVER: saver
+                }),
+            config=config)
 
     @classmethod
     def _default_config(cls):
@@ -75,7 +74,7 @@ class Network(Model):
 
     def kernel(self, inputs):
         return {}
-    
+
     def post_kernel_in_scope(self, results):
         KT = self.KEYS.TENSOR
         objective = self.apply_metrics(results[KT.LABEL],
@@ -84,9 +83,9 @@ class Network(Model):
 
     def apply_metrics(self, label, infer):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        loss, acc = self.graphs[KG.METRICS](label, infer)
+        loss = self.graphs[KG.METRICS](label, infer)
         self.tensors[KT.OBJECTIVE] = loss
-        self.tensors[KT.ACCURACY] = acc
+        # self.tensors[KT.ACCURACY] = acc
         return loss
 
     def apply_trainer(self, objective):
@@ -125,12 +124,12 @@ class Network(Model):
 
     def on_end_step(self, step):
         KG = self.KEYS.GRAPH
-        summary_step = self.graphs[KG.SUMMARY_WRITER].summary_step
-        if step % summary_step == 0:
-            self.graphs[KG.SUMMARY_WRITER].write()
+        if self.graphs.get(KG.SUMMARY_WRITER) is not None:
+            summary_step = self.graphs[KG.SUMMARY_WRITER].summary_step
+            if step % summary_step == 0:
+                self.graphs[KG.SUMMARY_WRITER].write()
 
-        save_step = self.graphs[KG.SAVER].save_step
-        if step % save_step == 0:
-            self.graphs[KG.SAVER].save()
-            
-
+        if self.graphs.get(KG.SAVER) is not None:
+            save_step = self.graphs[KG.SAVER].save_step
+            if step % save_step == 0:
+                self.graphs[KG.SAVER].save()
