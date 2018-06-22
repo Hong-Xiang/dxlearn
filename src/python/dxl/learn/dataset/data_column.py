@@ -208,7 +208,7 @@ class PyTablesColumns(DataColumnsWithGetItem):
     
     @property
     def types(self):
-        return tf.float32
+        return self._node.coldtypes
 
     def _calculate_capacity(self):
         return self._node.shape[0]
