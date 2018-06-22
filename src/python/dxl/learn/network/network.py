@@ -50,7 +50,7 @@ class Network(Model):
         outside managed scope.
 
         """
-        KS = self.KEYS.SUBGRAPH
+        KS = self.KEYS.GRAPH
         super().__init__(
             info,
             tensors=tensors,
