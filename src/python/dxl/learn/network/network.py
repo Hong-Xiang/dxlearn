@@ -20,7 +20,7 @@ class Network(Model):
             TRAIN = 'train'
             OBJECTIVE = 'objective'
             ACCURACY = 'accuracy'
-            INFERNECES = 'inferences'
+            INFERENCES = 'inferences'
             EVALUATE = 'evaluate'
             LABEL = 'label'
             STEP = 'step'
@@ -75,7 +75,7 @@ class Network(Model):
     def post_kernel_in_scope(self, results):
         KT = self.KEYS.TENSOR
         objective = self.apply_metrics(results[KT.LABEL],
-                                       results[KT.INFERNECES])
+                                       results[KT.INFERENCES])
         self.apply_trainer(objective)
 
     def apply_metrics(self, label, infer):
@@ -106,7 +106,7 @@ class Network(Model):
         self.on_end_step(step)
 
     def inference(self, name=None, feeds=None):
-        t = self.tensors[self.KEYS.TENSOR.INFERNECES]
+        t = self.tensors[self.KEYS.TENSOR.INFERENCES]
         ThisSession.run(t, feeds)
 
     def evaluate(self, name=None, feeds=None):
