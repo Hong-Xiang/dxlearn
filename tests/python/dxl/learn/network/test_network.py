@@ -45,10 +45,10 @@ class TestNetwork(TestCase):
             def kernel(self, inputs):
                 x = inputs['x']
                 h = self.get_or_create_graph('layer0', 
-                        Dense('dense', n_units=self.config('h0_units'),
+                        Dense('dense0', n_units=self.config('h0_units'),
                               activation='relu'))(tf.layers.flatten(x.data))
                 y_ = self.get_or_create_graph('layer1', 
-                        Dense('dense', n_units=self.config('h1_units'),
+                        Dense('dense1', n_units=self.config('h1_units'),
                               activation='relu'))(h)
                 return {
                     self.KEYS.TENSOR.INFERENCES: y_,
