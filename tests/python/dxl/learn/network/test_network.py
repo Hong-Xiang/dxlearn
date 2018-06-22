@@ -55,7 +55,7 @@ class TestNetwork(TestCase):
                 
                 y = self.get_or_create_graph('layer3', 
                         Dense('dense2', n_units=self.config('h1_units'),
-                              activation='relu'))(label)
+                              activation='relu'))(tf.layers.flatten(label.data))
                 return {
                     self.KEYS.TENSOR.INFERENCES: y_,
                     self.KEYS.TENSOR.LABEL: y
