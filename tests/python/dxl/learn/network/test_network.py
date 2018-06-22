@@ -51,7 +51,7 @@ class TestNetwork(TestCase):
                         Dense('dense', n_units=self.config('h1_units'),
                               activation='relu'))(h)
                 return {
-                    Network.KEYS.TENSOR.INFERENCE: y_,
+                    self.KEYS.TENSOR.INFERENCES: y_,
                 }
 
         dataset = self.get_dataset().make()
