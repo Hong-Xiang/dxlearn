@@ -30,7 +30,7 @@ class TestNetwork(TestCase):
                 'datset',
                 self.get_columns(),
                 nb_epochs=5,
-                batch_size=None,
+                batch_size=1,
                 is_shuffle=True)
     
     def get_trainer(self):
