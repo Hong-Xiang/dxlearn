@@ -54,7 +54,7 @@ class TestNetwork(TestCase):
                     Network.KEYS.TENSOR.INFERENCE: y_,
                 }
 
-        dataset = self.get_dataset()()
+        dataset = self.get_dataset().make()
         network = DNNWith2Layers('mnist', tensors={'x': dataset.tensors['x']},
                     trainer=self.get_trainer(),
                     metrics=self.get_metrices())
