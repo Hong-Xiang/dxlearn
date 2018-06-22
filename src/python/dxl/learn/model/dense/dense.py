@@ -37,7 +37,7 @@ class Dense(Model):
         return {
             KC.N_UNITS: 64,
             KC.W_INIT: tf.truncated_normal_initializer(stddev=0.1),
-            KC.B_INIT: tf.constant_initializer(value=0.0)
+            KC.B_INIT: tf.constant_initializer(value=0)
         }
 
     def kernel(self, inputs):
@@ -51,13 +51,13 @@ class Dense(Model):
             w = tf.get_variable(name='w', 
                                 shape=(n_in, self.config(KC.N_UNITS)),
                                 initializer=self.config(KC.W_INIT),
-                                dtype=tf.float32)
+                                dtype=x.dtype)
             y = tf.matmul(x, w)
             if self.config(KC.B_INIT):
                 b = tf.get_variable(name='b',
                                     shape=(self.config(KC.N_UNITS),),
                                     initializer=self.config(KC.B_INIT),
-                                    dtype=tf.float32)
+                                    dtype=x.dtype)
             y = tf.nn.bias_add(y, b, name='bias_add')
 
         return y
