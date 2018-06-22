@@ -1,8 +1,8 @@
 """
 Trainable Graph
 """
-from dxl.learn.model import Model
-from dxl.learn.session import ThisSession
+from dxl.learn.core import Model
+from dxl.learn.core import ThisSession
 from dxl.learn.utils import logger
 from .trainer.global_step import GlobalStep
 
@@ -20,7 +20,7 @@ class Network(Model):
             TRAIN = 'train'
             OBJECTIVE = 'objective'
             ACCURACY = 'accuracy'
-            INFERNECES = 'inferences'
+            INFERENCES = 'inferences'
             EVALUATE = 'evaluate'
             LABEL = 'label'
             STEP = 'step'
@@ -50,7 +50,7 @@ class Network(Model):
         outside managed scope.
 
         """
-        KS = self.KEYS.SUBGRAPH
+        KS = self.KEYS.GRAPH
         super().__init__(
             info,
             tensors=tensors,
@@ -74,19 +74,20 @@ class Network(Model):
     
     def post_kernel_in_scope(self, results):
         KT = self.KEYS.TENSOR
-        objective = self.apply_metrics(results[KT.INFERNECES])
+        objective = self.apply_metrics(results[KT.LABEL],
+                                       results[KT.INFERENCES])
         self.apply_trainer(objective)
 
-    def apply_metrics(self, infer):
+    def apply_metrics(self, label, infer):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        loss, acc = self.graphs[KG.METRICS](infer)
+        loss, acc = self.graphs[KG.METRICS](label, infer)
         self.tensors[KT.OBJECTIVE] = loss
         self.tensors[KT.ACCURACY] = acc
         return loss
 
     def apply_trainer(self, objective):
         KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        self.graphs[KG.TRAINER](objective)
+        self.graphs[KG.TRAINER].make({KT.OBJECTIVE: objective})
         self.tensors[KT.TRAIN] = self.graphs[KG.TRAINER].train_step
         self.tensors[KT.STEP] = GlobalStep()
 
@@ -105,7 +106,7 @@ class Network(Model):
         self.on_end_step(step)
 
     def inference(self, name=None, feeds=None):
-        t = self.tensors[self.KEYS.TENSOR.INFERNECES]
+        t = self.tensors[self.KEYS.TENSOR.INFERENCES]
         ThisSession.run(t, feeds)
 
     def evaluate(self, name=None, feeds=None):
