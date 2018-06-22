@@ -1,8 +1,8 @@
 """
 Trainable Graph
 """
-from dxl.learn.model import Model
-from dxl.learn.session import ThisSession
+from dxl.learn.core import Model
+from dxl.learn.core import ThisSession
 from dxl.learn.utils import logger
 from .trainer.global_step import GlobalStep
 
