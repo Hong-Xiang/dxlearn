@@ -43,7 +43,7 @@ class TestNetwork(TestCase):
     def create_network(self):
         class DNNWith2Layers(Network):
             def kernel(self, inputs):
-                x = inputs['x']
+                x = inputs['image']
                 h = self.get_or_create_graph('layer0', 
                         Dense('dense0', n_units=self.config('h0_units'),
                               activation='relu'))(tf.layers.flatten(x.data))
@@ -52,11 +52,12 @@ class TestNetwork(TestCase):
                               activation='relu'))(h)
                 return {
                     self.KEYS.TENSOR.INFERENCES: y_,
+                    self.KEYS.TENSOR.LABEL: inputs['label']
                 }
 
         dataset = self.get_dataset()
         dataset.make()
-        network = DNNWith2Layers('mnist', tensors={'x': dataset.tensors['image']},
+        network = DNNWith2Layers('mnist', tensors=dataset.tensors},
                     trainer=self.get_trainer(),
                     metrics=self.get_metrices())
         return network
