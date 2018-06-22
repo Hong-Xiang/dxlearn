@@ -48,7 +48,7 @@ class Dense(Model):
         
         n_in = x.shape.as_list()[-1]
 
-        with tf.variable_scope("init_w_b"):
+        with tf.variable_scope(self.info.name + "init_w_b"):
             w = tf.get_variable(name='w', 
                                 shape=(n_in, self.config(KC.N_UNITS)),
                                 initializer=self.config(KC.W_INIT),
