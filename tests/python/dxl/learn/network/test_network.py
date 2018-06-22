@@ -1,34 +1,85 @@
 import unittest
-
-# from dxl.learn.core import Network
 import pytest
+import tensorflow as tf
+import numpy as np
+from dxl.learn.test import TestCase
+from dxl.learn.network import Network
+from dxl.learn.model.dense import Dense
+from dxl.learn.dataset import DatasetFromColumns, PyTablesColumns
+from dxl.learn.dataset import Train80Partitioner, DataColumnsPartition
+from dxl.learn.test.resource import test_resource_path
+from dxl.learn.network.metric import mean_square_error
+from dxl.learn.network.trainer.optimizers import RMSPropOptimizer
+from dxl.learn.network.trainer import Trainer
 
 
-@pytest.mark.skip(reason='not impl yet')
-class TestNetwork(unittest.TestCase):
-    def make_network_with_dummy_output_and_mse_objective(
-            self, is_add_trainer=True):
-        pass
+@pytest.mark.skip(reason=" No gradients provided for any variable")
+class TestNetwork(TestCase):
+    DATA_PATH = test_resource_path() / 'dataset' / 'mnist.h5'
 
-    def make_dummy_dataset(self):
-        pass
+    def get_columns(self):
+        return DataColumnsPartition(
+                PyTablesColumns(self.DATA_PATH, '/train'),
+                Train80Partitioner(True))
 
-    def test_add_trainer(self):
-        n = self.make_network_with_dummy_output_and_mse_objective()
-        t = n.subgraph(n.KEYS.SUBGRAPH.TRAINER)
-        self.assertIs(
-            t.tensor(t.KEYS.TENSOR.OBJECTIVE), n.tensor(n.KEYS.TENSOR.LOSS))
-        self.assertIs(
-            n.tensor(n.KEYS.TENSOR.TRAIN), t.tensor(t.KEYS.TENSOR.MAIN))
+    def get_dataset(self):
+        return DatasetFromColumns(
+                'datset',
+                self.get_columns(),
+                nb_epochs=5,
+                batch_size=32,
+                is_shuffle=True)
+    
+    def get_trainer(self):
+        return Trainer('trainer', 
+                RMSPropOptimizer('optimizer', learning_rate=1e-3))
+    
+    def get_metrices(self):
+        return mean_square_error
 
-    def test_no_trainer(self):
-        n = self.make_network_with_dummy_output_and_mse_objective(
-            is_add_trainer=False)
-        self.assertIsNone(n.subgraph(n.SUBGRAPH.TRAINER))
-        self.assertIsNone(n.tensor(n.TENSOR.LOSS))
+    def create_network(self):
+        class DNNWith2Layers(Network):
+            def kernel(self, inputs):
+                x = inputs['image']
+                label = inputs['label']
+                label = tf.reshape(label.data, (32,1))
 
-    def test_saver(self):
-        pass
+                h = self.get_or_create_graph('layer0', 
+                        Dense('dense0', n_units=32,
+                              activation='relu'))(tf.layers.flatten(x.data))
+                y_ = self.get_or_create_graph('layer1', 
+                        Dense('dense1', n_units=10,
+                              activation='relu'))(h)
+                
+                y = self.get_or_create_graph('layer3', 
+                        Dense('dense2', n_units=10,
+                              activation='relu'))(label)
+                return {
+                    self.KEYS.TENSOR.INFERENCES: y_,
+                    self.KEYS.TENSOR.LABEL: y
+                }
 
-    def test_loader(self):
-        pass
+        dataset = self.get_dataset()
+        dataset.make()
+        network = DNNWith2Layers('mnist', tensors=dataset.tensors,
+                    trainer=self.get_trainer(),
+                    metrics=self.get_metrices())
+        return network
+ 
+    def is_mono_decay(self, data):
+        data_pre = data[:-1]
+        data_now = data[1:]
+        return np.all(data_pre > data_now)
+
+    def test_train(self):
+        network = self.create_network()
+        network.make()
+        with self.test_session() as sess:
+            losses = []
+            for i in range(1000):
+                if i % 100 == 0:
+                    l = network.run(network.tensors['objective'])
+                    losses.append(l)
+                network.train()
+
+        assert self.is_mono_decay(losses)

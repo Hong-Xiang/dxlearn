@@ -205,6 +205,23 @@ class PyTablesColumns(DataColumnsWithGetItem):
     @property
     def columns(self):
         return tuple(self._node.colnames)
+    
+    @property
+    def types(self):
+        result = {}
+        coltypes = self._node.coltypes
+        for k, v in coltypes.items():
+            # result.update({k: tf.as_dtype(v)})
+            result.update({k: tf.float32})
+        return result
+    
+    @property
+    def shapes(self):
+        result = {}
+        coldescrs = self._node.coldescrs
+        for k, v in coldescrs.items():
+            result.update({k: v.shape})
+        return result
 
     def _calculate_capacity(self):
         return self._node.shape[0]
