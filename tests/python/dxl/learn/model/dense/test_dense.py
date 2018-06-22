@@ -13,7 +13,6 @@ class TestDense(TestCase):
         return Dense('dense', self.get_input(), 32)
 
     def test_result(self):
-        dense = self.make_model()
-        result = dense.make()
+        result = self.make_model()()
         except_shape = (5, 32)
         self.assertAllEqual(result.shape.as_list(), except_shape)
