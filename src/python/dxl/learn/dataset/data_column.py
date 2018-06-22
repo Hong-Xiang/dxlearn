@@ -205,6 +205,10 @@ class PyTablesColumns(DataColumnsWithGetItem):
     @property
     def columns(self):
         return tuple(self._node.colnames)
+    
+    @property
+    def types(self):
+        return tf.float32
 
     def _calculate_capacity(self):
         return self._node.shape[0]
