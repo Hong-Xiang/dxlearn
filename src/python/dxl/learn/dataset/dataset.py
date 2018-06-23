@@ -5,6 +5,8 @@ from typing import Dict
 from .partitioner import Partitioner
 import tensorflow as tf
 
+RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE = 4
+
 
 class Dataset(Graph):
     class KEYS(Graph.KEYS):
@@ -23,18 +25,19 @@ class Dataset(Graph):
 
         super().__init__(
             info,
-            config=self._parse_input_config(
-                config, {
-                    self.KEYS.CONFIG.NB_EPOCHS: nb_epochs,
-                    self.KEYS.CONFIG.BATCH_SIZE: batch_size,
-                    self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
-                }))
+            config={
+                self.KEYS.CONFIG.NB_EPOCHS: nb_epochs,
+                self.KEYS.CONFIG.BATCH_SIZE: batch_size,
+                self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
+            })
 
-    def _process_dataset(self, dataset):
+    def _process_dataset(self, dataset: Dict[tf.Dataset]):
         KC = self.KEYS.CONFIG
         dataset = dataset.repeat(self.config(KC.NB_EPOCHS))
         if self.config(KC.IS_SHUFFLE):
-            dataset = dataset.shuffle(self.config(KC.BATCH_SIZE) * 4)
+            dataset = dataset.shuffle(
+                self.config(KC.BATCH_SIZE) *
+                RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE)
         dataset = dataset.batch(self.config(KC.BATCH_SIZE))
         return dataset
 
@@ -61,6 +64,10 @@ class DatasetFromColumns(Dataset):
             config=config)
 
     def _make_dataset_object(self):
+        shapes = {
+            k: tf.TensorShape(v)
+            for k, v in self._columns.shapes.items()
+        }
         return tf.data.Dataset.from_generator(
             self._columns.__iter__, self._columns.types, self._columns.shapes)
 
@@ -72,18 +79,16 @@ class DatasetFromColumns(Dataset):
             result = Tensor(tf.reshape(result.data, shape))
         return result
 
-    def _make_dataset_tensor(self, dataset):
+    def _finalize_to_dict_of_tensors(self, dataset):
         result = dataset.make_one_shot_iterator().get_next()
         if not isinstance(result, dict):
-            result = {self.KEYS.TENSOR.DATA : result}
+            result = {self.KEYS.TENSOR.DATA: result}
         return {k: self._convert(v) for k, v in result.items()}
-        
-        
 
     def kernel(self, inputs=None):
         dataset = self._make_dataset_object()
         dataset = self._process_dataset(dataset)
-        self.tensors.update(self._make_dataset_tensor(dataset))
+        self.tensors.update(self._finalize_to_dict_of_tensors(dataset))
 
 
 # class HDF5Dataset(Dataset):

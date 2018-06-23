@@ -8,9 +8,31 @@ from typing import Dict, Iterable
 from dxl.fs import Path
 import tensorflow as tf
 from dxl.data.io import load_npz
+from typing import Tuple, TypeVar
+
+
+class IDataColumns:
+    @property
+    def columns(self) -> Tuple[str]:
+        pass
+    
+    @property
+    def types(self) -> Tuple['DataType']:
+        pass
+
+    @property
+    def shapes(self) -> Tuple[Tuple[int]]:
+        pass
+
+    @property
+    def capacity(self) -> int:
+        pass
 
 
 class DataColumns:
+    """
+    """
+
     def __init__(self, data):
         self.data = self._process(data)
         self._capacity_cache = None

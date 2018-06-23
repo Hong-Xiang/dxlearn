@@ -38,3 +38,12 @@ class TestDatasetFromColumns(TestCase):
             for j in range(32):
                 expected[i, j] = i * 32 + j
         self.assertFloatArrayEqual(expected, samples, 'samples not equal')
+
+    def test_incident_gamma(self):
+        from dxl.data.zoo.incident_position_estimation import PhotonDataColumns
+        c = PhotonDataColumns(
+            '/mnt/gluster/CustomerTests/IncidentEstimation/SQLAlchemyDemo/simu0.1/gamma.db'
+        )
+        dataset = DatasetFromColumns(
+            'dataset', c, batch_size=4, is_shuffle=True)
+        dataset.make()
