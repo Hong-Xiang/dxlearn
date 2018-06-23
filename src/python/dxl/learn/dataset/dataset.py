@@ -1,11 +1,13 @@
 import tables as tb
-from ..core import Graph, Tensor
+from dxl.learn.core import Graph, Tensor
 from dxl.fs import Path
 from typing import Dict
 from .partitioner import Partitioner
 import tensorflow as tf
 
 RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE = 4
+
+from dxl.learn.utils import nest
 
 
 class Dataset(Graph):
@@ -20,8 +22,7 @@ class Dataset(Graph):
                  *,
                  nb_epochs=None,
                  batch_size=None,
-                 is_shuffle=None,
-                 config=None):
+                 is_shuffle=None):
 
         super().__init__(
             info,
@@ -31,7 +32,7 @@ class Dataset(Graph):
                 self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
             })
 
-    def _process_dataset(self, dataset: Dict[tf.Dataset]):
+    def _process_dataset(self, dataset: tf.data.Dataset):
         KC = self.KEYS.CONFIG
         dataset = dataset.repeat(self.config(KC.NB_EPOCHS))
         if self.config(KC.IS_SHUFFLE):
@@ -60,22 +61,20 @@ class DatasetFromColumns(Dataset):
             info,
             nb_epochs=nb_epochs,
             batch_size=batch_size,
-            is_shuffle=is_shuffle,
-            config=config)
+            is_shuffle=is_shuffle)
 
     def _make_dataset_object(self):
-        shapes = {
-            k: tf.TensorShape(v)
-            for k, v in self._columns.shapes.items()
-        }
         return tf.data.Dataset.from_generator(
-            self._columns.__iter__, self._columns.types, self._columns.shapes)
+            self._columns.__iter__, self._columns.types,
+            nest.map(tf.TensorShape, self._columns.shapes))
 
     def _convert(self, v):
         result = Tensor(v)
         if self.config(self.KEYS.CONFIG.BATCH_SIZE) is not None:
             shape = result.data.shape.as_list()
             shape[0] = self.config(self.KEYS.CONFIG.BATCH_SIZE)
+            if shape.count(None) == 1:
+                shape[shape.index(None)] = -1
             result = Tensor(tf.reshape(result.data, shape))
         return result
 

@@ -130,6 +130,10 @@ develop-cgy/
 .vs/*
 /.vs
 .idea/
+dxlearn.pyproj
+dxlearn.pyperf
+dxlearn.sln
 
 # pytest
 .pytest_cache/*
+
