@@ -7,7 +7,9 @@ import tensorflow as tf
 
 RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE = 4
 
-from dxl.learn.utils import nest
+from dxl.data.function import Function, function, MapIf, NestMapOf, shape_list, To
+from dxl.learn.core import Tensor
+from typing import Union, NamedTuple
 
 
 class Dataset(Graph):
@@ -19,6 +21,7 @@ class Dataset(Graph):
 
     def __init__(self,
                  info,
+                 processing=None,
                  *,
                  nb_epochs=None,
                  batch_size=None,
@@ -31,16 +34,12 @@ class Dataset(Graph):
                 self.KEYS.CONFIG.BATCH_SIZE: batch_size,
                 self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
             })
-
-    def _process_dataset(self, dataset: tf.data.Dataset):
-        KC = self.KEYS.CONFIG
-        dataset = dataset.repeat(self.config(KC.NB_EPOCHS))
-        if self.config(KC.IS_SHUFFLE):
-            dataset = dataset.shuffle(
-                self.config(KC.BATCH_SIZE) *
-                RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE)
-        dataset = dataset.batch(self.config(KC.BATCH_SIZE))
-        return dataset
+        if processing is None:
+            processing = StandardProcessing(self.config(self.KEYS.CONFIG.BATCH_SIZE),
+                                            self.config(
+                                                self.KEYS.CONFIG.NB_EPOCHS),
+                                            self.config(self.KEYS.CONFIG.IS_SHUFFLE))
+        self.processing = processing
 
 
 class DatasetFromColumns(Dataset):
@@ -88,6 +87,130 @@ class DatasetFromColumns(Dataset):
         dataset = self._make_dataset_object()
         dataset = self._process_dataset(dataset)
         self.tensors.update(self._finalize_to_dict_of_tensors(dataset))
+
+
+class Batch(Function):
+    def __init__(self, batch_size):
+        self.batch_size = batch_size
+
+    def __call__(self, x: Union[tf.data.Dataset]):
+        if isinstance(x, tf.data.Dataset):
+            return x.batch(self.batch_size)
+
+
+class Repeat(Function):
+    def __init__(self, nb_repeat=None):
+        self.nb_repeat = nb_repeat
+
+    def __call__(self, x: Union[tf.data.Dataset]):
+        if isinstance(x, tf.data.Dataset):
+            return x.repeat(self.nb_repeat)
+
+
+class Shuffle(Function):
+    def __init__(self, nb_buffer):
+        self.nb_buffer = nb_buffer
+
+    def __call__(self, x: Union[tf.data.Dataset]):
+        if isinstance(x, tf.data.Dataset):
+            return x.shuffle(self.nb_buffer)
+
+
+class ReshapeForBatch(Function):
+    def __init__(self, batch_size, axis=0):
+        self.batch_size = batch_size
+        self.axis = axis
+
+    def __call__(self, x: Union[tf.data.Dataset]):
+        shape = shape_list(x)
+        shape[self.axis] = self.batch_size
+        shape = [s if s is not None else -1 for s in shape]
+        if isinstance(x, tf.Tensor):
+            return tf.reshape(x, shape)
+        raise TypeError("Unknown type {} of x.".format(type(x)))
+
+
+class StandardProcessing(Function):
+    def __init__(self, batch_size, nb_epochs, is_shuffle):
+        self.f = (Repeat(nb_epochs)
+                  >> MapIf(lambda _: is_shuffle, Shuffle(batch_size * 4))
+                  >> Batch(batch_size))
+
+    def __call__(self, x: Union[tf.data.Dataset]):
+        if isinstance(x, tf.data.Dataset):
+            return self.f(x)
+
+
+class DictToTupleForDataclass(Function):
+    def __init__(self, dataclass):
+        self.dataclass = dataclass
+
+    def __call__(self, d):
+        return tuple([d[k] for k in self.dataclass._fields])
+
+
+class TupleToDictForDataclass(Function):
+    def __init__(self, dataclass):
+        self.dataclass = dataclass
+
+    def __call__(self, t):
+        return {k: t[i] for i, k in enumerate(self.dataclass._fields)}
+
+
+class ColumnsToTensorFlowDataset(Function):
+    def __init__(self, is_with_shape=False):
+        self.is_with_shape = is_with_shape
+
+    def __call__(self, columns):
+        d2t = DictToTupleForDataclass(columns.dataclass)
+        if self.is_with_shape:
+            return tf.data.Dataset.from_generator(
+                columns.__iter__,
+                NestMapOf(tf.as_dtype)(d2t(columns.dtypes)),
+                NestMapOf(tf.TensorShape)(d2t(columns.dataclass.shapes())))
+        else:
+            return tf.data.Dataset.from_generator(
+                columns.__iter__, d2t(columns.dtypes))
+
+
+@function
+def dataset_to_tensor(x: tf.data.Dataset):
+    return x.make_one_shot_iterator().get_next()
+
+
+@function
+def named_tuple_to_dict(t: NamedTuple):
+    return {k: t[i] for i, k in enumerate(t._fields)}
+
+
+class DatasetFromColumnsV2(Dataset):
+    class KEYS(Dataset.KEYS):
+        class CONFIG(Dataset.KEYS.CONFIG):
+            IS_WITH_SHAPE = 'is_with_shape'
+
+        class TENSOR(Dataset.KEYS.TENSOR):
+            DATA = 'data'
+
+    def __init__(self, info, columns, processing=None, *, batch_size=None, nb_epochs=None, is_shuffle=None):
+        super().__init__(info, processing, batch_size=batch_size,
+                         nb_epochs=nb_epochs, is_shuffle=is_shuffle)
+        self.columns = columns
+        # TODO: refactor is_with_shape
+
+    def _to_tf_tensors(self, dataset):
+        result = dataset.make_one_shot_iterator().get_next()
+        if not isinstance(result, dict):
+            result = {self.KEYS.TENSOR.DATA: result}
+        return {k: self._convert(v) for k, v in result.items()}
+
+    def kernel(self, inputs=None):
+        f = (ColumnsToTensorFlowDataset(True)
+             >> self.processing
+             >> dataset_to_tensor
+             >> NestMapOf(ReshapeForBatch(self.config(self.KEYS.CONFIG.BATCH_SIZE)))
+             >> NestMapOf(To(Tensor))
+             >> TupleToDictForDataclass(self.columns.dataclass))
+        self.tensors.update(f(self.columns))
 
 
 # class HDF5Dataset(Dataset):
