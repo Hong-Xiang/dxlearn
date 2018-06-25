@@ -42,10 +42,15 @@ class Dataset(Graph):
         self.processing = processing
 
 
-class DatasetFromColumns(Dataset):
+class DatasetFromColumns(Graph):
     class KEYS(Dataset.KEYS):
         class TENSOR(Dataset.KEYS.TENSOR):
             DATA = 'data'
+
+        class CONFIG(Graph.KEYS.CONFIG):
+            NB_EPOCHS = 'nb_epochs'
+            BATCH_SIZE = 'batch_size'
+            IS_SHUFFLE = 'is_shuffle'
 
     def __init__(self,
                  info,
@@ -58,14 +63,16 @@ class DatasetFromColumns(Dataset):
         self._columns = columns
         super().__init__(
             info,
-            nb_epochs=nb_epochs,
-            batch_size=batch_size,
-            is_shuffle=is_shuffle)
+            config={
+                self.KEYS.CONFIG.NB_EPOCHS: nb_epochs,
+                self.KEYS.CONFIG.BATCH_SIZE: batch_size,
+                self.KEYS.CONFIG.IS_SHUFFLE: is_shuffle,
+            })
 
     def _make_dataset_object(self):
         return tf.data.Dataset.from_generator(
             self._columns.__iter__, self._columns.types,
-            nest.map(tf.TensorShape, self._columns.shapes))
+            NestMapOf(tf.TensorShape)(self._columns.shapes))
 
     def _convert(self, v):
         result = Tensor(v)
@@ -82,6 +89,14 @@ class DatasetFromColumns(Dataset):
         if not isinstance(result, dict):
             result = {self.KEYS.TENSOR.DATA: result}
         return {k: self._convert(v) for k, v in result.items()}
+
+    def _process_dataset(self, dataset):
+        KC = self.KEYS.CONFIG
+        dataset = dataset.repeat(self.config(KC.NB_EPOCHS))
+        if self.config(KC.IS_SHUFFLE):
+            dataset = dataset.shuffle(self.config(KC.BATCH_SIZE) * 4)
+        dataset = dataset.batch(self.config(KC.BATCH_SIZE))
+        return dataset
 
     def kernel(self, inputs=None):
         dataset = self._make_dataset_object()

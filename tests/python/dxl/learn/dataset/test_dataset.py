@@ -1,4 +1,4 @@
-from dxl.learn.dataset import DatasetFromColumns, RangeColumns, Train80Partitioner, DataColumnsPartition
+from dxl.learn.dataset import DatasetFromColumns, RangeColumns, Train80Partitioner, DataColumnsPartition, DatasetFromColumnsV2
 from dxl.learn.test import TestCase
 import pytest
 import numpy as np
@@ -40,10 +40,9 @@ class TestDatasetFromColumns(TestCase):
         self.assertFloatArrayEqual(expected, samples, 'samples not equal')
 
     def test_incident_gamma(self):
-        from dxl.data.zoo.incident_position_estimation import PhotonDataColumns
-        c = PhotonDataColumns(
-            '/mnt/gluster/CustomerTests/IncidentEstimation/SQLAlchemyDemo/simu0.1/gamma.db'
-        )
-        dataset = DatasetFromColumns(
-            'dataset', c, batch_size=4, is_shuffle=True)
+        from dxl.data.zoo.incident_position_estimation import padded_hits_columns, Hit, just_add_index
+        path_db = '/mnt/gluster/CustomerTests/IncidentEstimation/SQLAlchemyDemo/simu0.1/gamma.db'
+        columns = padded_hits_columns(path_db, 10, Hit, just_add_index, True)
+        dataset = DatasetFromColumnsV2(
+            'dataset', columns, batch_size=32, is_shuffle=True)
         dataset.make()
