@@ -70,6 +70,12 @@ class TestCase(current_backend().TestCase()):
             sess.run(tf.global_variables_initializer())
             yield sess
 
+    @contextmanager
+    def graph_on_cpu(self):
+        with tf.device('/cpu:0'):
+            with tf.Graph().as_default() as g:
+                yield
+
 
 class DistributeTestCase(TestCase):
     def setUp(self):
