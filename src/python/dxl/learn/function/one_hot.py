@@ -1,6 +1,7 @@
 from dxl.data.function import Function, shape_list
 import numpy as np
 import tensorflow as tf
+import cntk
 
 
 class OneHot(Function):
@@ -22,5 +23,7 @@ class OneHot(Function):
             result = np.zeros(shape_list(x) + [self.nb_classes])
             result[np.arange(x.size), x] = 1
             return result
+        if isinstance(x, cntk.Variable):
+            return cntk.one_hot(x, self.nb_classes)
         if isinstance(x, tf.Tensor):
             return tf.keras.backend.one_hot(x, self.nb_classes)
