@@ -60,8 +60,7 @@ class RMSPropOptimizer(Optimizer):
             self.config(KC.OPTIMIZER_NAME))
 
     def minimize(self, *args, **kwargs):
-        return self.tensors[self.KEYS.GRAPH.OPTIMIZER].minimize(
-            *args, **kwargs)
+        return self.tensors[self.KEYS.GRAPH.OPTIMIZER].minimize(*args, **kwargs)
 
     @property
     def decay_learning_rate(self):
