@@ -232,3 +232,34 @@ class PyTablesColumns(DataColumnsWithGetItem):
 
     def close(self):
         self._file.close()
+
+
+from dxl.data import ColumnsWithIndex
+from typing import NamedTuple, Optional, Dict
+from pathlib import Path
+
+
+class PyTablesColumnsV2(ColumnsWithIndex):
+    def __init__(self, path: Path, dataclass: NamedTuple, key_map=Optional[Dict[str, str]]):
+        super().__init__(dataclass)
+        self.path = path
+        self.key_map = key_map
+        self.file = None
+
+    def __enter__(self):
+        self.file = self.open()
+        return self.file
+
+    def __exit__(self, type, value, tb):
+        self.file.close()
+
+    def open(self):
+        return h5py.File(self.path, 'r')
+
+    def close(self):
+        return self.file.close()
+
+    @property
+    def capacity(self):
+        if self.file is None:
+            raise TypeError("PyTable not initialied yet.")
