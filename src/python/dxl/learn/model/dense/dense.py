@@ -30,7 +30,7 @@ class Dense(Model):
                 KC.B_INIT: b_init
             }
         )
-    
+
     @classmethod
     def _default_config(cls):
         KC = cls.KEYS.CONFIG
@@ -45,11 +45,11 @@ class Dense(Model):
         x = inputs[KT.INPUT]
         if x.shape.ndims != 2:
             raise AssertionError("The input dimension must be rank 2")
-        
+
         n_in = x.shape.as_list()[-1]
 
         with tf.variable_scope(str(self.info.name) + "init_w_b"):
-            w = tf.get_variable(name='w', 
+            w = tf.get_variable(name='w',
                                 shape=(n_in, self.config(KC.N_UNITS)),
                                 initializer=self.config(KC.W_INIT),
                                 dtype=x.dtype)
@@ -62,3 +62,16 @@ class Dense(Model):
             y = tf.nn.bias_add(y, b, name='bias_add')
 
         return y
+
+
+class Initializer:
+    pass
+
+
+class WeightBiasInitializer:
+    pass
+
+
+class DenseV2(Model):
+    def __init__(self, info, x, *, nb_units=None, ):
+        pass
