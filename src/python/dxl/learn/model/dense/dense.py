@@ -73,5 +73,9 @@ class WeightBiasInitializer:
 
 
 class DenseV2(Model):
-    def __init__(self, info, x, *, nb_units=None, ):
-        pass
+    def __init__(self, nb_units, x=None, info='dense'):
+        super().__init__(info=info, tensors={
+            'x': x}, config={'nb_units': nb_units})
+
+    def kernel(self, x):
+        return tf.layers.dense(x['input'], self.config('nb_units'))

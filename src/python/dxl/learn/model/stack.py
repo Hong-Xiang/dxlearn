@@ -1,6 +1,6 @@
-import tensorflow as tf 
+import tensorflow as tf
 import numpy as np
-from dxl.learn.core import Model 
+from dxl.learn.core import Model
 from dxl.learn.model.cnn import Conv2D, InceptionBlock
 
 __all__ = [
@@ -23,13 +23,17 @@ class Stack(Model):
             graphs={self.KEYS.GRAPHS.MODELS: models},
             config={self.KEYS.CONFIG.NB_LAYERS: nb_layers}
         )
-    
+
     @classmethod
     def _default_config(cls):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     def kernel(self, inputs):
         x = inputs[self.KEYS.TENSOR.INPUT]
-        for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
-            x = self.graphs[self.KEYS.GRAPHS.MODELS](x)
+        # for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
+        nb_layers = self.config(self.KEYS.CONFIG.NB_LAYERS)
+        if nb_layers is None:
+            nb_layers = len(self.graphs)
+        for i in range(nb_layers):
+            x = self.graphs[self.KEYS.GRAPHS.MODELS][i](x)
         return x
