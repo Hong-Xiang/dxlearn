@@ -2,6 +2,8 @@ from dxl.data.function import Function, shape_list
 import numpy as np
 import tensorflow as tf
 import cntk
+from functools import singledispatch
+from dxl.learn.core import Tensor
 
 
 class OneHot(Function):
@@ -18,12 +20,33 @@ class OneHot(Function):
     def __init__(self, nb_classes):
         self.nb_classes = nb_classes
 
+    @singledispatch
     def __call__(self, x):
-        if isinstance(x, np.ndarray):
-            result = np.zeros(shape_list(x) + [self.nb_classes])
-            result[np.arange(x.size), x] = 1
-            return result
-        if isinstance(x, cntk.Variable):
-            return cntk.one_hot(x, self.nb_classes)
-        if isinstance(x, tf.Tensor):
-            return tf.keras.backend.one_hot(x, self.nb_classes)
+        return _one_hot(x, self.nb_classes)
+
+
+@singledispatch
+def _one_hot(x, nb_classes):
+    raise NotImplementedError("Not implemented for {}.".format(type(x)))
+
+
+@_one_hot.register(np.ndarray)
+def _(x, nb_classes):
+    result = np.zeros(shape_list(x) + [nb_classes])
+    result[np.arange(x.size), x] = 1
+    return result
+
+
+@_one_hot.register(cntk.Variable)
+def _(x, nb_classes):
+    return cntk.one_hot(x, nb_classes)
+
+
+@_one_hot.register(tf.Tensor)
+def _(x, nb_classes):
+    return tf.keras.backend.one_hot(x, nb_classes)
+
+
+@_one_hot.register(Tensor)
+def _(x, nb_classes):
+    return Tensor(_one_hot(x.data, nb_classes))

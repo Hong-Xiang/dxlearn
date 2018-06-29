@@ -1,7 +1,6 @@
 import tensorflow as tf
-from dxl.learn.core import Model
-
-__all__ = ['Dense']
+from dxl.learn.core import Model, Tensor
+__all__ = ['Dense', 'DenseV2']
 
 
 class Dense(Model):
@@ -72,10 +71,33 @@ class WeightBiasInitializer:
     pass
 
 
+from functools import singledispatch
+
+
 class DenseV2(Model):
-    def __init__(self, nb_units, x=None, info='dense'):
+    created = 0
+
+    def __init__(self, nb_units, x=None, info=None):
+        if info is None:
+            info = 'dense_{}'.format(created)
+            created += 1
         super().__init__(info=info, tensors={
             'x': x}, config={'nb_units': nb_units})
 
     def kernel(self, x):
-        return tf.layers.dense(x['input'], self.config('nb_units'))
+        return _dense(x['input'], self.config('nb_units'))
+
+
+@singledispatch
+def _dense(x, nb_units):
+    raise NotImplementedError("Not supported type {}.".format(type(x)))
+
+
+@_dense.register(tf.Tensor)
+def _(x, nb_units):
+    return tf.layers.dense(x, nb_units)
+
+
+@_dense.register(Tensor)
+def _(x, nb_units):
+    return Tensor(_dense(x.data, nb_units))

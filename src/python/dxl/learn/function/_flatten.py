@@ -1,5 +1,6 @@
 from .multi_method_imports import *
 from dxl.data.function import shape_list
+from dxl.learn.core import Tensor
 
 __all__ = ['Flatten', 'flatten']
 
@@ -35,14 +36,17 @@ class Flatten(Function):
         if isinstance(x, numpy.ndarray):
             if self.batch_dim == 0:
                 return x.reshape([x.shape[0], -1])
-            raise NotImplementedError("Flatten for numpy Tensor with batch_dim != 0 is not implemented yet")
+            raise NotImplementedError(
+                "Flatten for numpy Tensor with batch_dim != 0 is not implemented yet")
             # return numpy.concatenate([x.take(i, self.batch_dim).flatten()]
-                                    #  for i in x.shape[self.batch_dim], axis=self.batch_dim)
+            #  for i in x.shape[self.batch_dim], axis=self.batch_dim)
         if isinstance(x, tensorflow.Tensor):
             return tensorflow.keras.layers.Flatten()(x)
         if isinstance(x, cntk.Variable):
             return cntk.squeeze(cntk.flatten(x, axis=self.batch_dim))
-            # return cntk.ops.flatten(x)
+        if isinstance(x, Tensor):
+            return Tensor(self.__call__(x.data))
+        raise TypeError("Not supported type of x {}.".format(type(x)))
 
 
 flatten = Flatten(0)
