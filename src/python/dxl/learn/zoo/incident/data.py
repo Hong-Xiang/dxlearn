@@ -7,7 +7,7 @@ import tensorflow as tf
 import numpy as np
 from typing import NamedTuple
 from dxl.learn.core import Tensor
-from dxl.data.zoo.incident_position_estimation.columns import HitsColumnFromNPZ
+from dxl.data.zoo.incident_position_estimation.columns import HitsColumnFromNPZ, HitsTable
 from dxl.data.zoo.incident_position_estimation import photon2hits
 from dxl.data.function import Filter
 
@@ -34,6 +34,16 @@ def dataset_npz(path_npz, padding_size, batch_size, is_shuffle):
     return dataset
 
 
+@function
+def dataset_pytable(path_table, padding_size, batch_size, is_shuffle):
+    if padding_size != 5:
+        raise ValueError(
+            "Invalid padding size {}, should be 5.".format(padding_size))
+    return DatasetFromColumnsV2('dataset',
+                                HitsTable(path_table),
+                                batch_size=batch_size, is_shuffle=is_shuffle)
+
+
 class DatasetIncidentSingle(NamedTuple):
     hits: Tensor
     first_hit_index: Tensor
@@ -57,6 +67,29 @@ def create_dataset(dataset_maker, path_source, padding_size, batch_size):
     d.make()
     d_tuple = post_processing(d, padding_size)
     return d_tuple
+
+
+def create_fast_dataset(path_h5, batch_size, is_shuffle):
+    columns = HitsTable(path_h5)
+    dtypes = {
+        'hits': np.float32,
+        'first_hit_index': np.int32,
+        'padded_size': np.int32,
+    }
+    data = {k: np.array(columns.cache[k], dtype=dtypes[k])
+            for k in columns.cache}
+    columns.close()
+    dataset = tf.data.Dataset.from_tensor_slices(data)
+    dataset = dataset.repeat()
+    if is_shuffle:
+        dataset = dataset.shuffle(4 * batch_size)
+    dataset = dataset.batch(batch_size)
+    tensors = dataset.make_one_shot_iterator().get_next()
+    for k in tensors:
+        tensors[k] = Tensor(tensors[k])
+    tensors['first_hit_index'] = OneHot(
+        tensors['hits'].shape[1])(tensors['first_hit_index'])
+    return DatasetIncidentSingle(tensors['hits'], tensors['first_hit_index'], tensors['padded_size'])
 
 
 # if __name__ == "__main__":

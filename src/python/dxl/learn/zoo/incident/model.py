@@ -2,7 +2,7 @@ from dxl.learn.core import Model
 from dxl.learn.function import flatten, ReLU, identity, OneHot
 from dxl.learn.model import DenseV2 as Dense
 from dxl.learn.model import StackV2 as Stack
-from .data import DatasetIncidentSingle, create_dataset, dataset_db, dataset_npz
+from .data import DatasetIncidentSingle, create_dataset, dataset_db, dataset_npz, dataset_pytable
 import numpy as np
 import tensorflow as tf
 from dxl.learn.network.trainer import Trainer, RMSPropOptimizer

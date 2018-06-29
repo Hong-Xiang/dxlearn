@@ -1,5 +1,8 @@
 from dxl.learn.network.trainer import Trainer, RMSPropOptimizer
 from .model import *
+from .data import create_fast_dataset
+
+from dxl.core.debug import profiled
 
 
 @click.command()
@@ -7,10 +10,12 @@ from .model import *
 @click.option('--steps', '-s', type=int, default=10000000)
 def train(load, steps):
     path_db = os.environ['GHOME'] + \
-        '/Workspace/IncidentEstimation/data/gamma.db'
+        '/Workspace/IncidentEstimation/data/gamma.h5'
     save_path = './model'
     padding_size = 5
-    d = create_dataset(dataset_db, path_db, padding_size, 128)
+    # d = create_dataset(dataset_pytable, path_db, padding_size, 128)
+    d = create_fast_dataset(path_db, 1024, True)
+    # d = create_dataset(dataset_pytable, path_db, 128)
     model = IndexFirstHit('model', d.hits, padding_size, [100] * 5)
     infer = model()
 
@@ -22,6 +27,7 @@ def train(load, steps):
     t.make({'objective': l})
     train_step = t.train_step
     saver = tf.train.Saver()
+    # with profiled():
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
@@ -32,5 +38,6 @@ def train(load, steps):
             if i % 100 == 0:
                 print(sess.run([acc, acc_op]))
                 print(sess.run([l, acc]))
-            if i % 1000 == 0:
+            if (i+1) % 10000 == 0:
                 saver.save(sess, save_path)
+

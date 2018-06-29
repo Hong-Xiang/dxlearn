@@ -14,3 +14,5 @@ from .model import test_model
 incident.add_command(test_model)
 from .train import train
 incident.add_command(train)
+from ._keras import train_keras
+incident.add_command(train_keras)
