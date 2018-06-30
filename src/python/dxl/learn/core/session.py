@@ -172,6 +172,15 @@ class Session(SessionBase):
     def reset(self):
         tf.reset_default_graph()
 
+    def __enter__(self):
+        sess = self._create_session()
+        ThisSession.set_session(sess)
+        return self
+
+    def __exit__(self, type, value, track):
+        # self.reset()
+        ThisSession.reset()
+
 
 class ThisSession:
     _session = None
@@ -182,7 +191,7 @@ class ThisSession:
 
     @classmethod
     def reset(cls):
-        cls._session.reset()
+        # cls._session.reset()
         cls._session = None
 
     @classmethod

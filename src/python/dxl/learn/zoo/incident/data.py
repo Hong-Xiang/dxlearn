@@ -1,47 +1,20 @@
-from dxl.data.zoo.incident_position_estimation import (
-    Hit, HitWithCrystalCenter, PhotonColumns, sort_hits_by_energy, ShuffledHitsWithIndexAndPaddedSize, ShuffledHitsColumns, photon2hits)
-from dxl.data.function import GetAttr, MapByPosition, MapWithUnpackArgsKwargs, append, Swap, To, Padding, OnIterator, NestMapOf, shape_list, function
+from typing import NamedTuple
+
+import numpy as np
+import tensorflow as tf
+
+from dxl.data.function import (Filter, GetAttr, MapByPosition,
+                               MapWithUnpackArgsKwargs, NestMapOf, OnIterator,
+                               Padding, Swap, To, append, function, shape_list)
+from dxl.data.zoo.incident_position_estimation.data import (CoincidenceColumns,
+                                                            PhotonColumns,
+                                                            ShuffledHitsColumns,
+                                                            ShuffledHitsTable)
+from dxl.data.zoo.incident_position_estimation.function import (raw_columns2shuffled_hits_columns,
+                                                                sort_hits_by_energy)
+from dxl.learn.core import Tensor
 from dxl.learn.dataset import DatasetFromColumnsV2
 from dxl.learn.function import OneHot
-import tensorflow as tf
-import numpy as np
-from typing import NamedTuple
-from dxl.learn.core import Tensor
-from dxl.data.zoo.incident_position_estimation.columns import HitsColumnFromNPZ, HitsTable
-from dxl.data.zoo.incident_position_estimation import photon2hits
-from dxl.data.function import Filter
-
-
-@function
-def dataset_db(path_db, padding_size, batch_size, is_shuffle):
-    columns = ShuffledHitsColumns(PhotonColumns(path_db, HitWithCrystalCenter),
-                                  ShuffledHitsWithIndexAndPaddedSize,
-                                  OnIterator(photon2hits(
-                                      sort_hits_by_energy, padding_size))
-                                  >> Filter(lambda x: x.hits.shape[0] <= padding_size))
-    dataset = DatasetFromColumnsV2('dataset', columns,
-                                   batch_size=batch_size, is_shuffle=is_shuffle)
-    return dataset
-
-
-@function
-def dataset_npz(path_npz, padding_size, batch_size, is_shuffle):
-    if padding_size != 10:
-        raise ValueError("Padding size is fixed to 10 for NPZ dataset.")
-    columns = HitsColumnFromNPZ(path_npz)
-    dataset = DatasetFromColumnsV2(
-        'dataset', columns, batch_size=batch_size, is_shuffle=is_shuffle)
-    return dataset
-
-
-@function
-def dataset_pytable(path_table, padding_size, batch_size, is_shuffle):
-    if padding_size != 5:
-        raise ValueError(
-            "Invalid padding size {}, should be 5.".format(padding_size))
-    return DatasetFromColumnsV2('dataset',
-                                HitsTable(path_table),
-                                batch_size=batch_size, is_shuffle=is_shuffle)
 
 
 class DatasetIncidentSingle(NamedTuple):
@@ -62,23 +35,40 @@ def post_processing(dataset, padding_size):
     return DatasetIncidentSingle(hits, label, dataset.tensors['padded_size'])
 
 
-def create_dataset(dataset_maker, path_source, padding_size, batch_size):
-    d = dataset_maker(path_source, padding_size, batch_size, True)
-    d.make()
-    d_tuple = post_processing(d, padding_size)
-    return d_tuple
+@function
+def dataset_db(path_db, limit, is_coincidence, padding_size, batch_size, is_shuffle):
+    if is_coincidence:
+        source_columns = CoincidenceColumns(path_db, True, limit, 100000)
+    else:
+        source_columns = PhotonColumns(path_db, True, limit, 100000)
+    columns = raw_columns2shuffled_hits_columns(
+        source_columns, padding_size, sort_hits_by_energy)
+    dataset = DatasetFromColumnsV2('dataset', columns,
+                                   batch_size=batch_size, is_shuffle=is_shuffle)
+    dataset.make()
+    return post_processing(dataset, padding_size)
 
 
-def create_fast_dataset(path_h5, batch_size, is_shuffle):
-    columns = HitsTable(path_h5)
+@function
+def dataset_pytable(path_table, batch_size, is_shuffle):
+    table = ShuffledHitsTable(path_table)
+    dataset = DatasetFromColumnsV2('dataset',
+                                   table,
+                                   batch_size=batch_size, is_shuffle=is_shuffle)
+    dataset.make()
+    return post_processing(dataset, table.padding_size)
+
+
+@function
+def dataset_fast(path_table, batch_size, is_shuffle):
+    columns = ShuffledHitsTable(path_h5)
     dtypes = {
         'hits': np.float32,
         'first_hit_index': np.int32,
         'padded_size': np.int32,
     }
-    data = {k: np.array(columns.cache[k], dtype=dtypes[k])
-            for k in columns.cache}
-    columns.close()
+    data = {k: np.array(columns.data[k], dtype=dtypes[k])
+            for k in columns.data}
     dataset = tf.data.Dataset.from_tensor_slices(data)
     dataset = dataset.repeat()
     if is_shuffle:
@@ -92,6 +82,8 @@ def create_fast_dataset(path_h5, batch_size, is_shuffle):
     return DatasetIncidentSingle(tensors['hits'], tensors['first_hit_index'], tensors['padded_size'])
 
 
+__all__ = ['dataset_db', 'dataset_pytable',
+           'DatasetIncidentSingle', 'dataset_fast']
 # if __name__ == "__main__":
 #     padding_size = 10
 #     batch_size = 32
@@ -107,4 +99,4 @@ def create_fast_dataset(path_h5, batch_size, is_shuffle):
 #     first_index = np.array([s.first_hit_index for s in samples])
 #     padded_size = np.array([s.padded_size for s in samples])
 
-    # np.savez('fast_data.npz', hits=hits, first_index=first_index, padded_size=padded_size)
+# np.savez('fast_data.npz', hits=hits, first_index=first_index, padded_size=padded_size)

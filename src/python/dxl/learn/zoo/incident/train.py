@@ -1,6 +1,6 @@
 from dxl.learn.network.trainer import Trainer, RMSPropOptimizer
 from .model import *
-from .data import create_fast_dataset
+# from .data import create_fast_dataset
 
 from dxl.core.debug import profiled
 
@@ -38,6 +38,5 @@ def train(load, steps):
             if i % 100 == 0:
                 print(sess.run([acc, acc_op]))
                 print(sess.run([l, acc]))
-            if (i+1) % 10000 == 0:
+            if (i + 1) % 10000 == 0:
                 saver.save(sess, save_path)
-
