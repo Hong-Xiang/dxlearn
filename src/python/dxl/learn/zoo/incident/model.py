@@ -1,5 +1,5 @@
 from dxl.learn.core import Model
-from dxl.learn.function import flatten, ReLU, identity, OneHot
+from dxl.learn.function import flatten, ReLU, identity, OneHot, DropOut
 from dxl.learn.model import DenseV2 as Dense
 from dxl.learn.model import StackV2 as Stack
 from .data import DatasetIncidentSingle, dataset_db, dataset_pytable
@@ -18,7 +18,7 @@ class IndexFirstHit(Model):
             MAX_NB_HITS = 'max_nb_hits'
             NB_UNITS = 'nb_units'
 
-    def __init__(self, info, hits, max_nb_hits, nb_units):
+    def __init__(self, info, hits=None, max_nb_hits=None, nb_units=None):
         super().__init__(info, tensors={self.KEYS.TENSOR.HITS: hits},
                          config={
             self.KEYS.CONFIG.MAX_NB_HITS: max_nb_hits,
@@ -32,7 +32,10 @@ class IndexFirstHit(Model):
         models = []
         for i in range(3):
             models += [Dense(self.config(self.KEYS.CONFIG.NB_UNITS)
-                             [i], info='dense_{}'.format(i)), ReLU]
+                             [i], info='dense_{}'.format(i)),
+                       ReLU,
+                       DropOut()]
+        # models.append(DropOut())
         models.append(
             Dense(self.config(self.KEYS.CONFIG.MAX_NB_HITS), info='dense_end'))
         seq = self.graphs.get('seq', Stack(info='stack', models=models))
@@ -57,32 +60,33 @@ def dummy_input():
 
 import click
 import os
+from dxl.learn.core import Session
 
 
-@click.command()
-def test_model():
-    path_db = os.environ['GHOME'] + \
-        '/Workspace/IncidentEstimation/data/gamma.db'
-    padding_size = 5
-    d = create_dataset(dataset_db, path_db, padding_size, 32)
-    print(d)
-    model = IndexFirstHit('model', d.hits, padding_size, [100] * 3)
-    infer = model()
+# @click.command()
+# def test_model():
+#     path_db = os.environ['GHOME'] + \
+#         '/Workspace/IncidentEstimation/data/gamma.db'
+#     padding_size = 5
+#     d = create_dataset(dataset_db, path_db, padding_size, 32)
+#     print(d)
+#     model = IndexFirstHit('model', d.hits, padding_size, [100] * 3)
+#     infer = model()
 
-    l = tf.losses.softmax_cross_entropy(d.first_hit_index.data, infer.data)
-    print(infer)
-    print(l)
-    acc, acc_op = tf.metrics.accuracy(tf.argmax(d.first_hit_index.data, 1),
-                                      tf.argmax(infer.data, 1))
+#     l = tf.losses.softmax_cross_entropy(d.first_hit_index.data, infer.data)
+#     print(infer)
+#     print(l)
+#     acc, acc_op = tf.metrics.accuracy(tf.argmax(d.first_hit_index.data, 1),
+#                                       tf.argmax(infer.data, 1))
 
-    t = Trainer('trainer', RMSPropOptimizer('opt', learning_rate=1e-3))
-    t.make({'objective': l})
-    train_step = t.train_step
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
-        for i in range(10000):
-            sess.run(train_step)
-            if i % 100 == 0:
-                print(sess.run([acc, acc_op]))
-                print(sess.run([l, acc]))
+#     t = Trainer('trainer', RMSPropOptimizer('opt', learning_rate=1e-3))
+#     t.make({'objective': l})
+#     train_step = t.train_step
+#     with Session() as sess:
+#         sess.run(tf.global_variables_initializer())
+#         sess.run(tf.local_variables_initializer())
+#         for i in range(10000):
+#             sess.run(train_step)
+#             if i % 100 == 0:
+#                 print(sess.run([acc, acc_op]))
+#                 print(sess.run([l, acc]))

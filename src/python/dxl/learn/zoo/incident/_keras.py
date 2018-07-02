@@ -5,10 +5,12 @@ import keras
 from dxl.learn.function import OneHot
 import numpy as np
 import click
+from dxl.data.zoo.incident_position_estimation.function import filter_by_nb_hits
 
 
 def load_pytable_dataset(path_h5):
     columns = ShuffledHitsTable(path_h5)
+    columns = filter_by_nb_hits(columns, 2)
     dtypes = {
         'hits': np.float32,
         'first_hit_index': np.int32,

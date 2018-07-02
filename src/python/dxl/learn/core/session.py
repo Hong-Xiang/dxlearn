@@ -173,12 +173,12 @@ class Session(SessionBase):
         tf.reset_default_graph()
 
     def __enter__(self):
-        sess = self._create_session()
-        ThisSession.set_session(sess)
+        self._create_session()
+        ThisSession.set_session(self)
         return self
 
     def __exit__(self, type, value, track):
-        # self.reset()
+        self._raw_session = None
         ThisSession.reset()
 
 

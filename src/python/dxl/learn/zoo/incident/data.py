@@ -11,9 +11,11 @@ from dxl.data.zoo.incident_position_estimation.data import (CoincidenceColumns,
                                                             ShuffledHitsColumns,
                                                             ShuffledHitsTable)
 from dxl.data.zoo.incident_position_estimation.function import (raw_columns2shuffled_hits_columns,
-                                                                sort_hits_by_energy)
+                                                                sort_hits_by_energy,
+                                                                filter_by_nb_hits,
+                                                                drop_padded_hits)
 from dxl.learn.core import Tensor
-from dxl.learn.dataset import DatasetFromColumnsV2
+from dxl.learn.dataset import DatasetFromColumnsV2, Train80Partitioner
 from dxl.learn.function import OneHot
 
 
@@ -50,25 +52,38 @@ def dataset_db(path_db, limit, is_coincidence, padding_size, batch_size, is_shuf
 
 
 @function
-def dataset_pytable(path_table, batch_size, is_shuffle):
+def dataset_pytable(path_table, batch_size, is_shuffle, nb_hits, is_train=None):
     table = ShuffledHitsTable(path_table)
+    padding_size = table.padding_size
+    table = filter_by_nb_hits(table, nb_hits)
+    table = drop_padded_hits(table, nb_hits)
+    if is_train is not None:
+        table = ShuffledHitsColumns(table.dataclass,
+                                    list(Train80Partitioner(is_train).partition(table)))
     dataset = DatasetFromColumnsV2('dataset',
                                    table,
                                    batch_size=batch_size, is_shuffle=is_shuffle)
     dataset.make()
-    return post_processing(dataset, table.padding_size)
+    return post_processing(dataset, nb_hits)
 
 
 @function
-def dataset_fast(path_table, batch_size, is_shuffle):
-    columns = ShuffledHitsTable(path_h5)
+def dataset_fast(path_table, batch_size, is_shuffle, nb_hits, is_train):
+    table = ShuffledHitsTable(path_table)
+    padding_size = table.padding_size
+    table = filter_by_nb_hits(table, nb_hits)
+    table = drop_padded_hits(table, nb_hits)
+    if is_train is not None:
+        table = ShuffledHitsColumns(table.dataclass,
+                                    list(Train80Partitioner(is_train).partition(table)))
     dtypes = {
         'hits': np.float32,
         'first_hit_index': np.int32,
         'padded_size': np.int32,
     }
-    data = {k: np.array(columns.data[k], dtype=dtypes[k])
-            for k in columns.data}
+    data = {k: np.array([getattr(table.data[i], k) for i in range(table.capacity)],
+                        dtype=dtypes[k])
+            for k in table.columns}
     dataset = tf.data.Dataset.from_tensor_slices(data)
     dataset = dataset.repeat()
     if is_shuffle:
