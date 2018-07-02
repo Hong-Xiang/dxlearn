@@ -5,3 +5,5 @@ from ._flatten import flatten, Flatten
 from .activation import *
 
 from .dropout import DropOut
+
+from .control import ControlDependencies

@@ -77,6 +77,11 @@ class Configurable:
                 config[k] = v
         return config
 
+    def update(self, dct):
+        for k, v in dct.items():
+            if v is not None and v is not ...:
+                self.config.update(k, v)
+
 
 class ConfigurableWithName(Configurable):
     def __init__(self, name: Path, config=None):

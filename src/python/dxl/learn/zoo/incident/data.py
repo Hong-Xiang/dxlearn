@@ -72,7 +72,7 @@ def dataset_fast(path_table, batch_size, is_shuffle, nb_hits, is_train):
     table = ShuffledHitsTable(path_table)
     padding_size = table.padding_size
     table = filter_by_nb_hits(table, nb_hits)
-    table = drop_padded_hits(table, nb_hits)
+    # table = drop_padded_hits(table, nb_hits)
     if is_train is not None:
         table = ShuffledHitsColumns(table.dataclass,
                                     list(Train80Partitioner(is_train).partition(table)))

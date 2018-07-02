@@ -181,6 +181,10 @@ class Session(SessionBase):
         self._raw_session = None
         ThisSession.reset()
 
+    def init(self):
+        ThisSession.run(tf.global_variables_initializer())
+        ThisSession.run(tf.local_variables_initializer())
+
 
 class ThisSession:
     _session = None
