@@ -10,7 +10,8 @@ from dxl.learn.core import Session
 from dxl.learn.core.global_ctx import get_global_context
 
 from dxl.learn.network.saver.saver import Saver
-from dxl.learn.network.summary.summary import SummaryWriter
+
+from dxl.learn.network.summary.summary import SummaryWriter, ScalarSummary
 
 
 def cate_task_loss(infer, label):
@@ -57,6 +58,10 @@ def train(path, load, steps, nb_hits):
     train_step = t.train_step
     saver = Saver('saver', save_interval=30)
     saver.make()
+    sw = SummaryWriter(path='./summary/')
+    sw.add_graph()
+    sw.add_item(ScalarSummary('loss', loss))
+    sw.make()
     # with profiled():
     with Session() as sess:
         sess.init()
@@ -70,4 +75,6 @@ def train(path, load, steps, nb_hits):
                     test_acc_v = sess.run(test_acc_op)
                 print("loss {}, train_acc {}, test_acc: {}".format(
                     loss_train, train_acc_v,  test_acc_v))
+                sw.run()
             saver.auto_save()
+    sw.close()
