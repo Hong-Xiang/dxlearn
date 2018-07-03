@@ -1,8 +1,7 @@
 import tensorflow as tf
-from .graph import Graph
-from .tensor import Tensor
-from dxl.learn.core import ThisSession
+from dxl.learn.core import Graph, Tensor, ThisSession
 
+from dxl.learn.tensor.global_step import GlobalStep
 
 class SummaryItem(Tensor):
     summary_func = None
@@ -64,25 +63,27 @@ class SummaryWriter(Graph):
             self.KEYS.CONFIG.NB_MAX_IMAGE: nb_max_image,
             self.KEYS.CONFIG.PREFIX: prefix
         })
-        self.file_writer = tf.summary.FileWriter()
+        self.file_writer = tf.summary.FileWriter(path)
 
     def close(self):
         self.file_writer.close()
 
-    def add_item(self, name, t):
-        if name in self.tensors:
-            raise ValueError("{} already in tensors.".format(name))
-        self.tensors[name] = t
+    def add_item(self, t):
+        if t.name in self.tensors:
+            raise ValueError("{} already in tensors.".format(t.name))
+        self.tensors[t.name] = t
 
-    def add_graph(self, g):
+    def add_graph(self, g=None):
+        if g is None:
+            g = tf.get_default_graph()
         self.file_writer.add_graph(g)
 
-    def kernel(self):
+    def kernel(self, inputs=None):
         summary_ops = []
-        for t in self.tensors:
-            summary_ops.append(t.make())
+        for t, v in self.tensors.items():
+            summary_ops.append(v.make())
         self.summary_op = tf.summary.merge(summary_ops)
 
-    def run(self, feeds):
-        result = ThisSession.run(feeds)
-        self.file_writer.add_summary(result)
+    def run(self, feeds=None):
+        result = ThisSession.run(self.summary_op, feeds)
+        self.file_writer.add_summary(result, ThisSession.run(GlobalStep()))
