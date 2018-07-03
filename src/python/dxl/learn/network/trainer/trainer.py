@@ -1,4 +1,5 @@
 from dxl.learn.core import Graph
+from dxl.learn.tensor.global_step import GlobalStep
 
 
 class Trainer(Graph):
@@ -24,7 +25,7 @@ class Trainer(Graph):
                                               inputs[KT.OBJECTIVE])
         self.graphs[KS.OPTIMIZER].make()
         self.tensors[KT.TRAIN_STEP] = self.graphs[KS.OPTIMIZER].minimize(
-            objective)
+            objective, global_step=GlobalStep().data)
         self.tensors[KT.MAIN] = self.train_step
 
     @property

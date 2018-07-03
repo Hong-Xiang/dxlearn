@@ -1,7 +1,5 @@
 import tensorflow as tf
-from .graph import Graph
-from .tensor import Tensor
-from dxl.learn.core import ThisSession
+from dxl.learn.core import Graph, Tensor, ThisSession
 
 
 class SummaryItem(Tensor):
@@ -74,7 +72,9 @@ class SummaryWriter(Graph):
             raise ValueError("{} already in tensors.".format(name))
         self.tensors[name] = t
 
-    def add_graph(self, g):
+    def add_graph(self, g=None):
+        if g is None:
+            g = tf.get_default_graph()
         self.file_writer.add_graph(g)
 
     def kernel(self):

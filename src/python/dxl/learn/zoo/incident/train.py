@@ -2,6 +2,7 @@ from dxl.learn.network.trainer import Trainer, RMSPropOptimizer
 from .model import *
 from .data import dataset_pytable, dataset_fast
 import click
+from dxl.learn.tensor.global_step import GlobalStep
 # from .data import create_fast_dataset
 
 # from dxl.core.debug import profiled
@@ -54,7 +55,8 @@ def train(path, load, steps, nb_hits):
     t = Trainer('trainer', RMSPropOptimizer('opt', learning_rate=1e-4))
     t.make({'objective': loss})
     train_step = t.train_step
-    saver = Saver('saver')
+    saver = Saver('saver', save_interval=30)
+    saver.make()
     # with profiled():
     with Session() as sess:
         sess.init()
@@ -68,5 +70,4 @@ def train(path, load, steps, nb_hits):
                     test_acc_v = sess.run(test_acc_op)
                 print("loss {}, train_acc {}, test_acc: {}".format(
                     loss_train, train_acc_v,  test_acc_v))
-            if (i + 1) % 10000 == 0:
-                saver.save(sess._raw_session, save_path)
+            saver.auto_save()

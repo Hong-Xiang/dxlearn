@@ -3,6 +3,7 @@ from pathlib import Path
 from dxl.learn.core import Graph
 import arrow
 
+from dxl.learn.core.session import ThisSession
 _instance = None
 
 
@@ -34,20 +35,18 @@ class Saver(Graph):
             tensors=variables,
             config={self.KEYS.CONFIG.MODEL_DIR: model_dir,
                     self.KEYS.CONFIG.CKPT_NAME: ckpt_name,
-                    self.KEYS.CONFIG.SAVE_INTERVAL: save_interval
+                    self.KEYS.CONFIG.SAVE_INTERVAL: save_interval,
                     self.KEYS.CONFIG.LOAD_STEP: load_step})
         self.last_save = None
-        self.save = None
 
     def _model_path(self):
-        return (Path(self.param('model_dir')) / self.param('ckpt_name')).abs
+        return str(Path(self.config('model_dir')) / self.config('ckpt_name'))
 
-    def kernel(self):
+    def kernel(self, inputs=None):
         self.saver = tf.train.Saver()
 
     def save(self):
         from dxl.learn.tensor.global_step import GlobalStep
-        from dxpy.learn.session import ThisSession
         step = ThisSession.run(GlobalStep())
         print("[SAVE] model to: {}.".format(self._model_path()))
         self.saver.save(ThisSession.session(),
@@ -55,16 +54,15 @@ class Saver(Graph):
 
     def auto_save(self):
         if self.last_save is None or (arrow.now(
-        ) - self.last_save).seconds > self.config('auto_save_interval'):
+        ) - self.last_save).seconds > self.config(self.KEYS.CONFIG.SAVE_INTERVAL):
             self.save()
             self.last_save = arrow.now()
 
     def __resolve_path_load(self):
         from fs.osfs import OSFS
         import re
-        from dxpy.filesystem import Path
-        path_check_point = (
-            Path(self.config('model_dir')) / 'checkpoint').abs
+        from pathlib import Path
+        path_check_point = str(Path(self.config('model_dir')) / 'checkpoint')
         pp = re.compile('^.*: "(.*)".*$')
         ps = re.compile('.*' + self.config('ckpt_name') + '-([0-9]+)-*')
         paths = []
