@@ -41,3 +41,13 @@ class Trainer(Graph):
     @property
     def decay_learning_rate(self, step=1):
         return self.graphs[self.KEYS.GRAPH.OPTIMIZER].decay_learning_rate
+
+
+class TrainerV2(Graph):
+    class KEYS(Graph.KEYS):
+        class GRAPH(Graph.KEYS.GRAPH):
+            OPTIMIZER = 'optimizer'
+
+    def __init__(self, info, optimizer):
+        super().__init__(info)
+        self.optimizer = optimizer
