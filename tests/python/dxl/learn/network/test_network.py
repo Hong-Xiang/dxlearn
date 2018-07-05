@@ -5,6 +5,7 @@ import numpy as np
 from dxl.learn.test import TestCase
 from dxl.learn.network import Network
 from dxl.learn.model.dense import Dense
+from dxl.learn.core import Model
 from dxl.learn.dataset import DatasetFromColumns, PyTablesColumns
 from dxl.learn.dataset import Train80Partitioner, DataColumnsPartition
 from dxl.learn.test.resource import test_resource_path
@@ -30,15 +31,18 @@ class TestNetwork(TestCase):
             batch_size=32,
             is_shuffle=True)
 
+    def get_optimizer(self):
+        return RMSPropOptimizer('optimizer', learning_rate=1e-3)
+
     def get_trainer(self):
         return Trainer('trainer',
-                       RMSPropOptimizer('optimizer', learning_rate=1e-3))
+                       self.get_optimizer())
 
     def get_metrices(self):
         return mean_square_error
 
     def create_network(self):
-        class DNNWith2Layers(Network):
+        class DNNWith2Layers(Model):
             def kernel(self, inputs):
                 x = inputs['image']
                 x = Tensor(tf.cast(x.data, tf.float32))
@@ -64,18 +68,20 @@ class TestNetwork(TestCase):
                                                  n_units=10,
                                                  activation='relu'))(label)
                 return {
-                    self.KEYS.TENSOR.INFERENCES: y_,
-                    self.KEYS.TENSOR.LABEL: y
+                    'inference' : y_,
+                    'label' : y
                 }
 
         dataset = self.get_dataset()
         dataset.make()
-        network = DNNWith2Layers(
-            'mnist',
-            tensors=dataset.tensors,
-            trainer=self.get_trainer(),
-            metrics=self.get_metrices())
-        return network
+        model = DNNWith2Layers('mnist', tensors=dataset.tensors)
+
+        model = Network('minst', model)
+        model.bind(metrics=self.get_metrices())
+        model.bind(optimizer=self.get_optimizer())
+        model.bind('trainer0', model.tensors['label'], model.tensors['inference'])
+
+        return model
 
     def is_mono_decay(self, data):
         data_pre = data[:-1]
@@ -90,7 +96,7 @@ class TestNetwork(TestCase):
             losses = []
             for i in range(100):
                 if i % 10 == 0:
-                    l = sess.run(network.tensors['objective'])
+                    l = sess.run(network.tensors['trainer0_objective'])
                     losses.append(l)
                 network.train()
 
