@@ -35,7 +35,7 @@ class Stack(Model):
         if nb_layers is None:
             nb_layers = len(self.graphs)
         for i in range(nb_layers):
-            x = self.graphs[self.KEYS.GRAPHS.MODELS][i](inputs)
+            x = self.graphs[self.KEYS.GRAPHS.MODELS](inputs)
         return x
 
 
