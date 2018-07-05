@@ -44,7 +44,6 @@ class TestSession:
 
 
 class SessionBase(ConfigurableWithName):
-    _raw_session = None
 
     class KEYS:
         class CONFIG:
@@ -79,8 +78,7 @@ class SessionBase(ConfigurableWithName):
                 is_log_device_placement,
                 self.KEYS.CONFIG.IS_RUN_VAR_INIT: is_run_var_init
             })
-        if backend_session is not None:
-            self.data = backend_session
+        self._raw_session = backend_session
 
     def get_session_config(self):
         config = tf.ConfigProto()
@@ -172,6 +170,19 @@ class Session(SessionBase):
     def reset(self):
         tf.reset_default_graph()
 
+    def __enter__(self):
+        self.session()
+        ThisSession.set_session(self)
+        return self
+
+    def __exit__(self, type, value, track):
+        self._raw_session = None
+        ThisSession.reset()
+
+    def init(self):
+        ThisSession.run(tf.global_variables_initializer())
+        ThisSession.run(tf.local_variables_initializer())
+
 
 class ThisSession:
     _session = None
@@ -182,7 +193,7 @@ class ThisSession:
 
     @classmethod
     def reset(cls):
-        cls._session.reset()
+        # cls._session.reset()
         cls._session = None
 
     @classmethod

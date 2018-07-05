@@ -3,6 +3,7 @@ from pathlib import Path
 from dxl.learn.core import Graph
 import arrow
 
+from dxl.learn.core.session import ThisSession
 _instance = None
 
 
@@ -19,55 +20,51 @@ class Saver(Graph):
             MODEL_DIR = 'model_dir'
             CKPT_NAME = 'ckpt_name'
             SAVE_INTERVAL = 'save_interval'
+            LOAD_STEP = 'load_step'
 
     def __init__(self,
                  info,
-                 model_dir='./save/',
-                 ckpt_name='save',
+                 model_dir='./model/',
+                 ckpt_name='model',
                  variables=None,
+                 load_step=None,
                  *,
-                 save_interval=600,
-                 config):
+                 save_interval=600):
         super().__init__(
             info,
             tensors=variables,
-            config=self._parse_input_config(
-                config, {
-                    self.KEYS.CONFIG.MODEL_DIR: model_dir,
+            config={self.KEYS.CONFIG.MODEL_DIR: model_dir,
                     self.KEYS.CONFIG.CKPT_NAME: ckpt_name,
-                    self.KEYS.CONFIG.SAVE_INTERVAL: save_interval
-                }))
+                    self.KEYS.CONFIG.SAVE_INTERVAL: save_interval,
+                    self.KEYS.CONFIG.LOAD_STEP: load_step})
         self.last_save = None
-        self.register_task('save', self.save)
-        self.register_task('load', self.load)
 
     def _model_path(self):
-        return (Path(self.param('model_dir')) / self.param('ckpt_name')).abs
+        return str(Path(self.config('model_dir')) / self.config('ckpt_name'))
 
-    def save(self, feeds):
-        from ..scalar import global_step
-        if self._saver is None:
-            self._saver = tf.train.Saver()
-        from dxpy.learn.session import get_default_session
-        sess = get_default_session()
-        step = sess.run(global_step())
+    def kernel(self, inputs=None):
+        self.saver = tf.train.Saver()
+
+    def save(self):
+        from dxl.learn.tensor.global_step import GlobalStep
+        step = ThisSession.run(GlobalStep())
         print("[SAVE] model to: {}.".format(self._model_path()))
-        self._saver.save(sess, self._model_path(), global_step=step)
+        self.saver.save(ThisSession.session(),
+                        self._model_path(), global_step=step)
 
-    def auto_save(self, feeds):
+    def auto_save(self):
         if self.last_save is None or (arrow.now(
-        ) - self.last_save).seconds > self.param('auto_save_interval'):
-            self.save(feeds)
+        ) - self.last_save).seconds > self.config(self.KEYS.CONFIG.SAVE_INTERVAL):
+            self.save()
             self.last_save = arrow.now()
 
-    def __resolve_path_load(self, feeds):
+    def __resolve_path_load(self):
         from fs.osfs import OSFS
         import re
-        from dxpy.filesystem import Path
-        path_check_point = (
-            Path(self.param('model_dir', feeds)) / 'checkpoint').abs
+        from pathlib import Path
+        path_check_point = str(Path(self.config('model_dir')) / 'checkpoint')
         pp = re.compile('^.*: "(.*)".*$')
-        ps = re.compile('.*' + self.param('ckpt_name', feeds) + '-([0-9]+)-*')
+        ps = re.compile('.*' + self.config('ckpt_name') + '-([0-9]+)-*')
         paths = []
         with OSFS('/') as fs:
             if not fs.exists(path_check_point):
@@ -80,7 +77,7 @@ class Saver(Graph):
                         mat_step = ps.match(path_load)
                         if mat_step is not None:
                             paths.append([path_load, int(mat_step[1])])
-        step = self.param('step', feeds, default=-1)
+        step = self.config('step') or -1
         if step == -1:
             step = max(list(zip(*paths))[1])
         for p, s in paths:
@@ -88,14 +85,11 @@ class Saver(Graph):
                 return p, True
         return step, False
 
-    def load(self, feeds):
-        from ..scalar import global_global_step
+    def load(self):
+        from dxl.learn.tensor.global_step import GlobalStep
+        from dxl.learn.core import ThisSession
         import sys
-        if self._saver is None:
-            self._saver = tf.train.Saver()
-        from dxpy.learn.session import get_default_session
-        sess = get_default_session()
-        path_load, flag = self.__resolve_path_load(feeds)
+        path_load, flag = self.__resolve_path_load()
         if flag is False:
             if isinstance(path_load, int):
                 msg = "[ERROR][LOAD] Save for given step {} not found. Skip restore."
@@ -106,4 +100,4 @@ class Saver(Graph):
                 print(msg.format(path_load), file=sys.stderr)
                 return
         print("[LOAD] model from: {}.".format(path_load))
-        self._saver.restore(sess, path_load)
+        self.saver.restore(ThisSession.session(), path_load)
