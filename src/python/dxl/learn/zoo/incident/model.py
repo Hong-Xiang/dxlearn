@@ -30,7 +30,7 @@ class IndexFirstHit(Model):
         x = flatten(x)
         m = identity
         models = []
-        for i in range(3):
+        for i in range(len(self.config(self.KEYS.CONFIG.NB_UNITS))):
             models += [Dense(self.config(self.KEYS.CONFIG.NB_UNITS)
                              [i], info='dense_{}'.format(i)),
                        ReLU,
