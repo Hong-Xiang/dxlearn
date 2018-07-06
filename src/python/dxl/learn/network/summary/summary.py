@@ -73,6 +73,9 @@ class SummaryWriter(Graph):
             raise ValueError("{} already in tensors.".format(t.name))
         self.tensors[t.name] = t
 
+    def add_loss(self, loss):
+        self.add_item(ScalarSummary('loss', loss))
+
     def add_graph(self, g=None):
         if g is None:
             g = tf.get_default_graph()
@@ -80,10 +83,16 @@ class SummaryWriter(Graph):
 
     def kernel(self, inputs=None):
         summary_ops = []
+        
         for t, v in self.tensors.items():
             summary_ops.append(v.make())
         self.summary_op = tf.summary.merge(summary_ops)
 
     def run(self, feeds=None):
+        self.make()
         result = ThisSession.run(self.summary_op, feeds)
         self.file_writer.add_summary(result, ThisSession.run(GlobalStep()))
+
+    @property
+    def summary_step(self):
+        return self.config(self.KEYS.CONFIG.NB_INTERVAL)

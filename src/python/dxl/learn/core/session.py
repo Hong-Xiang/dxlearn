@@ -41,6 +41,9 @@ class TestSession:
         else:
             feeds_with_raw_key = None
         return self.data.run(fetches, feeds_with_raw_key)
+    
+    def session(self):
+        return self.data
 
 
 class SessionBase(ConfigurableWithName):
