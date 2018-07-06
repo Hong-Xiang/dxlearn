@@ -31,14 +31,7 @@ class SplitByPeriod(Function):
         return fst, snd
 
 
-@singledispatch
-def reindex_crystal(x):
-    raise TypeError(
-        "Input should be Photon or Coincidence, got {}.".format(type(x)))
-
-
-@reindex_crystal.register(Photon)
-def _(x: Photon):
+def reindex_crystal(x: Photon):
     if x.hits[0].crystal_index is None:
         return x
     crystal_indices = [h.crystal_index for h in x.hits]
@@ -47,6 +40,14 @@ def _(x: Photon):
     new_indices = [crystal_indices.index(h.crystal_index) for h in x.hits]
     hits = [h.update(crystal_index=i) for h, i in zip(x.hits, new_indices)]
     return x.update(hits=hits)
+
+
+def binary_crystal_index(p: Photon):
+    first_hit_crystal_id = p.hits[p.first_hit_index].crystal_index
+    new_indices = [1 if h.crystal_index == first_hit_crystal_id else 0
+                   for h in p.hits]
+    hits = [h.update(crystal_index=i) for h, i in zip(p.hits, new_indices)]
+    return p.update(hits=hits)
 
 
 class DatasetIncidentSingle(NamedTuple):
