@@ -13,6 +13,7 @@ from dxl.learn.function import OneHot
 from dxl.data.zoo.incident import (
     load_table, Photon, Coincidence, PhotonColumns, CoincidenceColumns)
 
+from dxl.learn.function import Sum, ArgMax
 from functools import singledispatch
 
 from random import shuffle
@@ -48,6 +49,21 @@ def binary_crystal_index(p: Photon):
                    for h in p.hits]
     hits = [h.update(crystal_index=i) for h, i in zip(p.hits, new_indices)]
     return p.update(hits=hits)
+
+
+class FilterPhotonByNbTrueHits(Function):
+    def __init__(self, nb_hits):
+        self.nb_hits = nb_hits
+
+    def __call__(self, photons):
+        return [p for p in photons if p.nb_ture_hits == self.nb_hits]
+
+
+def same_crystal_accuracy(predict, crystal_indices):
+    one_hot_predict = OneHot(shape_list(predict)[1])(ArgMax(1)(predict))
+    mask = one_hot_predict * crystal_indices
+    accuracy = Sum()(mask) / shape_list(predict)[0]
+    return accuracy
 
 
 class DatasetIncidentSingle(NamedTuple):

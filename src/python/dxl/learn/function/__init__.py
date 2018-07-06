@@ -7,3 +7,5 @@ from .activation import *
 from .dropout import DropOut
 
 from .control import ControlDependencies
+
+from .reduction import *

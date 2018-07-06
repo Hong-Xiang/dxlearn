@@ -40,3 +40,7 @@ def test_spilit_by_period():
     fst, snd = f(list(range(10)))
     assert fst == [2, 3, 7, 8]
     assert snd == [0, 1, 4, 5, 6, 9]
+
+
+class TestSameCrystalAccuracy(TestCase):
+    pass
