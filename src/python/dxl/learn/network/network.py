@@ -4,67 +4,39 @@ Trainable Graph
 from dxl.learn.core import Model
 from dxl.learn.core import ThisSession
 from dxl.learn.utils import logger
+from dxl.learn.core import Tensor
+from dxl.learn.network.trainer import Trainer
+from dxl.learn.network.summary import SummaryWriter
 from .trainer.global_step import GlobalStep
 
 
-class Network(Model):
-    """
-    A network is a trainable Graph.
-    A member maybe added.
-    A Network is restricted to has at most one objective/trainer/train_step.
-    """
-
+class AbstractNetwork(Model):
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
-            TRAIN = 'train'
-            OBJECTIVE = 'objective'
-            ACCURACY = 'accuracy'
-            INFERENCES = 'inferences'
-            EVALUATE = 'evaluate'
-            LABEL = 'label'
-            STEP = 'step'
-
+            OBJECTIVE = 'objective_'
+            ACCURACY = 'accuracy_'
+            INFERENCES = 'inferences_'
+            EVALUATE = 'evaluate_'
+            LABEL = 'label_'
+            TRAINER = 'trainer_'
+            GLOBAL_STEP = 'global_step'
+        
         class GRAPH(Model.KEYS.GRAPH):
-            MAIN = 'main'
-            TRAINER = 'trainer'
-            METRICS = 'metrics'
-            SUMMARY_WRITER = 'summary_writer'
-            SAVER = 'saver'
+            LOSS = 'loss_'
+            OPTIMIZER = 'optimizer_'
+            SUMMARY_WRITER = 'summary_writer_'
+            SAVER = 'saver_'
 
     def __init__(self,
-                 info='network',
-                 *,
-                 tensors=None,
-                 graphs=None,
-                 config=None,
-                 trainer=None,
-                 metrics=None,
-                 summaries=None,
-                 saver=None):
-        """
-        `objectives`: dict of Tensor/tf.tensor or callable. If objectives is a 
-        dict of callables, these callables should have current Network
-        object as the only input and returns a Tensor/tf.tensor object, note one
-        must **NOT** create new variable in this function since it will be called
-        outside managed scope.
+                 info,
+                 model,
+                 config=None):
+        self.model = self._make_model(model)
 
-        `trainer` is trainer for self.tensor('objective')
-        `metrics` is a collection of scalar tensor
-        `summaries` is a collection of summaries, typically some scalar summaries of metrics
-        `saver` is saver object for save/load functionality
-        """
-        KS = self.KEYS.GRAPH
-        super().__init__(
-            info,
-            tensors=tensors,
-            graphs=self._parse_input_config(
-                graphs, {
-                    KS.TRAINER: trainer,
-                    KS.METRICS: metrics,
-                    KS.SUMMARY_WRITER: summaries,
-                    KS.SAVER: saver
-                }),
-            config=config)
+        self.trainers = []
+        self.global_step = GlobalStep() 
+
+        super().__init__(info, config=config)
 
     @classmethod
     def _default_config(cls):
@@ -72,64 +44,106 @@ class Network(Model):
         c.update({})
         return c
 
-    def kernel(self, inputs):
-        return {}
+    def _make_model(self, model):
+        # make model
+        if not model.is_made:
+            model()
+        return model
 
-    def post_kernel_in_scope(self, results):
-        KT = self.KEYS.TENSOR
-        objective = self.apply_metrics(results[KT.LABEL],
-                                       results[KT.INFERENCES])
-        self.apply_trainer(objective)
+    def _add_tensor(self, name, t):
+        if name in self.tensors:
+            raise ValueError("{} is already exits".format(name))
+        self.tensors[name] = t
 
-    def apply_metrics(self, label, infer):
-        KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        loss = self.graphs[KG.METRICS](label, infer)
-        self.tensors[KT.OBJECTIVE] = loss
-        # self.tensors[KT.ACCURACY] = acc
-        return loss
+    def _update_bind(self, binds):
+        for k, v in binds:
+            if v is not None:
+                if k in self.graphs:
+                    raise ValueError("{} is already exits".format(k))
+                self.graphs[k] = v
 
-    def apply_trainer(self, objective):
-        KT, KG = self.KEYS.TENSOR, self.KEYS.GRAPH
-        self.graphs[KG.TRAINER].make({KT.OBJECTIVE: objective})
-        self.tensors[KT.TRAIN] = self.graphs[KG.TRAINER].train_step
-        self.tensors[KT.STEP] = GlobalStep()
+    def apply_loss(self, name, label, infer):
+        _loss = self.graphs.get(self.KEYS.GRAPH.LOSS + name)
+        if _loss is None:
+            raise ValueError("loss is None, please bind first!")  
+        return _loss(label, infer)
+
+    def apply_optimizer(self, name):
+        _optimizer = self.graphs.get(self.KEYS.GRAPH.OPTIMIZER + name)
+        if _optimizer is None:
+            raise ValueError("optimizer is None, please bind first!")
+        return _optimizer
+
+    def apply_trainer(self, name, objective):
+        if name in self.tensors:
+            raise ValueError("trainer {} is already exits".format(name))
+        _optimizer = self.apply_optimizer(name)
+        trainer = Trainer(name, _optimizer, objective)
+        trainer.make()
+        return trainer.train_step
+    
+    def get_objective(self, name=None):
+        if name is None:
+            name = 'default'
+        return self.tensors.get(self.KEYS.TENSOR.OBJECTIVE+name)
 
     def train(self, name=None, feeds=None):
-        """
-        `name`: name of trainer (in subgraph)
-        """
-        if not self.is_made:
-            self.make()
-
-        KT = self.KEYS.TENSOR
-        trainer = self.tensors[self.KEYS.TENSOR.TRAIN]
+        if name is None:
+           name = 'default'
+        trainer = self.tensors.get(name)
+        if trainer is None:
+            raise ValueError("Nothing to train, please bind first.")
+        
         ThisSession.run(trainer, feeds)
-        step = ThisSession.run(self.tensors[KT.STEP].increased())
+        global_step = ThisSession.run(self.global_step.increased())
 
-        self.on_end_step(step)
+        self.on_step_end(name, global_step)
 
-    def inference(self, name=None, feeds=None):
-        t = self.tensors[self.KEYS.TENSOR.INFERENCES]
-        ThisSession.run(t, feeds)
+    def on_step_end(self, name, step):
+        KG = self.KEYS.GRAPH
+        summary_writer = self.graphs.get(KG.SUMMARY_WRITER + name)
+        if summary_writer is not None:
+            summary_writer.run()
 
-    def evaluate(self, name=None, feeds=None):
-        t = self.tensors[self.KEYS.TENSOR.EVALUATE]
-        ThisSession.run(t, feeds)
+        saver = self.graphs.get(KG.SAVER + name)
+        if saver is not None:
+                saver.save()
 
     def load(self, step=None):
-        """
-        Restore saved models.
-        """
-        self.saver.load(step)
+        raise NotImplementedError
 
-    def on_end_step(self, step):
+    @property
+    def traner(self):
+        return self.trainers
+
+
+class Network(AbstractNetwork):
+
+    def bind(self,
+             name='default',
+             loss=None,
+             optimizer=None,
+             summary_writer=None,
+             saver=None):
         KG = self.KEYS.GRAPH
-        if self.graphs.get(KG.SUMMARY_WRITER) is not None:
-            summary_step = self.graphs[KG.SUMMARY_WRITER].summary_step
-            if step % summary_step == 0:
-                self.graphs[KG.SUMMARY_WRITER].write()
+        _names = (
+            KG.LOSS + name,
+            KG.OPTIMIZER + name,
+            KG.SUMMARY_WRITER + name,
+            KG.SAVER + name
+        )
+        _binds = (loss, optimizer, summary_writer, saver)
+        self._update_bind(zip(_names, _binds))
 
-        if self.graphs.get(KG.SAVER) is not None:
-            save_step = self.graphs[KG.SAVER].save_step
-            if step % save_step == 0:
-                self.graphs[KG.SAVER].save()
+        
+    def build_trainer(self, label, infer, name='default'):
+        KT = self.KEYS.TENSOR
+        objective = self.apply_loss(name, label, infer)
+        self._add_tensor(KT.OBJECTIVE + name, objective)
+
+        train_step = self.apply_trainer(name, objective)
+        self._add_tensor(name, train_step)
+        self.trainers.append(name)
+
+
+
