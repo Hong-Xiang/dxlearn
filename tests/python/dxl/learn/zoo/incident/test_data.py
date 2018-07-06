@@ -1,20 +1,21 @@
 from dxl.learn.test import TestCase
+from dxl.data.zoo.incident import load_table, Hit, Photon, Coincidence
+from dxl.learn.zoo.incident.data import reindex_crystal
 
 # from dxl.learn.zoo.incident.data import create_dataset, dataset_db
 
 import os
-path_db = os.environ['GHOME'] + '/Workspace/IncidentEstimation/data/gamma.db'
+path_p5 = os.environ['GHOME'] + \
+    '/Workspace/IncidentEstimation/data/gamma_photo_5.h5'
 
-import pytest
 
-@pytest.mark.skip(reason="not imp yet!")
-class TestDataset(TestCase):
-    @pytest.mark.skip("slow")
-    def test_load(self):
-        dataset = create_dataset(dataset_db, path_db, 5, 32)
-        samples = []
-        with tf.Session() as sess:
-            for i in range(1000):
-                samples.append(sess.run(
-                    [dataset.hits.data, dataset.first_hit_index.data, dataset.padded_size.data]))
-        assert samples[0][0].shape == (32, 5, 4)
+def test_reindex_crystal():
+    p = Photon([
+        Hit(0.0, 0.0, 0.0, 0.0, crystal_index=12),
+        Hit(0.0, 0.0, 0.0, 0.0, crystal_index=23),
+        Hit(0.0, 0.0, 0.0, 0.0, crystal_index=12),
+    ])
+    p2 = reindex_crystal(p)
+    assert p2.hits[0].crystal_index == 0
+    assert p2.hits[1].crystal_index == 1
+    assert p2.hits[0].crystal_index == 0

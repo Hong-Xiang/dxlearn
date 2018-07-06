@@ -3,9 +3,6 @@ from .model import *
 from .data import dataset_pytable, dataset_fast
 import click
 from dxl.learn.tensor.global_step import GlobalStep
-# from .data import create_fast_dataset
-
-# from dxl.core.debug import profiled
 from dxl.learn.core import Session
 from dxl.learn.core.global_ctx import get_global_context
 

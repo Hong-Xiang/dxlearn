@@ -4,7 +4,7 @@ from dxl.learn.core import Model
 from dxl.learn.model.cnn import Conv2D, InceptionBlock
 
 __all__ = [
-    'Stack', 'StackV2'
+    'Stack', 'Squential'
 ]
 
 
@@ -29,8 +29,6 @@ class Stack(Model):
         return {cls.KEYS.CONFIG.NB_LAYERS: 2}
 
     def kernel(self, inputs):
-        # x = inputs[self.KEYS.TENSOR.INPUT]
-        # for _ in range(self.config(self.KEYS.CONFIG.NB_LAYERS)):
         nb_layers = self.config(self.KEYS.CONFIG.NB_LAYERS)
         if nb_layers is None:
             nb_layers = len(self.graphs)
@@ -43,13 +41,12 @@ from typing import List, Union
 from dxl.data.function import Function
 
 
-class StackV2(Model):
-    def __init__(self, models: List[Union[Model, Function]], info='stack'):
+class Sequential(Model):
+    def __init__(self, models: List[Union[Model, Function]], info='sequential'):
         super().__init__(info, graphs=models)
-        self.models = models
 
     def kernel(self, inputs):
         x = inputs
-        for m in self.models:
+        for m in self.graphs:
             x = m(x)
         return x
