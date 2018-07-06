@@ -107,7 +107,7 @@ class AbstractNetwork(Model):
 
         saver = self.graphs.get(KG.SAVER + name)
         if saver is not None:
-                saver.run()
+                saver.save()
 
     def load(self, step=None):
         raise NotImplementedError

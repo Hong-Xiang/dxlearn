@@ -13,6 +13,7 @@ from dxl.learn.test.resource import test_resource_path
 from dxl.learn.network.losses import mean_square_error
 from dxl.learn.network.trainer.optimizers import RMSPropOptimizer
 from dxl.learn.network.summary import SummaryWriter
+from dxl.learn.network.saver import Saver
 from dxl.learn.network.trainer import Trainer
 from dxl.learn.core import ThisSession, Tensor
 
@@ -47,6 +48,9 @@ class TestNetwork(TestCase):
 
     def get_summarywriter(self):
         return SummaryWriter('test_writer', self.SAVE_PATH, 10)
+    
+    def get_saver(self):
+        return Saver('test_saver', self.SAVE_PATH)
 
     def create_network(self):
         class DNNWith2Layers(Model):
@@ -91,6 +95,7 @@ class TestNetwork(TestCase):
 
         sw = self.get_summarywriter().add_loss(net.get_objective())
         net.bind(summary_writer=sw)
+        net.bind(saver=self.get_saver())
 
         return net
 
