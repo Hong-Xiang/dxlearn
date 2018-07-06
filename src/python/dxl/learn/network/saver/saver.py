@@ -46,6 +46,7 @@ class Saver(Graph):
         self.saver = tf.train.Saver()
 
     def save(self):
+        self.make()
         from dxl.learn.tensor.global_step import GlobalStep
         step = ThisSession.run(GlobalStep())
         print("[SAVE] model to: {}.".format(self._model_path()))
