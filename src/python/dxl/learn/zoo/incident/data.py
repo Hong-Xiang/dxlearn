@@ -59,11 +59,14 @@ class FilterPhotonByNbTrueHits(Function):
         return [p for p in photons if p.nb_ture_hits == self.nb_hits]
 
 
-def same_crystal_accuracy(predict, crystal_indices):
-    one_hot_predict = OneHot(shape_list(predict)[1])(ArgMax(1)(predict))
-    mask = one_hot_predict * crystal_indices
-    accuracy = Sum()(mask) / shape_list(predict)[0]
-    return accuracy
+def parse_hits_features(p):
+    return [[h.x, h.y, h.z, h.e] for h in p.hits]
+
+
+def parse_crystal_index(p):
+    return [h.crystal_index for h in p.hits]
+
+
 
 
 class DatasetIncidentSingle(NamedTuple):

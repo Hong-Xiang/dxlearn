@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-class IndexFirstHit(Model):
+class FirstHit(Model):
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             HITS = 'hits'
@@ -40,4 +40,4 @@ class IndexFirstHit(Model):
         if self.graphs.get(self.KEYS.GRAPH.SEQUENTIAL) is None:
             self.graphs[self.KEYS.GRAPH.SEQUENTIAL] = Sequential(
                 info='stack', models=models)
-        return self.graphs(self.KEYS.GRAPH.SEQUENTIAL)(x)
+        return self.graphs[self.KEYS.GRAPH.SEQUENTIAL](x)

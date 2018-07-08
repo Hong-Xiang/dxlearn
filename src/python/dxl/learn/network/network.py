@@ -5,6 +5,7 @@ from dxl.learn.core import Model
 from dxl.learn.core import ThisSession
 from dxl.learn.utils import logger
 from dxl.learn.core import Tensor
+from dxl.learn.core.global_ctx import get_global_context
 from dxl.learn.network.trainer import Trainer
 from dxl.learn.network.summary import SummaryWriter
 from .trainer.global_step import GlobalStep
@@ -20,7 +21,7 @@ class AbstractNetwork(Model):
             LABEL = 'label_'
             TRAINER = 'trainer_'
             GLOBAL_STEP = 'global_step'
-        
+
         class GRAPH(Model.KEYS.GRAPH):
             LOSS = 'loss_'
             OPTIMIZER = 'optimizer_'
@@ -34,7 +35,7 @@ class AbstractNetwork(Model):
         self.model = self._make_model(model)
 
         self.trainers = []
-        self.global_step = GlobalStep() 
+        self.global_step = GlobalStep()
 
         super().__init__(info, config=config)
 
@@ -65,7 +66,7 @@ class AbstractNetwork(Model):
     def apply_loss(self, name, label, infer):
         _loss = self.graphs.get(self.KEYS.GRAPH.LOSS + name)
         if _loss is None:
-            raise ValueError("loss is None, please bind first!")  
+            raise ValueError("loss is None, please bind first!")
         return _loss(label, infer)
 
     def apply_optimizer(self, name):
@@ -81,7 +82,7 @@ class AbstractNetwork(Model):
         trainer = Trainer(name, _optimizer, objective)
         trainer.make()
         return trainer.train_step
-    
+
     def get_objective(self, name=None):
         if name is None:
             name = 'default'
@@ -89,25 +90,29 @@ class AbstractNetwork(Model):
 
     def train(self, name=None, feeds=None):
         if name is None:
-           name = 'default'
+            name = 'default'
         trainer = self.tensors.get(name)
         if trainer is None:
             raise ValueError("Nothing to train, please bind first.")
-        
+
         ThisSession.run(trainer, feeds)
         global_step = ThisSession.run(self.global_step.increased())
 
         self.on_step_end(name, global_step)
 
+    def evaluate(self, name=None, feeds=None):
+        with get_global_context().test_phase():
+            return ThisSession.run(self.tensors.get(name), feeds)
+
     def on_step_end(self, name, step):
         KG = self.KEYS.GRAPH
         summary_writer = self.graphs.get(KG.SUMMARY_WRITER + name)
         if summary_writer is not None:
-            summary_writer.run()
+            summary_writer.auto_run()
 
         saver = self.graphs.get(KG.SAVER + name)
         if saver is not None:
-                saver.save()
+            saver.auto_save()
 
     def load(self, step=None):
         raise NotImplementedError
@@ -135,7 +140,6 @@ class Network(AbstractNetwork):
         _binds = (loss, optimizer, summary_writer, saver)
         self._update_bind(zip(_names, _binds))
 
-        
     def build_trainer(self, label, infer, name='default'):
         KT = self.KEYS.TENSOR
         objective = self.apply_loss(name, label, infer)
@@ -144,6 +148,3 @@ class Network(AbstractNetwork):
         train_step = self.apply_trainer(name, objective)
         self._add_tensor(name, train_step)
         self.trainers.append(name)
-
-
-

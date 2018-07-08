@@ -4,7 +4,7 @@ from dxl.learn.core import Model
 from dxl.learn.model.cnn import Conv2D, InceptionBlock
 
 __all__ = [
-    'Stack', 'Squential'
+    'Stack', 'Sequential'
 ]
 
 
