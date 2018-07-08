@@ -17,7 +17,6 @@ from dxl.learn.network.saver.saver import Saver
 
 
 def dataset_photon_classification(path_h5, limit, nb_hits):
-    limit = 1000
     photons = load_table(path_h5, limit)
     photons = [p for p in photons if p.nb_true_hits == nb_hits]
     photons = [p.update(hits=p.hits[:nb_hits]) for p in photons]
