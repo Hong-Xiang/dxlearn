@@ -12,30 +12,32 @@ from dxl.function import fmap, to
 from dxl.data.function import x
 
 
-from dxl.learn.zoo.incident.main import construct_network, make_summary
+from dxl.learn.zoo.incident.main import construct_network, make_summary, get_saver
 
 from dxl.learn.zoo.incident.main import one_hot_predict, same_crystal_accuracy
 
+from typing import NamedTuple, List
+
+from dxl.learn.train import TrainSpec
+import json
+
 
 @click.command()
-@click.option('--load', '-l', type=int)
-@click.option('--path', '-p', type=click.types.Path(True, dir_okay=False))
-@click.option('--steps', '-s', type=int, default=10000000)
-@click.option('--nb-hits', '-n', type=int, default=2)
-def train(path, load, steps, nb_hits):
-    path_table = path
-    save_path = './model'
-    # padding_size = nb_hits
-    result_train, result_test = construct_network(path, None, nb_hits)
+@click.option('--config-file', '-c', type=click.types.Path(True, dir_okay=False))
+def train(config_file):
+    with open(config_file) as fin:
+        config = json.load(fin)
+    spec = TrainSpec.from_dict(config)
+    path_table = config['path_table']
+    nb_hits = config['nb_hits']
+    result_train, result_test = construct_network(path_table, None, nb_hits, spec)
     loss_train = result_train['loss']
-    t = Trainer('trainer', RMSPropOptimizer('opt', learning_rate=1e-3))
+    t = Trainer('trainer', RMSPropOptimizer('opt', learning_rate=spec.learning_rate))
 
     t.make({'objective': loss_train})
     train_step = t.train_step
-    saver = Saver('saver', save_interval=30)
-    saver.make()
-    sw_train, sw_test = make_summary(
-        result_train, 'train'), make_summary(result_test, 'test')
+    saver = get_saver(spec)
+    sw_train, sw_test = make_summary(result_train, 'train', spec), make_summary(result_test, 'test', spec)
 
     fetches = {
         'loss_train': result_train['loss'],
@@ -43,25 +45,20 @@ def train(path, load, steps, nb_hits):
         'loss_test': result_test['loss'],
         'acc_test': result_test['accuracy']
     }
-    # with profiled():
     with Session() as sess:
         sess.init()
-        # debug(sess, result_train) 
-        # return
-        if load == 1:
+        if spec.load_step == 1:
             saver.restore(sess._raw_session, save_path)
-        for i in range(steps):
+        for i in range(spec.nb_steps):
             sess.run(train_step)
-            if i % 100 == 0:
-                # loss_train, train_acc_v = sess.run([loss, train_acc_op])
-                fetched = sess.run(fetches)
-                print(fetched)
-                # with get_global_context().test_phase():
-                #     test_acc_v = sess.run(test_acc_op)
-                # print("loss {}, train_acc {}, test_acc: {}".format(
-                #     loss_train, train_acc_v,  test_acc_v))
-                sw_train.run()
-                sw_test.run()
+            # if i  % 1000 == 0:
+                # print("step {}".format(i))
+            if i % max(spec.nb_steps // 10000, 1) == 0:
+                with get_global_context().test_phase():
+                    fetched = sess.run(fetches)
+                    print(fetched)
+                    sw_train.run()
+                    sw_test.run()
             saver.auto_save()
     sw.close()
 
