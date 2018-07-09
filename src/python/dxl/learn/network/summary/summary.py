@@ -91,6 +91,9 @@ class SummaryWriter(Graph):
         self.summary_op = tf.summary.merge(summary_ops)
 
     def run(self, feeds=None):
+        """
+        Run tensors and dump to summary file.
+        """
         self.make()
         result = ThisSession.run(self.summary_op, feeds)
         self.file_writer.add_summary(result, ThisSession.run(GlobalStep()))
