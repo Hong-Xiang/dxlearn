@@ -3,7 +3,7 @@ import tensorflow as tf
 from functools import singledispatch
 from dxl.learn.core import Tensor
 from .scope import Scope
-__all__ = ['ReLU', 'SELU']
+__all__ = ['ReLU', 'SELU', 'Swish']
 
 
 @function
@@ -39,3 +39,15 @@ def _(x):
         alpha = 1.6732632437728481704
         scale = 1.0507009873554804933
         return scale*tf.where(x>=0, x, alpha*tf.nn.elu(x))
+
+@function
+def Swish(x):
+    return _Swish(x)
+
+@singledispatch
+def _Swish(x):
+    raise NotImplementedError("SELU not implemented for {}.".format(type(x)))
+
+@_Swish.register(tf.Tensor)
+def _(x):
+    return x * tf.nn.sigmoid(x)
