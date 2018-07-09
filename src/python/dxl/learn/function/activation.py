@@ -51,3 +51,15 @@ def _Swish(x):
 @_Swish.register(tf.Tensor)
 def _(x):
     return x * tf.nn.sigmoid(x)
+
+@function
+def ELU(x):
+    return _ELU(x)
+
+@singledispatch
+def _ELU(x):
+    raise NotImplementedError("ELU not implemented for {}.".format(type(x)))
+
+@_ELU.register(tf.Tensor)
+def _(x):
+    return tf.nn.elu(x)
