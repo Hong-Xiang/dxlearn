@@ -2,7 +2,8 @@ from dxl.data.function import function
 import tensorflow as tf
 from functools import singledispatch
 from dxl.learn.core import Tensor
-__all__ = ['ReLU']
+from .scope import Scope
+__all__ = ['ReLU', 'SELU']
 
 
 @function
@@ -12,7 +13,7 @@ def ReLU(x):
 
 @singledispatch
 def _ReLU(x):
-    raise NotImplementedError("Not implemented for {}.".format(type(x)))
+    raise NotImplementedError("ReLU not implemented for {}.".format(type(x)))
 
 
 @_ReLU.register(Tensor)
@@ -23,3 +24,18 @@ def _(x):
 @_ReLU.register(tf.Tensor)
 def _(x):
     return tf.nn.relu(x)
+
+@function
+def SELU(x):
+    return _SELU(x)
+
+@singledispatch
+def _SELU(x):
+    raise NotImplementedError("SELU not implemented for {}.".format(type(x)))
+
+@_SELU.register(tf.Tensor)
+def _(x):
+    with Scope('SELU', x):
+        alpha = 1.6732632437728481704
+        scale = 1.0507009873554804933
+        return scale*tf.where(x>=0, x, alpha*tf.nn.elu(x))
