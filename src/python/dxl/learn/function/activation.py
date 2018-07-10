@@ -3,7 +3,7 @@ import tensorflow as tf
 from functools import singledispatch
 from dxl.learn.core import Tensor
 from .scope import Scope
-__all__ = ['ReLU', 'SELU', 'Swish']
+__all__ = ['ReLU', 'SELU', 'Swish', 'ELU']
 
 
 @function
@@ -40,6 +40,10 @@ def _(x):
         scale = 1.0507009873554804933
         return scale*tf.where(x>=0, x, alpha*tf.nn.elu(x))
 
+@_SELU.register(Tensor)
+def _(x):
+    return Tensor(_SELU(x.data))
+
 @function
 def Swish(x):
     return _Swish(x)
@@ -52,6 +56,10 @@ def _Swish(x):
 def _(x):
     return x * tf.nn.sigmoid(x)
 
+@_Swish.register(Tensor)
+def _(x):
+    return Tensor(_Swish(x.data))
+
 @function
 def ELU(x):
     return _ELU(x)
@@ -63,3 +71,7 @@ def _ELU(x):
 @_ELU.register(tf.Tensor)
 def _(x):
     return tf.nn.elu(x)
+
+@_ELU.register(Tensor)
+def _(x):
+    return Tensor(_ELU(x.data))
