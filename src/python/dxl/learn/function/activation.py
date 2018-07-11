@@ -23,7 +23,8 @@ def _(x):
 
 @_ReLU.register(tf.Tensor)
 def _(x):
-    return tf.nn.relu(x)
+    with Scope('ReLU', x):
+        return tf.nn.relu(x)
 
 @function
 def SELU(x):
@@ -54,7 +55,8 @@ def _Swish(x):
 
 @_Swish.register(tf.Tensor)
 def _(x):
-    return x * tf.nn.sigmoid(x)
+    with Scope('Swish', x):
+        return x * tf.nn.sigmoid(x)
 
 @_Swish.register(Tensor)
 def _(x):
@@ -70,7 +72,8 @@ def _ELU(x):
 
 @_ELU.register(tf.Tensor)
 def _(x):
-    return tf.nn.elu(x)
+    with Scope('ELU', x):
+        return tf.nn.elu(x)
 
 @_ELU.register(Tensor)
 def _(x):
