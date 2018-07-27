@@ -63,7 +63,7 @@ class TensorboardEvents:
         if not self._loaded:
             self.load_all()
         if isinstance(k, int):
-            return self._cache[i]
+            return self._cache[k]
         if isinstance(k, str):
             return [d.values[k] for d in self._cache]
         raise TypeError(f"Unknown key type {type(k)}")
