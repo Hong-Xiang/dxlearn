@@ -1,4 +1,5 @@
-from dxl.data.function import Function, shape_list
+from dxl.function.tensor import shape as shape_list
+from dxl.data import Function
 import numpy as np
 import tensorflow as tf
 import cntk
