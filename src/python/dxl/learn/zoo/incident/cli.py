@@ -14,5 +14,8 @@ def incident():
 # incident.add_command(test_model)
 from .train import train
 incident.add_command(train)
-from ._keras import train_keras
-incident.add_command(train_keras)
+# from ._keras import train_keras
+# incident.add_command(train_keras)
+
+from .grid_search import gridc
+incident.add_command(gridc)

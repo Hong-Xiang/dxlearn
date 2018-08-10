@@ -5,8 +5,7 @@ class CLI(click.MultiCommand):
     commands = {'incident': None}
 
     def __init__(self):
-        super(__class__, self).__init__(
-            name='zoo', help='ML zoo CLI.')
+        super().__init__(name='zoo', help='ML zoo CLI.')
 
     def list_commands(self, ctx):
         return sorted(self.commands.keys())
@@ -21,3 +20,6 @@ class CLI(click.MultiCommand):
 
 
 zoo = CLI()
+
+if __name__ == "__main__":
+    zoo()

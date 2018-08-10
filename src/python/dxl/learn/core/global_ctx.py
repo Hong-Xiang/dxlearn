@@ -30,3 +30,7 @@ global_context = GlobalContext()
 
 def get_global_context():
     return global_context
+
+
+class GlobalContextV2(GlobalContext):
+    ...
