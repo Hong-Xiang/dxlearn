@@ -1,4 +1,5 @@
-from dxl.data.function import function
+# from dxl.data.function import function
+from dxl.data import func as function
 import tensorflow as tf
 from functools import singledispatch
 from dxl.learn.core import Tensor

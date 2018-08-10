@@ -1,5 +1,5 @@
 from .multi_method_imports import *
-from dxl.data.function import shape_list
+from dxl.function.tensor import shape as shape_list
 from dxl.learn.core import Tensor
 
 __all__ = ['Flatten', 'flatten']
