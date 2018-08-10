@@ -8,9 +8,13 @@ from typing import Dict, Iterable
 from dxl.fs import Path
 import tensorflow as tf
 from dxl.data.io import load_npz
+from typing import Tuple, TypeVar
 
 
 class DataColumns:
+    """
+    """
+
     def __init__(self, data):
         self.data = self._process(data)
         self._capacity_cache = None
@@ -206,6 +210,23 @@ class PyTablesColumns(DataColumnsWithGetItem):
     def columns(self):
         return tuple(self._node.colnames)
 
+    @property
+    def types(self):
+        result = {}
+        coltypes = self._node.coltypes
+        for k, v in coltypes.items():
+            result.update({k: tf.as_dtype(v)})
+            # result.update({k: tf.float32})
+        return result
+
+    @property
+    def shapes(self):
+        result = {}
+        coldescrs = self._node.coldescrs
+        for k, v in coldescrs.items():
+            result.update({k: v.shape})
+        return result
+
     def _calculate_capacity(self):
         return self._node.shape[0]
 
@@ -213,8 +234,32 @@ class PyTablesColumns(DataColumnsWithGetItem):
         self._file.close()
 
 
-def data_loader(path, *args, **kwargs):
-    """
-    Get a dataloader automatically.
-    """
-    pass
+from dxl.data import ColumnsWithIndex
+from typing import NamedTuple, Optional, Dict
+from pathlib import Path
+
+
+class PyTablesColumnsV2(ColumnsWithIndex):
+    def __init__(self, path: Path, dataclass: NamedTuple, key_map=Optional[Dict[str, str]]):
+        super().__init__(dataclass)
+        self.path = path
+        self.key_map = key_map
+        self.file = None
+
+    def __enter__(self):
+        self.file = self.open()
+        return self.file
+
+    def __exit__(self, type, value, tb):
+        self.file.close()
+
+    def open(self):
+        return h5py.File(self.path, 'r')
+
+    def close(self):
+        return self.file.close()
+
+    @property
+    def capacity(self):
+        if self.file is None:
+            raise TypeError("PyTable not initialied yet.")

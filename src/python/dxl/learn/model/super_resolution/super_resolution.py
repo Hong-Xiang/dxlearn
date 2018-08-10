@@ -1,17 +1,16 @@
 import tensorflow as tf
 import numpy as np
 from typing import Dict
-from ...core import Model, Tensor
-from ..cnn import StackedResidualIncept
-from ..crop import boundary_crop, align_crop, shape_as_list
-from ..cnn import UpSampling2D, StackedConv2D, StackedResidualConv
-from ..losses import mean_square_error, CombinedSupervisedLoss, poission_loss
+from dxl.learn.core import Model, Tensor
+from dxl.learn.model.stack import Stack
+from dxl.learn.model.residual import Residual
+from dxl.learn.model.crop import boundary_crop, align_crop, shape_as_list
+from dxl.learn.model.cnn import UpSampling2D, Conv2D
+from dxl.learn.model.losses import mean_square_error, CombinedSupervisedLoss, poission_loss
 
 __all__ = [
     "SuperResolution2x",
-    "SuperResolutionBlock",
-    "SuperResolutionMultiScale",
-    "SuperResolutionMultiScalev2",
+    "SuperResolutionBlock"
 ]
 
 
@@ -33,7 +32,7 @@ class SuperResolution2x(Model):
         nb_layers: integer.
         filters: Integer, the dimensionality of the output space.
         boundary_crop: Tuple/List of 2 integers.
-        sub_block: kernel 
+        graph: kernel 
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     """
 
@@ -48,8 +47,8 @@ class SuperResolution2x(Model):
             FILTERS = 'filters'
             BOUNDARY_CROP = 'boundary_crop'
 
-        class SUB_BLOCK:
-            BUILDING = 'buildingblock'
+        class GRAPHS:
+            SHORT_CUT = 'buildingblock'
 
     def __init__(self,
                  info,
@@ -57,11 +56,11 @@ class SuperResolution2x(Model):
                  nb_layers=None,
                  filters=None,
                  boundary_crop=None,
-                 sub_block=None):
+                 graph=None):
         super().__init__(
             info,
-            inputs=inputs,
-            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
+            tensors=inputs,
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={
                 self.KEYS.CONFIG.NB_LAYERS: nb_layers,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -76,25 +75,26 @@ class SuperResolution2x(Model):
             cls.KEYS.CONFIG.BOUNDARY_CROP: (4, 4)
         }
 
-    @classmethod
-    def sub_block_maker(cls, graph, name, input_tensor):
-        return StackedConv2D(
-            graph.info.child_scope(name),
-            input_tensor=input_tensor,
-            nb_layers=graph.config(graph.KEYS.CONFIG.NB_LAYERS),
-            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+    def _short_cut(self, name):
+        conv2d_ins = Conv2D(
+            info="conv2d",
+            filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='same',
             activation='basic')
+        return Stack(
+            info=self.info.child_scope(name),
+            models=conv2d_ins,
+            nb_layers=2)
 
     def kernel(self, inputs):
         with tf.variable_scope('input'):
             u = UpSampling2D(
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT], size=(2, 2))()
+                inputs=inputs[self.KEYS.TENSOR.INPUT], size=(2, 2))()
             if SRKeys.REPRESENTS in inputs:
                 r = UpSampling2D(
-                    input_tensor=inputs[SRKeys.REPRESENTS], size=(2, 2))()
+                    inputs=inputs[SRKeys.REPRESENTS], size=(2, 2))()
                 r = align_crop(r, u)
                 r = tf.concat([r, u], axis=3)
             else:
@@ -104,10 +104,8 @@ class SuperResolution2x(Model):
                     kernel_size=5,
                     name='stem0')
 
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.BUILDING,
-            lambda p, k: SuperResolution2x.sub_block_maker(p, k, r))
-        x = sub_block({SRKeys.REPRESENTS: r})
+        key = self.KEYS.GRAPHS.SHORT_CUT
+        x = self.get_or_create_graph(key, self._short_cut(key))(r)
         with tf.variable_scope('inference'):
             res = tf.layers.conv2d(
                 inputs=x,
@@ -150,7 +148,7 @@ class SuperResolutionBlock(Model):
             SRKeys.REPRESENTS: [Optional] low resolution feature representations.
         interp: bool.
             if True, return upsampling result directly.
-        sub_block: kernel 
+        graph: kernel 
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     '''
 
@@ -173,14 +171,14 @@ class SuperResolutionBlock(Model):
             DENORM_MEAN = 'denorm_mean'
             INTERP = 'interp'
 
-        class SUB_BLOCK:
-            BUILDING = 'buildingblock'
+        class GRAPHS:
+            SHORT_CUT = 'buildingblock'
 
     def __init__(self,
                  info,
                  inputs,
                  interp=None,
-                 sub_block=None,
+                 graph=None,
                  filters: int = None,
                  boundary_crop=None,
                  upsample_ratio=None,
@@ -193,8 +191,8 @@ class SuperResolutionBlock(Model):
                  denorm_mean=None):
         super().__init__(
             info,
-            inputs=inputs,
-            submodels={self.KEYS.SUB_BLOCK.BUILDING: sub_block},
+            tensors=inputs,
+            graphs={self.KEYS.GRAPHS.SHORT_CUT: graph},
             config={
                 self.KEYS.CONFIG.INTERP: interp,
                 self.KEYS.CONFIG.FILTERS: filters,
@@ -225,22 +223,24 @@ class SuperResolutionBlock(Model):
             cls.KEYS.CONFIG.DENORM_MEAN: 0.0
         }
 
-    @classmethod
-    def sub_block_maker(cls, graph, name, input_tensor):
-        return StackedConv2D(
-            info=graph.info.child_scope(name),
-            input_tensor=input_tensor,
-            filters=graph.config(graph.KEYS.CONFIG.FILTERS),
+    def _short_cut(self, name):
+        conv2d_ins = Conv2D(
+            info="conv2d",
+            filters=self.config(self.KEYS.CONFIG.FILTERS),
             kernel_size=(1, 1),
             strides=(1, 1),
             padding='valid',
             activation='basic')
+        return Stack(
+            info=self.info.child_scope(name),
+            models=conv2d_ins,
+            nb_layers=2)
 
     def _input(self, inputs):
         with tf.variable_scope('input'):
             u = UpSampling2D(
                 'upsampling_u',
-                input_tensor=inputs[self.KEYS.TENSOR.INPUT],
+                inputs=inputs[self.KEYS.TENSOR.INPUT],
                 size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
 
             if self.KEYS.TENSOR.LABEL in inputs:
@@ -254,7 +254,7 @@ class SuperResolutionBlock(Model):
             if SRKeys.REPRESENTS in inputs:
                 r = UpSampling2D(
                     'upsampling_r',
-                    input_tensor=inputs[SRKeys.REPRESENTS],
+                    inputs=inputs[SRKeys.REPRESENTS],
                     size=self.config(self.KEYS.CONFIG.UPSAMPLE_RATIO))()
                 r = align_crop(r, u)
             else:
@@ -310,7 +310,7 @@ class SuperResolutionBlock(Model):
                             self.KEYS.TENSOR.INPUT: inferd,
                             self.KEYS.TENSOR.LABEL: labeld
                         })()
-                    result.update({SRKeys.ALIGNED_LABEL: aligned_label})
+                    result.update({SRKeys.ALIGNED_LABEL: align_label})
                     result.update({
                         self.KEYS.TENSOR.LOSS:
                         result[self.KEYS.TENSOR.OUTPUT]
@@ -341,10 +341,8 @@ class SuperResolutionBlock(Model):
         if self.config(self.KEYS.CONFIG.INTERP):
             return upsampled
 
-        sub_block = self.subgraph(
-            self.KEYS.SUB_BLOCK.BUILDING,
-            lambda p, k: SuperResolutionBlock.sub_block_maker(p, k, represents))
-        x = sub_block({SRKeys.REPRESENTS: represents})
+        key = self.KEYS.GRAPHS.SHORT_CUT
+        x = self.get_or_create_graph(key, self._short_cut(key))(represents)
         result = {SRKeys.REPRESENTS: x}
         result.update(self._inference(x, upsampled))
         result.update(self._loss(label, result[self.KEYS.TENSOR.INFERENCE]))

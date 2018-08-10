@@ -23,7 +23,7 @@ class MasterWorkerTaskBase(Graph):
             TASK_INDEX = 'task_index'
             NB_WORKERS = 'nb_workers'
 
-        class SUBGRAPH(Graph.KEYS.SUBGRAPH):
+        class GRAPH(Graph.KEYS.GRAPH):
             MASTER = JOB_NAME.MASTER
             WORKER = JOB_NAME.WORKER
 
@@ -31,7 +31,7 @@ class MasterWorkerTaskBase(Graph):
                  info=None,
                  config=None,
                  tensors=None,
-                 subgraphs=None,
+                 graphs=None,
                  *,
                  job=None,
                  task_index=None,
@@ -49,7 +49,7 @@ class MasterWorkerTaskBase(Graph):
         })
 
         self._cluster = cluster
-        super().__init__(info, config, tensors, subgraphs)
+        super().__init__(info, config, tensors, graphs)
 
     @classmethod
     def _default_config(cls):

@@ -12,13 +12,12 @@ src/python/dxl/learn/analysis/
 src/python/dxl/learn/configs/
 src/python/dxl/learn/distribute.old/
 src/python/dxl/learn/model.old/
-src/python/dxl/learn/network/
+src/python/dxl/learn/network.old/
 src/python/dxl/learn/run/
 src/python/dxl/learn/scalar/
 src/python/dxl/learn/scripts/
 src/python/dxl/learn/session/
 src/python/dxl/learn/train/
-src/python/dxl/learn/zoo/
 src/python/dxl/learn/config.py
 src/python/dxl/learn/graph.py
 
@@ -130,6 +129,10 @@ develop-cgy/
 .vs/*
 /.vs
 .idea/
+dxlearn.pyproj
+dxlearn.pyperf
+dxlearn.sln
 
 # pytest
 .pytest_cache/*
+

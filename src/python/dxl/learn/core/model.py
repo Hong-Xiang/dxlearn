@@ -24,13 +24,13 @@ class Model(Graph):
 
     def __init__(self,
                  info,
-                 inputs: Dict[str, Tensor] = None,
-                 submodels: Dict[str, 'Model'] = None,
+                 tensors: Dict[str, Tensor] = None,
+                 graphs: Dict[str, 'Model'] = None,
                  config: Dict[str, 'Config'] = None):
         super().__init__(
             info,
-            tensors=self.make_inputs(inputs),
-            subgraphs=submodels,
+            tensors=self.make_inputs(tensors),
+            graphs=graphs,
             config=config)
 
     def make_inputs(self, inputs):
@@ -62,13 +62,23 @@ class Model(Graph):
         Returns:
             A dict of tensors.
         """
+        if not self.is_made:
+            self.make(inputs)
+            
         return self.construct(inputs)
 
-    def _make_kernel_with_scope(self):
+    def _make_kernel_with_scope(self, inputs):
         self._created = False
+        if inputs == None:
+            inputs = {}
+        if not isinstance(inputs, Dict):
+            inputs = {self.KEYS.TENSOR.INPUT: inputs}
         self.inputs = {}
         self.outputs = {}
-        inputs = dict(self.tensors)
+        # inputs.update(self.tensors)
+        for k, v in self.tensors.items():
+            if v is not None and inputs.get(k) is None:
+                inputs[k] = v
         self.construct(inputs)
         self._created = True
 
