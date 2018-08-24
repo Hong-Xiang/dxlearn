@@ -50,7 +50,7 @@ class SummaryWriter(Graph):
 
         summary = SummaryWriter('train', {'loss': network['loss']}, {'input': network['input'], 'label': network['label']} path='./summary/train/)
 
-        #After create session
+        #After create depsession
         sess = tf.Session()
         with sess.as_default():
             dataset.post_session_created()

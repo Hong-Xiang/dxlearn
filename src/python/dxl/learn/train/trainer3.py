@@ -3,6 +3,7 @@ import tensorflow as tf
 from dxl.learn.backend import backend, TensorFlowBackend, CNTKBackend
 
 from doufo import singledispatch
+from dxl.learn.session import ThisSession
 
 
 class Trainer:
@@ -14,9 +15,11 @@ class Trainer:
         self.trainer = None
         self.is_made = False
 
-    def train(self, feeds):
+    def train(self, feeds, session=None):
         if backend(self.objective) is TensorFlowBackend:
-            return tf.get_default_session().run(self.trainer, feeds)
+            if session is None:
+                session = ThisSession
+            return session.run(self.trainer, feeds)
         if backend(self.objective) is CNTKBackend:
             return self.trainer.train_minibatch(feeds)
 

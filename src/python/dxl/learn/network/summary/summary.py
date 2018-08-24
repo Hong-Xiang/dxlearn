@@ -41,7 +41,7 @@ class SummaryWriter(Graph):
 
     If tensors is `None`, SummaryWriter just write graph definition to file.
     This is useful when debugging network architecture, in this case,
-    one simply use SummaryWritter(path='/tmp/debug/', session=sess)
+    one simply use SummaryWritter(path='/tmp/debug/', depsession=sess)
     """
 
     class KEYS(Graph.KEYS):
