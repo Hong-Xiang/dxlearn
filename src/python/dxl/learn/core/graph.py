@@ -1,10 +1,11 @@
 from .config import ConfigurableWithName
-from typing import Dict, Callable, TypeVar
+from typing import Dict, Callable, TypeVar, Union
 from .tensor import Tensor
 from .info import GraphInfo
 from pathlib import Path
 
 import warnings
+
 
 # from .subgraph_maker import SubgraphPartialMaker, SubgraphMaker, SubgraphMakerTable
 
@@ -127,7 +128,7 @@ class Graph(ConfigurableWithName):
             pass
 
     def __init__(self,
-                 info: TypeVar('ConvertableToInfo', Path, GraphInfo),
+                 info: Union[Path, GraphInfo],
                  config: Dict[str, 'Config'] = None,
                  tensors: Dict[str, Tensor] = None,
                  graphs: Dict[str, 'Graph'] = None):
@@ -381,7 +382,6 @@ class Graph(ConfigurableWithName):
         else:
             raise TypeError("Can not convert {} to tensorflow_tensor.".format(
                 type(t)))
-
 
 # class MainGraph(Graph):
 #     kernel_func = None

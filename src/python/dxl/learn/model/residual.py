@@ -1,5 +1,5 @@
-import tensorflow as tf 
-import numpy as np 
+import tensorflow as tf
+import numpy as np
 from dxl.learn.core import Model
 from dxl.learn.model.cnn import InceptionBlock
 
@@ -29,3 +29,20 @@ class Residual(Model):
         with tf.name_scope("add"):
             x = x + h * self.config(self.KEYS.CONFIG.RATIO)
         return x
+
+
+class ResidualV2(Model):
+    class Spec:
+        def __init__(self):
+            pass
+
+    def __init__(self, model, merge=None):
+        self.model = model
+        self.merge = merge if merge is not None else self.default_merge()
+
+    def default_merge(self):
+        return lambda x, h: x + self.config['ratio'] * h
+
+    def __call__(self, x):
+        h = self.model(x)
+        return self.merge(x, h)

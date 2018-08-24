@@ -1,81 +1,71 @@
-# from dxl.data.function import function
-from dxl.data import func as function
+from doufo import singledispatch
 import tensorflow as tf
-from functools import singledispatch
 from dxl.learn.core import Tensor
-from .scope import Scope
-__all__ = ['ReLU', 'SELU', 'Swish', 'ELU']
+
+__all__ = ['relu', 'selu', 'swish', 'elu']
 
 
-@function
-def ReLU(x):
-    return _ReLU(x)
+@singledispatch(nargs=1, nouts=1)
+def relu(x):
+    raise NotImplementedError("relu not implemented for {}.".format(type(x)))
 
 
-@singledispatch
-def _ReLU(x):
-    raise NotImplementedError("ReLU not implemented for {}.".format(type(x)))
-
-
-@_ReLU.register(Tensor)
+@relu.register(Tensor)
 def _(x):
-    return Tensor(_ReLU(x.data))
+    return x.fmap(relu)
 
 
-@_ReLU.register(tf.Tensor)
+@relu.register(tf.Tensor)
 def _(x):
-    with Scope('ReLU', x):
+    with tf.variable_scope('relu'):
         return tf.nn.relu(x)
 
-@function
-def SELU(x):
-    return _SELU(x)
 
-@singledispatch
-def _SELU(x):
+@singledispatch(nargs=1, nouts=1)
+def selu(x):
     raise NotImplementedError("SELU not implemented for {}.".format(type(x)))
 
-@_SELU.register(tf.Tensor)
+
+@selu.register(tf.Tensor)
 def _(x):
-    with Scope('SELU', x):
+    with tf.variable_scope('selu'):
         alpha = 1.6732632437728481704
         scale = 1.0507009873554804933
-        return scale*tf.where(x>=0, x, alpha*tf.nn.elu(x))
+        return scale * tf.where(x >= 0, x, alpha * tf.nn.elu(x))
 
-@_SELU.register(Tensor)
+
+@selu.register(Tensor)
 def _(x):
-    return Tensor(_SELU(x.data))
+    return x.fmap(selu)
 
-@function
-def Swish(x):
-    return _Swish(x)
 
-@singledispatch
-def _Swish(x):
-    raise NotImplementedError("SELU not implemented for {}.".format(type(x)))
+@singledispatch(nargs=1, nouts=1)
+def swish(x):
+    raise NotImplementedError("swish not implemented for {}.".format(type(x)))
 
-@_Swish.register(tf.Tensor)
+
+@swish.register(tf.Tensor)
 def _(x):
-    with Scope('Swish', x):
+    with tf.variable_scope('swish', x):
         return x * tf.nn.sigmoid(x)
 
-@_Swish.register(Tensor)
+
+@swish.register(Tensor)
 def _(x):
-    return Tensor(_Swish(x.data))
+    return x.fmap(swish)
 
-@function
-def ELU(x):
-    return _ELU(x)
 
-@singledispatch
-def _ELU(x):
+@singledispatch(nargs=1, nouts=1)
+def elu(x):
     raise NotImplementedError("ELU not implemented for {}.".format(type(x)))
 
-@_ELU.register(tf.Tensor)
+
+@elu.register(tf.Tensor)
 def _(x):
-    with Scope('ELU', x):
+    with tf.variable_scope('elu'):
         return tf.nn.elu(x)
 
-@_ELU.register(Tensor)
+
+@elu.register(Tensor)
 def _(x):
-    return Tensor(_ELU(x.data))
+    return x.fmap(elu)

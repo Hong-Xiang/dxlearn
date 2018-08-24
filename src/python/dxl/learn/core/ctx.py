@@ -1,0 +1,2 @@
+class GlobalContext:
+    pass

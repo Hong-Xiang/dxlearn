@@ -12,12 +12,14 @@ def l1_error(label, data):
     with tf.name_scope('l1_error'):
         return tf.reduce_mean(tf.abs(label - data))
 
+
 def poission_loss(label, data, *, compute_full_loss=False):
     with tf.name_scope('poission_loss'):
         label = tf.maximum(label, 0.0)
         data = tf.maximum(data, 0.0)
         # return log_possion_loss(tf.log(label), data)
         return tf.reduce_mean(tf.keras.losses.poisson(label, data))
+
 
 def log_possion_loss(log_label, data, *, compute_full_loss=False):
     """
@@ -27,6 +29,7 @@ def log_possion_loss(log_label, data, *, compute_full_loss=False):
     with tf.name_scope('log_poission_loss'):
         data = tf.maximum(data, 0.0)
         return tf.reduce_mean(tf.nn.log_poisson_loss(data, log_label, compute_full_loss))
+
 
 def get_loss_func(name):
     if name.lower() in ['mse', 'mean_square_error', 'l2']:
@@ -47,9 +50,11 @@ class CombinedSupervisedLoss(Model):
         loss_name: str
         loss_weights:
     '''
+
     class KEYS(Model.KEYS):
         class TENSOR(Model.KEYS.TENSOR):
             pass
+
         class CONFIG:
             LOSS_NAME = 'loss_name'
             LOSS_WEIGHTS = 'loss_weights'
@@ -86,8 +91,14 @@ class CombinedSupervisedLoss(Model):
             with tf.name_scope('summation'):
                 loss = tf.add_n(losses)
 
-        result = {self.KEYS.TENSOR.OUTPUT : loss}
+        result = {self.KEYS.TENSOR.OUTPUT: loss}
         for i, n in enumerate(self.config(self.KEYS.CONFIG.LOSS_NAME)):
             result.update({'loss/' + n: losses[i]})
 
         return result
+
+
+def composite_loss(label, infer, losses):
+    with tf.variable_scope("composite_loss"):
+        weighted_loss = [k(label, infer) * v for k, v in losses.items()]
+        return tf.reduce_sum(weighted_loss)

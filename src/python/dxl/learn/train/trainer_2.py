@@ -159,3 +159,9 @@ class Trainer(Graph):
     #         return self._get_train_step_simple()
     #     else:
     #         return self._get_train_step_full()
+
+
+class ModelTrainer:
+    def __init__(self, model, objective, trainer):
+        pass
+

@@ -135,3 +135,5 @@ dxlearn.sln
 # pytest
 .pytest_cache/*
 
+/.idea
+

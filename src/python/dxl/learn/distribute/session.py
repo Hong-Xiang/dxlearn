@@ -42,3 +42,9 @@ def make_distribute_session(session_name='session', target=None):
         target = Server.server().target
     ThisSession.set_session(SessionMonitored(session_name, target))
     return ThisSession.session()
+
+from .api import distribute
+
+@distribute.register(SessionBase)
+def _(session, cluster, host):
+    pass
