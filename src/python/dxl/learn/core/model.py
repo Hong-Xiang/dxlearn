@@ -1,12 +1,14 @@
 from .graph import Graph
 from .tensor import Tensor, Constant
 from .graph_info import GraphInfo
-from typing import Dict
+from typing import Dict, Union, Tuple
 from dxl.fs import Path
 import tensorflow as tf
 
 
 # TODO: Add self.variables and self.trainable_variables support.
+
+
 class Model(Graph):
     """
     A special case of Graph, which all inputs are listed in inputs, i.e. no Tensor
@@ -64,7 +66,7 @@ class Model(Graph):
         """
         if not self.is_made:
             self.make(inputs)
-            
+
         return self.construct(inputs)
 
     def _make_kernel_with_scope(self, inputs):

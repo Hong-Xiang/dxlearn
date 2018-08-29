@@ -11,7 +11,7 @@ def dummy_image(shape=None, batch_size=32, nb_channel=1, name='dummy_image'):
 
 # def write_graph(path=None):
 #     from ..train.summary import SummaryWriter
-#     from ..session import Session
+#     from ..depsession import Session
 #     if path is None:
 #         path = '/tmp/tf_tests'
 #     with OSFS(path) as fs:
@@ -24,8 +24,8 @@ def dummy_image(shape=None, batch_size=32, nb_channel=1, name='dummy_image'):
 #             d.removetree('summary/train')
 #         summary = SummaryWriter(
 #             name='train', path=d.getsyspath('summary/train'))
-#         session = Session()
-#         with session.as_default():
+#         depsession = Session()
+#         with depsession.as_default():
 #             summary.post_session_created()
 
 

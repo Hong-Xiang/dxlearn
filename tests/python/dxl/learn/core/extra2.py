@@ -2,7 +2,7 @@ import click
 import tensorflow as tf
 # from dxl.learn.core.distribute import Host, Cluster, Server, ThisHost, Master, make_distribute_host
 from dxl.learn.core import Host, ThisHost, Master, make_distribute_host, Server, ThisSession
-# from dxl.learn.core.session import SessionDistribute, ThisSession, make_distribute_session
+# from dxl.learn.core.depsession import SessionDistribute, ThisSession, make_distribute_session
 from dxl.learn.core import make_distribute_session, DistributeGraphInfo, VariableInfo
 from dxl.learn.core import TensorNumpyNDArray, Tensor, TensorVariable
 

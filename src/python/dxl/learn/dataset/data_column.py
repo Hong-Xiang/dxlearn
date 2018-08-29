@@ -233,8 +233,10 @@ class PyTablesColumns(DataColumnsWithGetItem):
     def close(self):
         self._file.close()
 
+class ColumnsWithIndex:
+    pass
 
-from dxl.data import ColumnsWithIndex
+# from dxl.data import ColumnsWithIndex
 from typing import NamedTuple, Optional, Dict
 from pathlib import Path
 
@@ -263,3 +265,4 @@ class PyTablesColumnsV2(ColumnsWithIndex):
     def capacity(self):
         if self.file is None:
             raise TypeError("PyTable not initialied yet.")
+

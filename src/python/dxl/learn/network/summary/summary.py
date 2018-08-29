@@ -3,6 +3,7 @@ from dxl.learn.core import Graph, Tensor, ThisSession
 
 from dxl.learn.tensor.global_step import GlobalStep
 
+
 class SummaryItem(Tensor):
     summary_func = None
 
@@ -40,7 +41,7 @@ class SummaryWriter(Graph):
 
     If tensors is `None`, SummaryWriter just write graph definition to file.
     This is useful when debugging network architecture, in this case,
-    one simply use SummaryWritter(path='/tmp/debug/', session=sess)
+    one simply use SummaryWritter(path='/tmp/debug/', depsession=sess)
     """
 
     class KEYS(Graph.KEYS):
@@ -64,6 +65,7 @@ class SummaryWriter(Graph):
             self.KEYS.CONFIG.PREFIX: prefix
         })
         self.file_writer = tf.summary.FileWriter(path)
+        self._next_summary_step = 0
 
     def close(self):
         self.file_writer.close()
@@ -83,15 +85,24 @@ class SummaryWriter(Graph):
 
     def kernel(self, inputs=None):
         summary_ops = []
-        
+
         for t, v in self.tensors.items():
             summary_ops.append(v.make())
         self.summary_op = tf.summary.merge(summary_ops)
 
     def run(self, feeds=None):
+        """
+        Run tensors and dump to summary file.
+        """
         self.make()
         result = ThisSession.run(self.summary_op, feeds)
         self.file_writer.add_summary(result, ThisSession.run(GlobalStep()))
+
+    def auto_run(self, feeds=None):
+        if ThisSession.run(GlobalStep()) >= self._next_summary_step:
+            self.run(feeds)
+            self._next_summary_step += self.config(
+                self.KEYS.CONFIG.NB_INTERVAL)
 
     @property
     def summary_step(self):

@@ -65,7 +65,7 @@ class SessionBase(ConfigurableWithName):
         }
 
     def __init__(self,
-                 name='session',
+                 name='depsession',
                  *,
                  backend_session=None,
                  is_default=None,
@@ -94,7 +94,7 @@ class SessionBase(ConfigurableWithName):
 
     def _create_session(self):
         """
-        Return tensorflow session.
+        Return tensorflow depsession.
         """
         raise NotImplementedError
 
@@ -164,7 +164,7 @@ class SessionBase(ConfigurableWithName):
 
 
 class Session(SessionBase):
-    def __init__(self, name='session', **kw):
+    def __init__(self, name='depsession', **kw):
         super().__init__(name, **kw)
 
     def _create_session(self):
@@ -212,7 +212,7 @@ class ThisSession:
     @classmethod
     def set_session(cls, session=None):
         if cls._session is not None:
-            raise TypeError("Default session is set.")
+            raise TypeError("Default depsession is set.")
         if session is None:
             cls._session = tf.get_default_session()
         else:
@@ -243,9 +243,9 @@ def default_session():
     return ThisSession
 
 
-def make_session(session_name='session'):
+def make_session(session_name='depsession'):
     """
-    A quick helper function to make local session.
+    A quick helper function to make local depsession.
     """
     ThisSession.set_session(Session(session_name))
     return ThisSession.session()

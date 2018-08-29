@@ -37,7 +37,7 @@ class Saver(Graph):
                     self.KEYS.CONFIG.CKPT_NAME: ckpt_name,
                     self.KEYS.CONFIG.SAVE_INTERVAL: save_interval,
                     self.KEYS.CONFIG.LOAD_STEP: load_step})
-        self.last_save = None
+        self.last_save = arrow.now()
 
     def _model_path(self):
         return str(Path(self.config('model_dir')) / self.config('ckpt_name'))

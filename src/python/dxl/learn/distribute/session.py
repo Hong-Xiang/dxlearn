@@ -3,7 +3,7 @@ __all__ = ['DistributeSession', 'MonitoredSession', 'make_distribute_session']
 
 
 class DistributeSession(SessionBase):
-    def __init__(self, name='session', target=None, **kw):
+    def __init__(self, name='depsession', target=None, **kw):
         super().__init__(name=name, **kw)
         self.target = target
 
@@ -16,7 +16,7 @@ class MonitoredSession(DistributeSession):
         class CONFIG(SessionBase.KEYS.CONFIG):
             CHECKPOINT_DIR = 'checkpoint_dir'
 
-    def __init__(self, name='session', target=None, checkpoint_dir='./save/'):
+    def __init__(self, name='depsession', target=None, checkpoint_dir='./save/'):
         super().__init__(name=name, target=target)
         self.checkpoint_dir = checkpoint_dir
 
@@ -37,8 +37,21 @@ class MonitoredSession(DistributeSession):
         pass
 
 
-def make_distribute_session(session_name='session', target=None):
+def make_distribute_session(session_name='depsession', target=None):
     if target is None:
         target = Server.server().target
     ThisSession.set_session(SessionMonitored(session_name, target))
     return ThisSession.session()
+
+from .api import distribute
+
+@distribute.register(SessionBase)
+def _(session, cluster, host):
+    pass
+
+# class TensorFlowDistributedSession(TensorFlowSession):
+#     def init(self):
+#         from dxl.learn.distribute import ThisHost
+#         if ThisHost.is_master:
+#             self.depsession.run(tf.global_variables_initializer())
+#         self.depsession.run(tf.local_variables_initializer())

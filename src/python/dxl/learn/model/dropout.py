@@ -1,11 +1,10 @@
-from dxl.data.function import Function
-from functools import singledispatch
 from dxl.learn.core.global_ctx import get_global_context
 import tensorflow as tf
 from dxl.learn.core import Tensor
 
+from .base import Model
 
-class DropOut(Function):
+class DropOut(Model):
     def __init__(self, keep_prob=None):
         """
         `keep_prob`: keep probability during training.
