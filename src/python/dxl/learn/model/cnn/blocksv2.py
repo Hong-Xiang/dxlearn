@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
-from fs import path as fp
-from ..base import Model, ModelNeedBuild
-from .. import activation
-from typing import Union, Tuple
 
-from doufo import dataclass
+from ..base import Model
+from doufo import List
 from doufo.collections import concatenate
 
 __all__ = [
     # 'Conv1D',
     'Conv2D',
-    'InceptionBlock',
+    'Inception',
+    'Residual',
     # 'Conv3D',
     # 'DeConv2D',
     # 'DeConv3D',
-    'UpSampling2D',
-    'DownSampling2D',
+    # 'UpSampling2D',
+    # 'DownSampling2D',
     # 'DeformableConv2D',
     # 'AtrousConv1D',
     # 'AtrousConv2D',
@@ -28,7 +26,7 @@ __all__ = [
 ]
 
 
-class Conv2D(ModelNeedBuild):
+class Conv2D(Model):
     """2D convolution model
     Arguments:
         name: Path := dxl.fs.
@@ -53,24 +51,24 @@ class Conv2D(ModelNeedBuild):
     def __init__(self, name,
                  filters=None, kernel_size=None, strides=None, padding=None):
         super().__init__(name)
-        spec = self.Spec(filters=filters, kernel_size=kernel_size)
         self._config[self.KEYS.CONFIG.FILTERS] = filters
         self._config[self.KEYS.CONFIG.KERNEL_SIZE] = kernel_size
         self._config[self.KEYS.CONFIG.STRIDES] = strides if strides is not None else (1, 1)
         self._config[self.KEYS.CONFIG.PADDING] = padding if padding is not None else 'same'
+        self.model = tf.layers.Conv2D(self.config[self.KEYS.CONFIG.FILTERS],
+                                      self.config[self.KEYS.CONFIG.KERNEL_SIZE],
+                                      self.config[self.KEYS.CONFIG.STRIDES],
+                                      self.config[self.KEYS.CONFIG.PADDING])
 
-    def build(self, x):
-        if isinstance(x, tf.Tensor):
-            return tf.layers.Conv2D(self.config[self.KEYS.CONFIG.FILTERS],
-                                    self.config[self.KEYS.CONFIG.KERNEL_SIZE],
-                                    self.config[self.KEYS.CONFIG.STRIDES],
-                                    self.config[self.KEYS.CONFIG.PADDING])
+    def kernel(self, x):
+        return self.model(x)
 
+    @property
     def parameters(self):
-        return self.kernel.weights
+        return self.model.weights
 
 
-class InceptionBlock(Model):
+class Inception(Model):
     """InceptionBlock model
     Arguments:
         name: Path := dxl.fs.
@@ -80,18 +78,45 @@ class InceptionBlock(Model):
     _nargs = 1
     _nouts = 1
 
-    def __init__(self, name, init_op, paths, merge):
+    def __init__(self, name, init_op: Model, paths, merge):
         super().__init__(name)
         self.init_op = init_op
         self.paths = paths
         self.merge = merge
-        for m in [self.init_op] + self.paths + [self.merge]:
-            if isinstance(m, Model):
-                self.models.append(m)
 
     def kernel(self, x):
         x = self.init_op(x)
         return self.merge([p(x) for p in self.paths])
 
+    @property
+    def parameters(self):
+        models = List()
+        if isinstance(self.init_op, Model):
+            models.append(self.init_op)
+        models += List(self.paths).filter(lambda m: isinstance(m, Model))
+        if isinstance(self.merge, Model):
+            models.append(self.merge)
+        return concatenate(models.fmap(lambda m: m.parameters))
 
 
+class Residual(Model):
+    _nargs = 1
+    _nouts = 1
+
+    class KEYS(Model.KEYS):
+        class CONFIG(Model.KEYS.CONFIG):
+            RATIO = 'ratio'
+
+    def __init__(self, name, model, ratio):
+        super().__init__(name)
+        self.model = model
+        self._config = {
+            self.KEYS.CONFIG.RATIO: ratio
+        }
+
+    def kernel(self, x):
+        return x + self.config[self.KEYS.CONFIG.RATIO] * self.model(x)
+
+    @property
+    def parameters(self):
+        return self.model.parameters
