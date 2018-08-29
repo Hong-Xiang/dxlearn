@@ -135,5 +135,7 @@ dxlearn.sln
 # pytest
 .pytest_cache/*
 
+# ds_store
+*.DS_Store
 /.idea
 

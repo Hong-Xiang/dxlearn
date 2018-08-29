@@ -239,9 +239,148 @@ class ColumnsWithIndex:
 # from dxl.data import ColumnsWithIndex
 from typing import NamedTuple, Optional, Dict
 from pathlib import Path
+from doufo._dataclass import dataclass
+import tables as tb
+import attr
+import typing
+import tensorflow as tf
+from enum import Enum
+
+@attr.s(frozen=False, auto_attribs=True, slots=True)
+class PytableData:
+
+    class KEYS:
+        class ATTR:
+            PATH = 'path'
+            FILE = 'file'
+        class MARK:
+            TABLE = 'table'
+            DATASET = 'dataset'
+        class MODE:
+            TENSOR = 'Tensor'
+
+    """ pytablereader attribute defination. """
+
+    file_path: str = attr.ib()
+    file: typing.Any = attr.ib(default=None)
+    table: dict = attr.ib(default={})
+    file_dataset: dict = attr.ib(default={})
+    mode: str = attr.ib(default='r')
+    type_mapper: dict = attr.ib(default={
+        np.dtype('float16'): tf.float16,
+        np.dtype('float32'): tf.float32,
+        np.dtype('float64'): tf.float64,
+        np.dtype('int8'): tf.int8,
+        np.dtype('int16'): tf.int16,
+        np.dtype('int32'): tf.int32,
+        np.dtype('int64'): tf.int64,
+    })
+
+class PytableReader(PytableData):
+
+    def check(self,attr:str,mark=None):
+        if attr == self.KEYS.ATTR.PATH:
+            if self.file_path is None:
+                raise ValueError('path is empty.')
+        if attr == self.KEYS.ATTR.FILE:
+            if self.file is None:
+                raise ValueError('file is empty.')
+        if mark == self.KEYS.MARK.TABLE:
+            if attr not in self.table.keys():
+                raise ValueError('table not found.')
+        if mark == self.KEYS.MARK.DATASET:
+            #print(attr, self.file_dataset)
+            if attr not in self.file_dataset.keys():
+                raise ValueError('dataset not found.')
+
+    def open(self, file_path:str):
+        return tb.open_file(str(file_path),mode=self.mode)
+
+    def __enter__(self):
+        self.file = self.open(str(self.file_path))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.file.close()
+
+    def get_h5_to_table(self,table_dir:str, table_name=None):
+        self.check(self.KEYS.ATTR.FILE)
+        if table_dir is None and table_name is None:
+            raise ValueError('no table to locate.')
+        temp_table = self.file.get_node(table_dir, name=table_name)
+        self.add_table_to_dic(temp_table.name, temp_table)
+        return self.retrieve_table(temp_table.name)
+    def retrieve_table(self,table_name):
+        return self.table[table_name]
+    def add_table_to_dic(self,table_name, table):
+        self.table[table_name] = table
+    def make_iterator(self,table):
+        self.check(table.name, self.KEYS.MARK.TABLE)
+        it = table.iterrows()
+        col_name = table.colnames
+        col_num = len(col_name)
+        def iterator():
+            for row in it:
+                res = []
+                for col in range(col_num):
+                    res.append(row[col])
+                yield tuple(res)
+        return iterator
+
+    def map_to_tf_type(self, ntype: np.dtype):
+        return self.type_mapper[ntype]
+    def get_type_and_shape(self,table):
+        res_types=[]
+        res_shapes=[]
+        for name in table.colnames:
+            res_type = table.col(name)[0].dtype
+            res_shape = table.col(name)[0].shape
+            res_shape = tf.TensorShape(list(res_shape))
+            res_type = self.map_to_tf_type(res_type)
+            #print(res_type)
+            res_types.append(res_type)
+            res_shapes.append(res_shape)
+        return tuple(res_types), tuple(res_shapes)
+
+    def to_dataset(self,table_name:str):
+        self.check(table_name,self.KEYS.MARK.TABLE)
+        table = self.retrieve_table(table_name)
+        it = self.make_iterator(table)
+        table_type, table_shape = self.get_type_and_shape(table)
+        dataset = tf.data.Dataset.from_generator(it, table_type, table_shape)
+        self.add_dataset_to_dic(table_name, dataset)
+        return self.retrieve_dataset(table_name)
+
+    def add_dataset_to_dic(self,dataset_name, dataset):
+        self.file_dataset[dataset_name] = dataset
+    def retrieve_dataset(self, dataset_name):
+        self.check(dataset_name,self.KEYS.MARK.DATASET)
+        return self.file_dataset[dataset_name]
+    def process_dataset(self,dataset, repeat = None,is_shuffle=False,batch_size= 1):
+        if is_shuffle == True:
+            return dataset.repeat(repeat).shuffle(buffer_size=1000).batch(batch_size)
+        else:
+            return dataset.repeat(repeat).batch(batch_size)
+    def get_data(self,data_set, iterator = None, mode='Tensor' ):
+        if mode == self.KEYS.MODE.TENSOR:
+            return self.to_tensor(data_set, iterator=iterator)
+        #reserve for other data format.
+        else:
+            pass
+
+    def to_tensor(self,data_set, iterator= None):
+        it = iterator or data_set.make_one_shot_iterator()
+        return it.get_next()
 
 
-class PyTablesColumnsV2(ColumnsWithIndex):
+
+
+
+
+
+
+
+class PyTablesColumnsV2():
     def __init__(self, path: Path, dataclass: NamedTuple, key_map=Optional[Dict[str, str]]):
         super().__init__(dataclass)
         self.path = path
@@ -265,4 +404,3 @@ class PyTablesColumnsV2(ColumnsWithIndex):
     def capacity(self):
         if self.file is None:
             raise TypeError("PyTable not initialied yet.")
-
