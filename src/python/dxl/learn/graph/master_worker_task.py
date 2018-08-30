@@ -7,6 +7,10 @@ from ..distribute import (DistributeGraphInfo, Host, Master, ThisHost,
 from functools import wraps
 
 
+class AbstractMasterWorkerGraph(Graph):
+    pass
+
+
 class MasterWorkerTaskBase(Graph):
     """
     Helper class of managing distribute task with Master-Multiple Worker model.
@@ -56,9 +60,9 @@ class MasterWorkerTaskBase(Graph):
         from ..distribute import MasterWorkerClusterSpec
         return {
             cls.KEYS.CONFIG.CLUSTER:
-            MasterWorkerClusterSpec.make_local_cluster_config(2),
+                MasterWorkerClusterSpec.make_local_cluster_config(2),
             cls.KEYS.CONFIG.TASK_INDEX:
-            0
+                0
         }
 
     def _default_info(self, name):

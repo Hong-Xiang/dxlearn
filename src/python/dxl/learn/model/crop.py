@@ -4,6 +4,7 @@ import numpy as np
 from typing import List
 from ..core import Tensor
 
+# TODO move to function
 
 def shape_as_list(input_) -> List[int]:
     '''shape as list

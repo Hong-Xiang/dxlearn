@@ -7,11 +7,6 @@ __all__ = ['relu', 'selu', 'swish', 'elu']
 
 @singledispatch(nargs=1, nouts=1)
 def relu(x):
-    raise NotImplementedError("relu not implemented for {}.".format(type(x)))
-
-
-@relu.register(Tensor)
-def _(x):
     return x.fmap(relu)
 
 
@@ -41,18 +36,13 @@ def _(x):
 
 @singledispatch(nargs=1, nouts=1)
 def swish(x):
-    raise NotImplementedError("swish not implemented for {}.".format(type(x)))
+    return x.fmap(swish)
 
 
 @swish.register(tf.Tensor)
 def _(x):
     with tf.variable_scope('swish', x):
         return x * tf.nn.sigmoid(x)
-
-
-@swish.register(Tensor)
-def _(x):
-    return x.fmap(swish)
 
 
 @singledispatch(nargs=1, nouts=1)

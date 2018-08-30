@@ -16,8 +16,12 @@ class Model(Function):
 
     def __init__(self, name):
         self._config = {}
+        self.is_built = False
 
     def __call__(self, *args):
+        if not self.is_built:
+            self.build(*args)
+            self.is_built = True
         return self.unbox()(*args)
 
     @property
@@ -30,6 +34,9 @@ class Model(Function):
 
     @abstractmethod
     def kernel(self):
+        pass
+
+    def build(self):
         pass
 
     @property
@@ -52,13 +59,17 @@ class Model(Function):
         return 0
 
 
+def parameters(ms):
+    return concatenate([m.parameters for m in ms if isinstance(m, Model)])
+
+
 class Stack(Model):
     _nargs = 1
     _nouts = 1
 
     def __init__(self, models, name='stack'):
         super().__init__(name)
-        self.models = models
+        self.models = List(models)
 
     def kernel(self, x):
         for m in self.models:
@@ -67,21 +78,45 @@ class Stack(Model):
 
     @property
     def parameters(self):
-        return concatenate([m.parameters for m in self.models])
+        return parameters(self.models)
 
 
-class WrappedFunctionModel(Model):
-    def __init__(self, f, name='wrapped_model'):
+class Merge(Model):
+    _nargs = 1
+    _nouts = 1
+
+    def __init__(self, models, merger, name='merger'):
         super().__init__(name)
-        self.wrapped = f
+        self.models = models
+        self.merger = merger
+
+    def kernel(self, x):
+        xs = [m(x) for m in self.models]
+        return self.merger(xs)
 
     @property
     def parameters(self):
-        return []
-
-    def kernel(self, *args):
-        return self.wrapped(*args)
+        return parameters(self.models + [self.merger])
 
 
-def as_model(f):
-    return WrappedFunctionModel(f)
+class Residual(Model):
+    _nargs = 1
+    _nouts = 1
+
+    class KEYS(Model.KEYS):
+        class CONFIG(Model.KEYS.CONFIG):
+            RATIO = 'ratio'
+
+    def __init__(self, name, model, ratio):
+        super().__init__(name)
+        self.model = model
+        self._config = {
+            self.KEYS.CONFIG.RATIO: ratio
+        }
+
+    def kernel(self, x):
+        return x + self.config[self.KEYS.CONFIG.RATIO] * self.model(x)
+
+    @property
+    def parameters(self):
+        return parameters([self.model])

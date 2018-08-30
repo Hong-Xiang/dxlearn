@@ -4,6 +4,7 @@ from dxl.learn.core import Tensor
 
 from .base import Model
 
+# TODO move to function
 class DropOut(Model):
     def __init__(self, keep_prob=None):
         """

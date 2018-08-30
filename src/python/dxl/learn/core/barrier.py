@@ -1,5 +1,8 @@
 import tensorflow as tf
 from .tensor import Tensor, NoOp
+import warnings
+
+warnings.warn(DeprecationWarning("Use dxl.learn.distribute instead."))
 
 
 def barrier_single(name, nb_signal, nb_join, task=None, id_join=None):
@@ -19,6 +22,7 @@ def barrier_single(name, nb_signal, nb_join, task=None, id_join=None):
                 tf.FIFOQueue(nb_signal, tf.bool, [], name=n, shared_name=n)
                 for n in names
             ]
+
         with tf.name_scope('join'):
             if id_join is not None:
                 join_op = queues[id_join].dequeue_many(nb_signal)

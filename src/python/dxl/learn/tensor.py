@@ -1,62 +1,73 @@
-from pathlib import Path
-
 import numpy as np
 import tensorflow as tf
 
-from dxl.learn.utils.general import strip_colon_and_index_from_name
+from doufo.tensor import array, copy
+from dxl.learn.backend import TensorFlowBackend
+from doufo import singledispatch, tagfunc
+from .function import scope
 
 
+@singledispatch(nargs=2, nouts=2, ndefs=0)
 def copy_to(source, host):
     with scope(host):
         target = copy(source)
         return assign(source, target), target
 
 
-def no_op(backend=None):
+@tagfunc()
+def no_op():
+    return no_op[TensorFlowBackend]()
+
+
+@no_op.register(TensorFlowBackend)
+def _():
     return tf.no_op()
 
 
-def constant(backend, data, name=None):
+@tagfunc()
+def constant(data, name=None):
+    return constant[TensorFlowBackend](data, name)
+
+
+@constant.register(TensorFlowBackend)
+def _(data, name=None):
     return tf.constant(data, name)
 
 
-class SparseTensor(TensorFromExternalData):
-    """
-    data is required to be scipy.sparse.coo_matrix or a 2-D array.
-    If data is a 2-D array, it should has shape [N, ndim+1], data[:, :-1] are coordinates and data[:, -1] are values.
-    """
+# TODO implement sparse
 
-    def _construct_tensor(self, data, name):
-        import scipy.sparse
-        if isinstance(data, scipy.sparse.coo.coo_matrix):
-            data = tf.SparseTensor(
-                np.array([data.row, data.col]).T, data.data, data.shape)
-        else:
-            data = tf.SparseTensor(data[:, :-1], data[:, -1], data.shape)
-        return data, GraphInfo(name, tf.get_variable_scope(), False)
-
-    def matmul(self, m, constructor=None):
-        if constructor is None:
-            def constructor(d): return Tensor(d, self.info.update(name=None))
-        d = tf.sparse_tensor_dense_matmul(self.data, m.data)
-        return constructor(d)
-
-
-SparseMatrix = SparseTensor
-
+# class SparseTensor(TensorFromExternalData):
+#     """
+#     data is required to be scipy.sparse.coo_matrix or a 2-D array.
+#     If data is a 2-D array, it should has shape [N, ndim+1], data[:, :-1] are coordinates and data[:, -1] are values.
+#     """
+#
+#     def _construct_tensor(self, data, name):
+#         import scipy.sparse
+#         if isinstance(data, scipy.sparse.coo.coo_matrix):
+#             data = tf.SparseTensor(
+#                 np.array([data.row, data.col]).T, data.data, data.shape)
+#         else:
+#             data = tf.SparseTensor(data[:, :-1], data[:, -1], data.shape)
+#         return data, GraphInfo(name, tf.get_variable_scope(), False)
+#
+#     def matmul(self, m, constructor=None):
+#         if constructor is None:
+#             def constructor(d): return Tensor(d, self.info.update(name=None))
+#         d = tf.sparse_tensor_dense_matmul(self.data, m.data)
+#         return constructor(d)
+#
+#
+# SparseMatrix = SparseTensor
 
 
 def initializer(t):
     return t.initializer
 
 
-from doufo.tensor import array, copy
-from dxl.learn.backend import TensorFlowBackend
-
-
 @array.register(TensorFlowBackend)
 @array.register(tf)
-def _(backend, shape, dtype, name):
+def _(shape, dtype, name):
     return tf.get_variable(name, shape, dtype, trainable=False)
 
 
@@ -64,16 +75,31 @@ def assign(source, target):
     return source.assign(target)
 
 
+@singledispatch(nargs=2, nouts=1, ndefs=1)
 def assign_add(source, target, use_locking=None):
+    raise NotImplementedError(f"assign_add not implemented for {type(source)}")
+
+
+@assign_add.register(tf.Tensor)
+def _(source, target, use_locking=None):
     return tf.assign_add(target, source, use_locking=None)
 
 
-def variable(backend, name, shape, dtype):
+@tagfunc(nargs=3, nouts=1, ndefs=1)
+def variable(shape, dtype, name=None):
+    return np.zeros(shape, dtype)
 
 
-def variable_from_source(backend, name, data):
-    return tf.get_variable(name, None, None, data)
+@variable.register(TensorFlowBackend)
+def _(shape, dtype, name):
+    return tf.get_variable(name, shape, dtype)
 
 
-def variable_not_trainable(backend, name, shape, dtype, initializer):
-    return tf.get_variable(name, shape, dtype, initializer, trainable=False)
+@tagfunc(nargs=2, nouts=1, ndefs=1)
+def variable_with_init(data, name=None):
+    return np.array(data)
+
+
+@variable_with_init.register(TensorFlowBackend)
+def _(data, name):
+    return tf.get_variable(name, initializer=data)
