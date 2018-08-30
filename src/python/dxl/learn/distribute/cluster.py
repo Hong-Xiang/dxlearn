@@ -65,7 +65,7 @@ class MasterWorkerClusterSpec(ClusterSpec):
         return {
             JOB_NAME.MASTER: ['localhost:2222'],
             JOB_NAME.WORKER:
-            ['lcalhost:{}'.format(2333 + i) for i in range(nb_workers)]
+                ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
         }
 
     @classmethod
@@ -90,7 +90,7 @@ def default_master_worker_cluster_config(self, nb_workers=2):
     return {
         JOB_NAME.MASTER: ['localhost:2221'],
         JOB_NAME.WORKER:
-        ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
+            ['localhost:{}'.format(2333 + i) for i in range(nb_workers)]
     }
 
 

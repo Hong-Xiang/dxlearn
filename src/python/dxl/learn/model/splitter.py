@@ -2,6 +2,9 @@ from dxl.learn.core import Model, Tensor
 import tensorflow as tf
 import numpy as np
 
+
+# TODO move to function
+
 class DataSplitter(Model):
     """
     split the blockpairs into multiple parts without data loss.
@@ -27,7 +30,7 @@ class DataSplitter(Model):
                                                     [size, data_shape[1]])
         # arrange the last slice individully.
         result['slice_{}'.format(self._nb_split - 1)] = tf.slice(data,
-                                                                 [size * self._nb_split-1, 0],
+                                                                 [size * self._nb_split - 1, 0],
                                                                  [last_size, data_shape[1]])
         ginfo = inputs[self.KEYS.TENSOR.INPUT].graph_info
         result = {k: Tensor(result[k], None, ginfo.update(name=ginfo.name + '_{}'.format(k)))

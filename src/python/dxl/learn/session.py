@@ -17,7 +17,7 @@ import tensorflow as tf
 from dxl.learn.backend import TensorFlowBackend
 from dxl.learn.ctx import GlobalContext
 
-__all__ = ['TensorFlowSession', 'create_session']
+__all__ = ['TensorFlowSession', 'create_session', 'default_session']
 
 
 class AbstractSession(ABC):
@@ -71,7 +71,6 @@ class TensorFlowSession(AbstractSession):
         return self
 
     def __exit__(self, type, value, track):
-        # self.session.reset()
         self.default.__exit__(type, value, track)
         del self.default
         ThisSession.reset()
@@ -131,3 +130,7 @@ def create_session(name, backend=None):
         backend = TensorFlowBackend
     if backend is TensorFlowBackend:
         return TensorFlowSession(name)
+
+
+def default_session():
+    return ThisSession.session()

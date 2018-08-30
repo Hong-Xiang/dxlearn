@@ -47,7 +47,7 @@ class Saver(Graph):
 
     def save(self):
         self.make()
-        from dxl.learn.tensor.global_step import GlobalStep
+        from dxl.learn.tensor._global_step import GlobalStep
         step = ThisSession.run(GlobalStep())
         print("[SAVE] model to: {}.".format(self._model_path()))
         self.saver.save(ThisSession.session(),
@@ -87,7 +87,7 @@ class Saver(Graph):
         return step, False
 
     def load(self):
-        from dxl.learn.tensor.global_step import GlobalStep
+        from dxl.learn.tensor._global_step import GlobalStep
         from dxl.learn.core import ThisSession
         import sys
         path_load, flag = self.__resolve_path_load()

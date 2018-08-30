@@ -16,7 +16,7 @@ class GlobalContext(Graph):
         super().__init__('global_context')
 
     def kernel(self, inputs=None):
-        from dxl.learn.tensor.keep_prob import KeepProb
+        from dxl.learn.tensor._keep_prob import KeepProb
         self.tensors['keep_prob'] = KeepProb()
 
     @contextmanager

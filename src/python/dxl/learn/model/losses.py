@@ -2,6 +2,7 @@ import tensorflow as tf
 from ..core import Model
 import warnings
 
+# TODO move to function
 
 def mean_square_error(label, data):
     with tf.name_scope('mean_squared_error'):

@@ -1,11 +1,12 @@
-from .base import ConfigurableFunction
-
 from enum import Enum
 
 from doufo.tensor import shape
 
 
-class DownSampling2D(ConfigurableFunction):
+# TODO: reimplement to pure functions
+
+
+class DownSampling2D:
     """DownSampling2D Block
     Arguments:
         name: Path := dxl.fs.
@@ -75,7 +76,6 @@ class DownSampling2D(ConfigurableFunction):
         else:
             raise Exception("Do not support shape {}".format(x_shape))
         return result
-
 
 
 class UpSampling2D(Model):

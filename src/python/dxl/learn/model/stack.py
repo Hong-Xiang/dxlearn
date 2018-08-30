@@ -7,6 +7,12 @@ __all__ = [
     'Stack', 'Sequential'
 ]
 
+# TODO check and prepare delete
+
+import warnings
+
+warnings.warn(DeprecationWarning)
+
 
 class Stack(Model):
     class KEYS(Model.KEYS):
