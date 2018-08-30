@@ -1,7 +1,7 @@
 from dxl.learn.network.trainer import Trainer, RMSPropOptimizer
 from .model import *
 import click
-from dxl.learn.tensor.global_step import GlobalStep
+from dxl.learn.tensor._global_step import GlobalStep
 from dxl.learn.core import Session
 from dxl.learn.core.global_ctx import get_global_context
 

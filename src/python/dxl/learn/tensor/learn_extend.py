@@ -4,7 +4,7 @@ import tensorflow as tf
 from doufo.tensor import array, copy
 from dxl.learn.backend import TensorFlowBackend
 from doufo import singledispatch, tagfunc
-from .function import scope
+from dxl.learn.function import scope
 
 
 @singledispatch(nargs=2, nouts=2, ndefs=0)

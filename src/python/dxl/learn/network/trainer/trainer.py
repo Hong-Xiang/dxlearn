@@ -1,5 +1,5 @@
 from dxl.learn.core import Graph
-from dxl.learn.tensor.global_step import GlobalStep
+from dxl.learn.tensor._global_step import GlobalStep
 
 
 class Trainer(Graph):
