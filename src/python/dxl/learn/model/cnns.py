@@ -47,8 +47,8 @@ class Conv2D(Model):
             STRIDES = 'strides'
             PADDING = 'padding'
 
-    def __init__(self, name,
-                 filters=None, kernel_size=None, strides=None, padding=None):
+    def __init__(self, filters=None, kernel_size=None, strides=None, padding=None,
+                 name=None):
         super().__init__(name)
         self._config[self.KEYS.CONFIG.FILTERS] = filters
         self._config[self.KEYS.CONFIG.KERNEL_SIZE] = kernel_size
@@ -62,6 +62,7 @@ class Conv2D(Model):
                                           self.config[self.KEYS.CONFIG.KERNEL_SIZE],
                                           self.config[self.KEYS.CONFIG.STRIDES],
                                           self.config[self.KEYS.CONFIG.PADDING])
+            return
         raise TypeError(f"Not support tensor type: {type(x)}.")
 
     def kernel(self, x):
