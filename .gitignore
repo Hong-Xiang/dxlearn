@@ -17,7 +17,6 @@ src/python/dxl/learn/run/
 src/python/dxl/learn/scalar/
 src/python/dxl/learn/scripts/
 src/python/dxl/learn/session/
-src/python/dxl/learn/config.py
 src/python/dxl/learn/graph.py
 
 # Distribution / packaging
