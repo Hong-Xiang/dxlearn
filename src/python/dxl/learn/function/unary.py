@@ -1,9 +1,23 @@
 from enum import Enum
 
 from doufo.tensor import shape
+from doufo import Function
 
 
 # TODO: reimplement to pure functions
+
+class DownSampler2D(Function):
+    @property
+    def nouts(self):
+        return 1
+
+    @property
+    def nargs(self):
+        return 1
+
+    @property
+    def ndefs(self):
+        return 0
 
 
 class DownSampling2D:
