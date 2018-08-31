@@ -1,11 +1,21 @@
 import pytest
 import tensorflow as tf
+from dxl.learn.config import clear_config
 
 
 @pytest.fixture(scope="module")
 def tensorflow_test():
     with tf.Graph().as_default():
         yield
+
+@pytest.fixture(scope="module")
+def clean_config():
+    clear_config()
+    yield
+    clear_config()
+
+
+
 
 
 def pytest_collection_modifyitems(session, config, items):

@@ -1,6 +1,7 @@
 from doufo import Function, List
 from doufo.collections import concatenate
 from abc import abstractmethod
+from dxl.learn.config import config_with_name
 
 
 class Model(Function):
@@ -15,7 +16,7 @@ class Model(Function):
             pass
 
     def __init__(self, name):
-        self._config = {}
+        self.config = config_with_name(name)
         self.is_built = False
 
     def __call__(self, *args):
@@ -38,10 +39,6 @@ class Model(Function):
 
     def build(self):
         pass
-
-    @property
-    def config(self):
-        return self._config
 
     def fmap(self, m):
         return Stack([m, self])
@@ -107,12 +104,10 @@ class Residual(Model):
         class CONFIG(Model.KEYS.CONFIG):
             RATIO = 'ratio'
 
-    def __init__(self, name, model, ratio):
+    def __init__(self, name, model, ratio=None):
         super().__init__(name)
         self.model = model
-        self._config = {
-            self.KEYS.CONFIG.RATIO: ratio
-        }
+        self.config.update_value_and_default(self.KEYS.CONFIG.RATIO, ratio, 0.3)
 
     def kernel(self, x):
         return x + self.config[self.KEYS.CONFIG.RATIO] * self.model(x)
