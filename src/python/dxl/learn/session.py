@@ -15,8 +15,7 @@ from contextlib import contextmanager
 import tensorflow as tf
 
 from dxl.learn.backend import TensorFlowBackend
-from dxl.learn.ctx import GlobalContext
-
+from dxl.core.globals import GlobalContext
 
 __all__ = ['TensorFlowSession', 'create_session', 'default_session']
 
@@ -82,14 +81,10 @@ class TensorFlowSession(AbstractSession):
         self.is_init = True
 
 
-class ThisSession:
+class ThisSession(GlobalContext):
     @classmethod
     def session(cls):
-        return GlobalContext.get(AbstractSession)
-
-    @classmethod
-    def reset(cls):
-        GlobalContext.reset(AbstractSession)
+        return cls.get()
 
     @classmethod
     def run(cls, fetches, feeds=None):
@@ -99,14 +94,13 @@ class ThisSession:
     def set_session(cls, session=None):
         if session is None:
             session = tf.get_default_session()
-        GlobalContext.register(AbstractSession, session)
-        return cls.session()
+        cls.set(session)
 
     @classmethod
     def set_to_default_if_none_is_set(cls, session):
         if cls.session() is None:
-            cls._session = session
-        return cls._session
+            cls.set(session)
+        return cls.session()
 
     @classmethod
     @contextmanager
@@ -116,7 +110,7 @@ class ThisSession:
             yield
             return
         try:
-            GlobalContext.register(AbstractSession, session)
+            cls.set_session(session)
             yield
         except Exception as e:
             raise e
