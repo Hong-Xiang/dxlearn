@@ -50,10 +50,10 @@ class Conv2D(Model):
     def __init__(self, filters=None, kernel_size=None, strides=None, padding=None,
                  name=None):
         super().__init__(name)
-        self._config[self.KEYS.CONFIG.FILTERS] = filters
-        self._config[self.KEYS.CONFIG.KERNEL_SIZE] = kernel_size
-        self._config[self.KEYS.CONFIG.STRIDES] = strides if strides is not None else (1, 1)
-        self._config[self.KEYS.CONFIG.PADDING] = padding if padding is not None else 'same'
+        self.config.update(self.KEYS.CONFIG.FILTERS, filters)
+        self.config.update(self.KEYS.CONFIG.KERNEL_SIZE, kernel_size)
+        self.config.update_value_and_default(self.KEYS.CONFIG.STRIDES, strides, (1, 1))
+        self.config.update_value_and_default(self.KEYS.CONFIG.PADDING, padding, 'same')
         self.model = None
 
     def build(self, x):
