@@ -2,6 +2,11 @@ import tensorflow as tf
 from ..core import Model, GraphInfo, Tensor, Constant
 from dxl.fs import Path
 
+import warnings
+
+warnings.warn(DeprecationWarning("Summation is deprecated, use doufo.tensor.sum_ instead."))
+
+# TODO remove
 
 class Summation(Model):
     def __init__(self, info, inputs=None):

@@ -3,6 +3,7 @@ import numpy as np
 from dxl.learn.core import Model
 from dxl.learn.model.cnn import InceptionBlock
 
+# TODO remove
 
 class Residual(Model):
     class KEYS(Model.KEYS):

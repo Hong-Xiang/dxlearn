@@ -5,10 +5,17 @@ import json
 from collections import UserDict
 import warnings
 
-from dxl.learn.ctx import GlobalContext
+# from dxl.learn.ctx import GlobalContext
+from dxl.core.globals import GlobalContext
 from doufo import dataclass, tagfunc
+from enum import Enum
 
 __all__ = ['Host', 'Master', 'ThisHost', 'default_host']
+
+
+class JobName(Enum):
+    MASTER = 'master'
+    WORKER = 'worker'
 
 
 @dataclass
@@ -22,18 +29,10 @@ class Host:
     port: Optional[int] = None
 
 
-class ThisHost:
-    @classmethod
-    def set(cls, host):
-        GlobalContext.register(Host, host)
-
-    @classmethod
-    def reset(cls):
-        GlobalContext.reset(Host)
-
+class ThisHost(GlobalContext):
     @classmethod
     def host(cls):
-        return GlobalContext.get(Host)
+        return cls.get()
 
     @classmethod
     def is_this(cls, host: Host):
@@ -61,11 +60,10 @@ def device_prefix(host):
     return "/job:{}/task:{}".format(host.job, host.task_index)
 
 
-class Master:
+class Master(GlobalContext):
     """
     Helper class to access master host info globally.
     """
-    _host = None
 
     @classmethod
     def set(cls,
@@ -73,20 +71,16 @@ class Master:
             task_index: int = None,
             ip=None,
             port=None):
-        if cls._host is not None:
+        if cls.get() is not None:
             raise TypeError("Master already set to {}.".format(cls.host()))
         if job_or_host is None:
-            job_or_host = JOB_NAME.MASTER
-        cls._host = Host(job_or_host, task_index, ip, port)
-        return cls._host
-
-    @classmethod
-    def reset(cls):
-        cls._host = None
+            job_or_host = JobName.MASTER
+        host = Host(job_or_host, task_index, ip, port)
+        return super().set(host)
 
     @classmethod
     def host(cls):
-        return cls._host
+        return cls.get()
 
     @classmethod
     def is_master(cls, host: Host):
