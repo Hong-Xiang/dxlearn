@@ -9,6 +9,13 @@ def tensorflow_test():
         yield
 
 @pytest.fixture(scope="module")
+def tensorflow_test_session():
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
+        yield sess
+
+@pytest.fixture(scope="module")
 def clean_config():
     clear_config()
     yield

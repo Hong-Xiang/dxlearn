@@ -5,14 +5,16 @@ import tensorflow as tf
 
 import tensorflow as tf
 
-__all__ = ['control_dependencies', 'scope']
+__all__ = ['dependencies', 'scope']
 
 
 @contextlib.contextmanager
-def control_dependencies(xs):
-    if all(map(lambda t: isinstance(t, tf.Tensor))):
+def dependencies(xs):
+    if all(map(lambda t: isinstance(t, tf.Tensor), xs)):
         with tf.control_dependencies(xs):
             yield
+    else:
+        raise TypeError(f"Invalid type of xs: {type(xs)}")
 
 
 @tagfunc()
