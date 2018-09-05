@@ -17,7 +17,7 @@ import tensorflow as tf
 from dxl.learn.backend import TensorFlowBackend
 from dxl.core.globals import GlobalContext
 
-__all__ = ['TensorFlowSession', 'create_session', 'default_session']
+__all__ = ['TensorFlowSession', 'create_session', 'default_session', 'Session']
 
 
 class AbstractSession(ABC):
@@ -52,7 +52,8 @@ class TensorFlowSession(AbstractSession):
         return tf.Session(config=self.create_session_config())
 
     def reset(self):
-        self.session.reset()
+        self.session.reset('')
+        tf.reset_default_graph()
 
     def run(self, fetches, feeds=None):
         if not self.is_init:
@@ -81,6 +82,9 @@ class TensorFlowSession(AbstractSession):
         self.is_init = True
 
 
+Session = TensorFlowSession
+
+
 class ThisSession(GlobalContext):
     @classmethod
     def session(cls):
@@ -101,6 +105,10 @@ class ThisSession(GlobalContext):
         if cls.session() is None:
             cls.set(session)
         return cls.session()
+
+    @classmethod
+    def reset(cls):
+        cls.session().reset()
 
     @classmethod
     @contextmanager

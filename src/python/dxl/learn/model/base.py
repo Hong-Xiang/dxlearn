@@ -1,7 +1,9 @@
 from doufo import Function, List
-from doufo.collections import concatenate
+from doufo.collections import concat
 from abc import abstractmethod
 from dxl.learn.config import config_with_name
+
+__all__ = ['Model', 'Stack', 'Residual']
 
 
 class Model(Function):
@@ -34,10 +36,10 @@ class Model(Function):
         return self.kernel
 
     @abstractmethod
-    def kernel(self):
+    def kernel(self, *args):
         pass
 
-    def build(self):
+    def build(self, *args):
         pass
 
     def fmap(self, m):
@@ -57,7 +59,7 @@ class Model(Function):
 
 
 def parameters(ms):
-    return concatenate([m.parameters for m in ms if isinstance(m, Model)])
+    return concat([m.parameters for m in ms if isinstance(m, Model)])
 
 
 class Stack(Model):
