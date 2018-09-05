@@ -2,9 +2,9 @@
 
 import tensorflow as tf
 
-from .base import Model
+from dxl.learn.model.base import Model
 from doufo import List
-from doufo.collections import concatenate
+from doufo.collections.concatenate import concat
 
 __all__ = [
     # 'Conv1D',
@@ -88,10 +88,17 @@ class Inception(Model):
         self.init_op = init_op
         self.paths = paths
         self.merge = merge
+        self.model = None
 
     def kernel(self, x):
-        x = self.init_op(x)
-        return self.merge([p(x) for p in self.paths])
+        return self.model
+
+    def build(self,x):
+        if isinstance(x,tf.Tensor):
+            x = self.init_op(x)
+            temp = [p(x) for p in self.paths]
+            self.model = self.merge([p(x) for p in self.paths])
+            temp = 1
 
     @property
     def parameters(self):
@@ -101,4 +108,7 @@ class Inception(Model):
         models += List(self.paths).filter(lambda m: isinstance(m, Model))
         if isinstance(self.merge, Model):
             models.append(self.merge)
-        return concatenate(models.fmap(lambda m: m.parameters))
+        a = models.fmap(lambda m:m.parameters)
+        print(a)
+        res = concat(models.fmap(lambda m: m.parameters))
+        return res

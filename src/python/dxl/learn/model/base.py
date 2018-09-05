@@ -1,5 +1,5 @@
 from doufo import Function, List
-from doufo.collections import concatenate
+from doufo.collections.concatenate import concat
 from abc import abstractmethod
 from dxl.learn.config import config_with_name
 
@@ -37,6 +37,7 @@ class Model(Function):
     def kernel(self):
         pass
 
+    @abstractmethod
     def build(self):
         pass
 
@@ -57,7 +58,7 @@ class Model(Function):
 
 
 def parameters(ms):
-    return concatenate([m.parameters for m in ms if isinstance(m, Model)])
+    return concat([m.parameters for m in ms if isinstance(m, Model)])
 
 
 class Stack(Model):

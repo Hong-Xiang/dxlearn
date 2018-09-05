@@ -1,4 +1,4 @@
-from .base import Model
+from dxl.learn.model.base import Model
 import tensorflow as tf
 
 
@@ -9,7 +9,7 @@ class Dense(Model):
 
     def __init__(self, hidden, name='dense'):
         super().__init__(name)
-        self._config[self.KEYS.CONFIG.HIDDEN] = hidden
+        self.config[self.KEYS.CONFIG.HIDDEN] = hidden
         self.model = None
 
     def build(self, x):
@@ -20,3 +20,18 @@ class Dense(Model):
 
     def kernel(self, x):
         return self.model(x)
+
+    @property
+    def parameters(self):
+        return self.model.weights
+
+if __name__ == '__main__':
+    x = tf.ones([32, 2],dtype=tf.float32)
+    a = Dense(128)
+    #a = tf.layers.Dense(128)
+    y = a(x)
+    print(a.parameters)
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        y1 = sess.run(y)
+        print(y1)
