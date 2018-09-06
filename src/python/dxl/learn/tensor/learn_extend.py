@@ -6,6 +6,8 @@ from dxl.learn.backend import TensorFlowBackend
 from doufo import singledispatch, tagfunc
 from dxl.learn.function import scope
 
+__all__ = ['copy_to', 'no_op', 'constant', 'assign', 'assign_add', 'variable', 'variable_from_tensor', 'initializer']
+
 
 @singledispatch(nargs=2, nouts=2, ndefs=0)
 def copy_to(source, host):
@@ -61,6 +63,7 @@ def _(data, name=None):
 # SparseMatrix = SparseTensor
 
 
+@singledispatch(nargs=1, nouts=1)
 def initializer(t):
     return t.initializer
 
@@ -71,6 +74,7 @@ def _(shape, dtype, name):
     return tf.get_variable(name, shape, dtype, trainable=False)
 
 
+@singledispatch(nargs=2)
 def assign(source, target):
     return source.assign(target)
 
@@ -91,15 +95,17 @@ def variable(shape, dtype, name=None):
 
 
 @variable.register(TensorFlowBackend)
+@variable.register(tf)
 def _(shape, dtype, name):
     return tf.get_variable(name, shape, dtype)
 
 
 @tagfunc(nargs=2, nouts=1, ndefs=1)
-def variable_with_init(data, name=None):
+def variable_from_tensor(data, name=None):
     return np.array(data)
 
 
-@variable_with_init.register(TensorFlowBackend)
+@variable_from_tensor.register(TensorFlowBackend)
+@variable_from_tensor.register(tf)
 def _(data, name):
     return tf.get_variable(name, initializer=data)

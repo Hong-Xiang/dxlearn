@@ -8,3 +8,6 @@ __version__ = get_distribution('dxl-learn').version
 
 # from .core import *
 from .function import *
+from .model import *
+from .graph import *
+from .session import *
