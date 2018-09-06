@@ -2,9 +2,11 @@
 
 import tensorflow as tf
 
-from dxl.learn.model.base import Model
+from dxl.learn.model import Model
+from dxl.learn.model.merge import Merge
 from doufo import List
 from doufo.collections.concatenate import concat
+import pdb
 
 __all__ = [
     # 'Conv1D',
@@ -47,8 +49,8 @@ class Conv2D(Model):
             STRIDES = 'strides'
             PADDING = 'padding'
 
-    def __init__(self, filters=None, kernel_size=None, strides=None, padding=None,
-                 name=None):
+    def __init__(self, name, filters=None, kernel_size=None, strides=None, padding=None,
+                 ):
         super().__init__(name)
         self.config.update(self.KEYS.CONFIG.FILTERS, filters)
         self.config.update(self.KEYS.CONFIG.KERNEL_SIZE, kernel_size)
@@ -66,8 +68,8 @@ class Conv2D(Model):
         raise TypeError(f"Not support tensor type: {type(x)}.")
 
     def kernel(self, x):
-        return self.model(x)
-
+        res = self.model(x)
+        return res
     @property
     def parameters(self):
         return self.model.weights
@@ -83,22 +85,27 @@ class Inception(Model):
     _nargs = 1
     _nouts = 1
 
-    def __init__(self, name, init_op: Model, paths, merge):
+    def __init__(self, name, init_op: Model, merge, paths):
         super().__init__(name)
         self.init_op = init_op
         self.paths = paths
         self.merge = merge
         self.model = None
+        self.axis = 0
 
     def kernel(self, x):
-        return self.model
+        x = self.init_op(x)
+        return self.model(x)
 
-    def build(self,x):
-        if isinstance(x,tf.Tensor):
-            x = self.init_op(x)
-            temp = [p(x) for p in self.paths]
-            self.model = self.merge([p(x) for p in self.paths])
-            temp = 1
+    def build(self, x):
+        if isinstance(x, tf.Tensor):
+            self.model = Merge('DEFAULT_MERGER', merger=self.merge, models=self.paths, axis=self.axis)
+        #    self.model = self.merge([p(x) for p in self.paths])
+            return
+        raise NotImplementedError(f"Incept not implemented for {type(x)}.")
+
+    def set_merger_axis(self, axis):
+        self.axis = axis
 
     @property
     def parameters(self):
@@ -108,7 +115,4 @@ class Inception(Model):
         models += List(self.paths).filter(lambda m: isinstance(m, Model))
         if isinstance(self.merge, Model):
             models.append(self.merge)
-        a = models.fmap(lambda m:m.parameters)
-        print(a)
-        res = concat(models.fmap(lambda m: m.parameters))
-        return res
+        return concat(models.fmap(lambda m: m.parameters))

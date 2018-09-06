@@ -11,7 +11,7 @@ setup(
     packages=find_packages('src/python'),
     package_dir={'': 'src/python'},
     install_requires=['dxl-fs', 'click', 'dxl-shape',
-                      'dxl-core', 'dxl-data', 'dxl-function',
+                      'dxl-core',
                       'arrow', 'tqdm'],
     entry_points="""
         [console_scripts]

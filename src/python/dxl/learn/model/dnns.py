@@ -7,7 +7,7 @@ class Dense(Model):
         class CONFIG(Model.KEYS.CONFIG):
             HIDDEN = 'hidden'
 
-    def __init__(self, hidden, name='dense'):
+    def __init__(self, name, hidden):
         super().__init__(name)
         self.config[self.KEYS.CONFIG.HIDDEN] = hidden
         self.model = None
@@ -24,14 +24,3 @@ class Dense(Model):
     @property
     def parameters(self):
         return self.model.weights
-
-if __name__ == '__main__':
-    x = tf.ones([32, 2],dtype=tf.float32)
-    a = Dense(128)
-    #a = tf.layers.Dense(128)
-    y = a(x)
-    print(a.parameters)
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        y1 = sess.run(y)
-        print(y1)

@@ -8,14 +8,11 @@ def tensorflow_test():
     with tf.Graph().as_default():
         yield
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def clean_config():
     clear_config()
     yield
     clear_config()
-
-
-
 
 
 def pytest_collection_modifyitems(session, config, items):
