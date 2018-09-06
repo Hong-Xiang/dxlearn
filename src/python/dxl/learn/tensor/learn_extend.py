@@ -63,6 +63,7 @@ def _(data, name=None):
 # SparseMatrix = SparseTensor
 
 
+@singledispatch(nargs=1, nouts=1)
 def initializer(t):
     return t.initializer
 
@@ -73,6 +74,7 @@ def _(shape, dtype, name):
     return tf.get_variable(name, shape, dtype, trainable=False)
 
 
+@singledispatch(nargs=2)
 def assign(source, target):
     return source.assign(target)
 
