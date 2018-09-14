@@ -3,13 +3,13 @@ import tensorflow as tf
 from dxl.learn.config import clear_config
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tensorflow_test():
     with tf.Graph().as_default():
         yield
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tensorflow_test_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -17,7 +17,7 @@ def tensorflow_test_session():
         yield sess
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def clean_config():
     clear_config()
     yield

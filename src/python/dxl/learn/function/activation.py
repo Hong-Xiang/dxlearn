@@ -1,8 +1,8 @@
 from doufo import singledispatch
 import tensorflow as tf
-from dxl.learn.core import Tensor
+from doufo.tensor import Tensor
 
-__all__ = ['relu', 'selu', 'swish', 'elu']
+__all__ = ['relu', 'selu', 'swish', 'elu', 'celu']
 
 
 @singledispatch(nargs=1, nouts=1)
@@ -14,6 +14,11 @@ def relu(x):
 def _(x):
     with tf.variable_scope('relu'):
         return tf.nn.relu(x)
+
+
+@relu.register(Tensor)
+def _(x):
+    return x.fmap(relu)
 
 
 @singledispatch(nargs=1, nouts=1)
@@ -45,6 +50,11 @@ def _(x):
         return x * tf.nn.sigmoid(x)
 
 
+@swish.register(Tensor)
+def _(x):
+    return x.fmap(swish)
+
+
 @singledispatch(nargs=1, nouts=1)
 def elu(x):
     raise NotImplementedError("ELU not implemented for {}.".format(type(x)))
@@ -59,3 +69,19 @@ def _(x):
 @elu.register(Tensor)
 def _(x):
     return x.fmap(elu)
+
+
+@singledispatch(nargs=1, nouts=1)
+def celu(x):
+    raise NotImplementedError("CELU not implemented for {}".format(type(x)))
+
+
+@celu.register(tf.Tensor)
+def _(x):
+    with tf.variable_scope('celu'):
+        return tf.nn.elu(tf.concat([x, -x], axis=-1))
+
+
+@celu.register(Tensor)
+def _(x):
+    return x.fmap(celu)

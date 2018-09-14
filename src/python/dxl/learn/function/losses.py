@@ -1,101 +1,108 @@
 import tensorflow as tf
-from ..core import Model
+from dxl.learn.model import Model
+from doufo import singledispatch
+from doufo.tensor import Tensor
 
 
+@singledispatch(nargs=2, nouts=1)
 def mean_square_error(label, infer):
+    raise NotImplementedError('{} is not supported.'.format(type(label)))
+
+
+@mean_square_error.register(tf.Tensor)
+def _(label, infer):
     return tf.losses.mean_squared_error(label, infer)
 
 
+@mean_square_error.register(Tensor)
+def _(label, infer):
+    if isinstance(infer, Tensor):
+        infer = infer.unbox()
+    label = label.unbox()
+    return Tensor(tf.losses.mean_squared_error(label, infer))
+
+
+@singledispatch(nargs=2, nouts=1)
 def absolute_error(label, infer):
+    raise NotImplementedError('{} is not supported.'.format(type(label)))
+
+
+@absolute_error.register(tf.Tensor)
+def _(label, infer):
     return tf.losses.absolute_difference(label, infer)
 
 
-def poission_loss(label, data, *, compute_full_loss=False):
-    with tf.name_scope('poission_loss'):
-        label = tf.maximum(label, 0.0)
-        data = tf.maximum(data, 0.0)
-        # return log_possion_loss(tf.log(label), data)
-        return tf.reduce_mean(tf.keras.losses.poisson(label, data))
+@absolute_error.register(Tensor)
+def _(label, infer):
+    if isinstance(infer, Tensor):
+        infer = infer.unbox()
+    label = label.unbox()
+    return Tensor(tf.losses.absolute_difference(label, infer))
 
 
-def log_possion_loss(log_label, data, *, compute_full_loss=False):
+@singledispatch(nargs=3, nouts=1)
+def poisson_loss(label, data, *, compute_full_loss=False):
+    raise NotImplementedError('{} is not supported.'.format(type(label)))
+
+
+@poisson_loss.register(tf.Tensor)
+def _(label, data, *, compute_full_loss=False):
+    label = tf.maximum(label, 0.0)
+    data = tf.maximum(data, 0.0)
+    return tf.reduce_mean(tf.keras.losses.poisson(label, data))
+
+
+@poisson_loss.register(Tensor)
+def _(label, data, *, compute_full_loss=False):
+    if isinstance(data, Tensor):
+        data = data.unbox()
+    label = label.unbox()
+    label = tf.maximum(label, 0.0)
+    data = tf.maximum(data, 0.0)
+    return Tensor(tf.reduce_mean(tf.keras.losses.poisson(label, data)))
+
+
+@singledispatch(nargs=3, nouts=1)
+def log_poisson_loss(log_label, data, *, compute_full_loss=False):
     """
     log_label: log value of expectation (inference)
-    data: Poission sample
+    data: Poisson sample
     """
-    with tf.name_scope('log_poission_loss'):
-        data = tf.maximum(data, 0.0)
-        return tf.reduce_mean(tf.nn.log_poisson_loss(data, log_label, compute_full_loss))
+    pass
 
 
-def get_loss_func(name):
-    if name.lower() in ['mse', 'mean_square_error', 'l2']:
-        return mean_square_error
-    if name == 'poi':
-        return poission_loss
-    if name == 'l1':
-        return l1_error
-    raise ValueError("Unknown error name {}.".format(name))
+@log_poisson_loss.register(tf.Tensor)
+def _(log_label, data, *, compute_full_loss=False):
+    data = tf.maximum(data, 0.0)
+    return tf.reduce_mean(tf.nn.log_poisson_loss(log_label, data, compute_full_loss))
 
 
-class CombinedSupervisedLoss(Model):
-    '''CombinedSupervisedLoss Block
-    Args:
-        inputs: Dict[str, Tensor/tf.Tensor] input.
-            KEYS.TENSOR.INPUT: infer
-            KEYS.TENSOR.LABEL: label
-        loss_name: str
-        loss_weights:
-    '''
-
-    class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
-
-        class CONFIG:
-            LOSS_NAME = 'loss_name'
-            LOSS_WEIGHTS = 'loss_weights'
-
-    def __init__(self, name,
-                 inputs,
-                 loss_names=None,
-                 loss_weights=None,
-                 graph_info=None):
-        super().__init__(
-            name,
-            inputs=inputs,
-            graph_info=graph_info,
-            config={
-                self.KEYS.CONFIG.LOSS_NAME: loss_names,
-                self.KEYS.CONFIG.LOSS_WEIGHTS: loss_names
-            })
-
-    def kernel(self, inputs):
-        if not self.KEYS.TENSOR.LABEL in inputs:
-            raise ValueError("{} is required for inputs of {}, but not found in inputs".format(
-                self.KEYS.TENSOR.LABEL, __class__))
-        if not self.KEYS.TENSOR.INPUT in inputs:
-            raise ValueError("{} is required for inputs of {}, but not found in inputs".format(
-                NodeKeys.INPUT, __class__))
-
-        label = inputs[self.KEYS.TENSOR.LABEL]
-        data = inputs[self.KEYS.TENSOR.INPUT]
-        with tf.name_scope('combined_losses'):
-            losses = []
-            for n, w in zip(self.config(self.KEYS.CONFIG.LOSS_NAME),
-                            self.config(self.KEYS.CONFIG.LOSS_WEIGHTS)):
-                losses.append(get_loss_func(n)(label, data) * tf.constant(w))
-            with tf.name_scope('summation'):
-                loss = tf.add_n(losses)
-
-        result = {self.KEYS.TENSOR.OUTPUT: loss}
-        for i, n in enumerate(self.config(self.KEYS.CONFIG.LOSS_NAME)):
-            result.update({'loss/' + n: losses[i]})
-
-        return result
+@log_poisson_loss.register(Tensor)
+def _(log_label, data, *, compute_full_loss=False):
+    if isinstance(data, Tensor):
+        data = data.unbox()
+    log_label = log_label.unbox()
+    data = tf.maximum(data, 0.0)
+    return Tensor(tf.reduce_mean(tf.nn.log_poisson_loss(log_label, data, compute_full_loss)))
 
 
+@singledispatch(nargs=3, nouts=1)
 def composite_loss(label, infer, losses):
+    raise NotImplementedError('{} is not supported.'.format(type(label)))
+
+
+@composite_loss.register(tf.Tensor)
+def _(label, infer, losses):
     with tf.variable_scope("composite_loss"):
         weighted_loss = [k(label, infer) * v for k, v in losses.items()]
         return tf.reduce_sum(weighted_loss)
+
+
+@composite_loss.register(Tensor)
+def _(label, infer, losses):
+    if isinstance(infer, Tensor):
+        infer = infer.unbox()
+    label = label.unbox()
+    with tf.variable_scope("composite_loss"):
+        weighted_loss = [k(label, infer) * v for k, v in losses.items()]
+        return Tensor(tf.reduce_sum(weighted_loss))

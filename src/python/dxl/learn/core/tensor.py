@@ -46,6 +46,9 @@ class Tensor:
     def unbox(self):
         return self.data
 
+    def fmap(self, f):
+        return Tensor(f(self.data))
+
     @classmethod
     def _get_name(self, tensor, info):
         if isinstance(tensor, Tensor):
@@ -272,7 +275,7 @@ class Variable(Tensor):
         if isinstance(info, (str, Path)):
             return self._construct_tf_variable(
                 str(info), shape, dtype, initializer), GraphInfo(
-                    info, tf.get_variable_scope(), False)
+                info, tf.get_variable_scope(), False)
         if not isinstance(info, GraphInfo):
             raise TypeError("Invalid info type {}.".format(type(info)))
         with info.variable_scope():

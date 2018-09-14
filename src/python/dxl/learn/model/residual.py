@@ -1,7 +1,6 @@
 from dxl.learn.model.base import Model
 from dxl.learn.model import parameters
 
-# TODO remove
 
 class Residual(Model):
     _nargs = 1
