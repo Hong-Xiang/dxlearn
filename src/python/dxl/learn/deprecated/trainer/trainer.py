@@ -1,5 +1,5 @@
-from dxl.learn.core import Graph
-from dxl.learn.tensor._global_step import GlobalStep
+from dxl.learn.graph import Graph
+from dxl.learn.tensor._global_step import global_step
 
 
 class Trainer(Graph):
@@ -11,13 +11,10 @@ class Trainer(Graph):
         class GRAPH(Graph.KEYS.GRAPH):
             OPTIMIZER = 'optimier'
 
-    def __init__(self, info, optimizer, objective=None):
-        super().__init__(
-            info,
-            tensors={
-                self.KEYS.TENSOR.OBJECTIVE: objective,
-            },
-            graphs={self.KEYS.GRAPH.OPTIMIZER: optimizer})
+    def __init__(self, name, optimizer, objective=None):
+        super().__init__(name)
+        self.target = objective
+        self.optimizer = optimizer
 
     def kernel(self, inputs=None):
         KT, KS = self.KEYS.TENSOR, self.KEYS.GRAPH
@@ -25,12 +22,12 @@ class Trainer(Graph):
                                               inputs[KT.OBJECTIVE])
         self.graphs[KS.OPTIMIZER].make()
         self.tensors[KT.TRAIN_STEP] = self.graphs[KS.OPTIMIZER].minimize(
-            objective, global_step=GlobalStep().data)
+            objective, global_step=global_step().current_step())
         self.tensors[KT.MAIN] = self.train_step
 
     @property
     def objective(self):
-        return self.tensors[self.KEYS.TENSOR.OBJECTIVE]
+        return self.target
 
     @property
     def train_step(self):

@@ -1,9 +1,5 @@
-from .graph import Graph
-from .tensor import Variable
-import numpy as np
-import tensorflow as tf
+from dxl.learn.graph import Graph
 from contextlib import contextmanager
-from .session import ThisSession
 
 
 class GlobalContext(Graph):
