@@ -8,7 +8,7 @@ from dxl.learn.core import Tensor
 from dxl.learn.core.global_ctx import get_global_context
 from dxl.learn.network.trainer import Trainer
 from dxl.learn.network.summary import SummaryWriter
-from .trainer.global_step import GlobalStep
+# from .trainer.global_step import GlobalStep
 
 
 class AbstractNetwork(Model):
@@ -35,7 +35,7 @@ class AbstractNetwork(Model):
         self.model = self._make_model(model)
 
         self.trainers = []
-        self.global_step = GlobalStep()
+    #    self.global_step = GlobalStep()
 
         super().__init__(info, config=config)
 
