@@ -16,3 +16,6 @@ class KeepProb:
         ThisSession.run(self.assign_to_one)
         yield
         ThisSession.run(self.assign_to_init)
+
+    def set_prob(self, prob):
+        self.data = prob

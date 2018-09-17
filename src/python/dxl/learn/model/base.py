@@ -1,9 +1,9 @@
 from doufo import Function, List
-from doufo.collections import concat
+from doufo.collections.concatenate import concat
 from abc import abstractmethod
 from dxl.learn.config import config_with_name
 
-__all__ = ['Model', 'Stack', 'Residual']
+__all__ = ['Model', 'parameters']
 
 
 class Model(Function):
@@ -36,13 +36,15 @@ class Model(Function):
         return self.kernel
 
     @abstractmethod
-    def kernel(self, *args):
+    def kernel(self, x):
         pass
 
-    def build(self, *args):
+    @abstractmethod
+    def build(self, x):
         pass
 
     def fmap(self, m):
+        from dxl.learn.model.stack import Stack
         return Stack([m, self])
 
     @property
@@ -59,61 +61,4 @@ class Model(Function):
 
 
 def parameters(ms):
-    return concat([m.parameters for m in ms if isinstance(m, Model)])
-
-
-class Stack(Model):
-    _nargs = 1
-    _nouts = 1
-
-    def __init__(self, models, name='stack'):
-        super().__init__(name)
-        self.models = List(models)
-
-    def kernel(self, x):
-        for m in self.models:
-            x = m(x)
-        return x
-
-    @property
-    def parameters(self):
-        return parameters(self.models)
-
-
-class Merge(Model):
-    _nargs = 1
-    _nouts = 1
-
-    def __init__(self, models, merger, name='merger'):
-        super().__init__(name)
-        self.models = models
-        self.merger = merger
-
-    def kernel(self, x):
-        xs = [m(x) for m in self.models]
-        return self.merger(xs)
-
-    @property
-    def parameters(self):
-        return parameters(self.models + [self.merger])
-
-
-class Residual(Model):
-    _nargs = 1
-    _nouts = 1
-
-    class KEYS(Model.KEYS):
-        class CONFIG(Model.KEYS.CONFIG):
-            RATIO = 'ratio'
-
-    def __init__(self, name, model, ratio=None):
-        super().__init__(name)
-        self.model = model
-        self.config.update_value_and_default(self.KEYS.CONFIG.RATIO, ratio, 0.3)
-
-    def kernel(self, x):
-        return x + self.config[self.KEYS.CONFIG.RATIO] * self.model(x)
-
-    @property
-    def parameters(self):
-        return parameters([self.model])
+    return concat(List([m.parameters for m in ms if isinstance(m, Model)]))

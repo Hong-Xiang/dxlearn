@@ -1,9 +1,12 @@
 from pathlib import Path
 from dxl.core.config import ConfigProxy, CNode, CView, Configuration
 import os
+import platform
+
+home_str = 'HOME' if (platform.platform()[0] == 'L') else 'HOMEPATH'
 
 datasets_configs = {
-    'dataset_root_path': os.environ.get('PATHS_DATASET', str(Path(os.environ.get('HOME')) / 'Datas')),
+    'dataset_root_path': os.environ.get('PATHS_DATASET', str(Path(os.environ.get(home_str)) / 'Datas')),
     'path': '/home/hongxwing/Datas/',
     'analytical_phantom_sinogram': {
         'path': '/home/hongxwing/Datas/Phantom',
@@ -16,7 +19,7 @@ datasets_configs = {
         },
     },
     'mice_sinograms': {
-        'path': str(Path(os.environ.get('HOME')) / 'Datas' / 'Mice')
+        'path': str(Path(os.environ.get(home_str)) / 'Datas' / 'Mice')
     }
 }
 
