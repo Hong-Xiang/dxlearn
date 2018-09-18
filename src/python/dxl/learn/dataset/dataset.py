@@ -1,5 +1,5 @@
 import tables as tb
-from dxl.learn.core import Graph, Tensor
+from dxl.learn.graph import Graph
 from dxl.fs import Path
 from typing import Dict
 from .partitioner import Partitioner
@@ -7,8 +7,8 @@ import tensorflow as tf
 
 RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE = 4
 
-from dxl.data.function import Function, function, MapIf, NestMapOf, shape_list, To
-from dxl.learn.core import Tensor
+from dxl.learn.function import Function, function, MapIf, NestMapOf, shape_list, To
+from doufo.tensor import Tensor
 from typing import Union, NamedTuple
 
 

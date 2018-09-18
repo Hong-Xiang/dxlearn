@@ -1,6 +1,6 @@
 from doufo import singledispatch
 import tensorflow as tf
-import cntk as C
+# import cntk as C
 import numpy as np
 from doufo.tensor.backends import *
 
