@@ -1,5 +1,4 @@
-from ..core import Graph, ThisSession
-
+from dxl.learn.graph.base import Graph
 from ..distribute import (DistributeGraphInfo, Host, Master, ThisHost,
                           make_master_worker_cluster, make_distribute_session,
                           JOB_NAME, MasterWorkerCluster)
