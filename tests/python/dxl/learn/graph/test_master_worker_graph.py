@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from dxl.learn.distribute import (Host, Master, make_master_worker_cluster,
                                   DistributeGraphInfo)
-from dxl.learn.graph import MasterWorkerTaskBase
+from dxl.learn.graph.master_worker_task import MasterWorkerTaskBase
 from dxl.learn.test import DistributeTestCase
 
 

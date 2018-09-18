@@ -1,3 +1,4 @@
+import pytest
 import tensorflow as tf
 import numpy as np
 from dxl.learn.test import TestCase
@@ -19,7 +20,7 @@ class TestTensor(TestCase):
 
     def test_parse_scope_from_name_hint_4(self):
         assert tensor.Tensor._parse_scope_from_name_hint('scope/x') == 'scope'
-
+    @pytest.mark.skip()
     def test_copy_to_result_with_same_type(self):
         from dxl.learn.distribute import Host, DistributeGraphInfo
 

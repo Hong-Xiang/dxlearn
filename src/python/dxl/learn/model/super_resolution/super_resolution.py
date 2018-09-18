@@ -32,7 +32,7 @@ class SuperResolution2x(Model):
         nb_layers: integer.
         filters: Integer, the dimensionality of the output space.
         boundary_crop: Tuple/List of 2 integers.
-        graph: kernel 
+        graph: kernel
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     """
 
@@ -148,7 +148,7 @@ class SuperResolutionBlock(Model):
             SRKeys.REPRESENTS: [Optional] low resolution feature representations.
         interp: bool.
             if True, return upsampling result directly.
-        graph: kernel 
+        graph: kernel
             One of StackedConv2D/StackedResidualConv/StackedResidualIncept
     '''
 

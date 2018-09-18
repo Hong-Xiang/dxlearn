@@ -1,14 +1,14 @@
 from dxl.learn.test import TestCase
-from dxl.data.zoo.incident import load_table, Hit, Photon, Coincidence
-from dxl.learn.zoo.incident.data import reindex_crystal, binary_crystal_index, SplitByPeriod
+# from dxl.data.zoo.incident import load_table, Hit, Photon, Coincidence
+# from dxl.learn.zoo.incident.data import reindex_crystal, binary_crystal_index, SplitByPeriod
 
 import pytest
 # from dxl.learn.zoo.incident.data import create_dataset, dataset_db
 
 import os
 
-path_p5 = os.environ['GHOME'] + \
-          '/Workspace/IncidentEstimation/data/gamma_photo_5.h5'
+# path_p5 = os.environ['GHOME'] + \
+#           '/Workspace/IncidentEstimation/data/gamma_photo_5.h5'
 
 
 @pytest.mark.skip("DEP")

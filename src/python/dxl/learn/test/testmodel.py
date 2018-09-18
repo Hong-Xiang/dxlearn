@@ -1,6 +1,6 @@
 import tensorflow as tf
-from dxl.learn.core import Model
-
+# from dxl.learn.core import Model
+from dxl.learn.model.base import Model
 
 class UnitBlock(Model):
     """UnitBlock block for test use.
@@ -13,15 +13,10 @@ class UnitBlock(Model):
     """
 
     class KEYS(Model.KEYS):
-        class TENSOR(Model.KEYS.TENSOR):
-            pass
 
-        class CONFIG:
-            pass
-
-    def __init__(self, info='UnitBlock', inputs=None):
-        super().__init__(info, tensors={self.KEYS.TENSOR.INPUT: inputs})
-
+    def __init__(self, name='UnitBlock'):
+        super().__init__(name)
+        self.inputs = []
     def kernel(self, inputs):
-        x = inputs[self.KEYS.TENSOR.INPUT]
-        return x
+        self.inputs.append(inputs)
+        return inputs

@@ -1,4 +1,4 @@
-from src.python.dxl.learn.deprecated.graph import Graph
+from dxl.learn.graph import Graph
 from .tensor import Tensor
 from typing import Dict
 import tensorflow as tf
