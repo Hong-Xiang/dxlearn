@@ -1,6 +1,6 @@
 import tensorflow as tf
 from pathlib import Path
-from dxl.learn.core import Graph
+from dxl.learn.graph import Graph
 import arrow
 
 from dxl.learn.core.session import ThisSession

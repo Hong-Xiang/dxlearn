@@ -36,5 +36,5 @@ from .data_column import (ListColumns, PyTablesColumns, DataColumns,
                           HDF5DataColumns, NPYDataColumns, NPZDataColumns,
                           RangeColumns, DataColumnsPartition)
 from .partitioner import CrossValidatePartitioner, Train80Partitioner
-from .dataset import Dataset, DatasetFromColumns, DatasetFromColumnsV2
+# from .dataset import Dataset, DatasetFromColumns, DatasetFromColumnsV2
 # from .api import get_dataset

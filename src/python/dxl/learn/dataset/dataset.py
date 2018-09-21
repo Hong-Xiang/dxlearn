@@ -7,7 +7,7 @@ import tensorflow as tf
 
 RATIO_SHUFFLE_BUFFER_TO_BATCH_SIZE = 4
 
-from dxl.learn.function import Function, function, MapIf, NestMapOf, shape_list, To
+# from dxl.learn.function import Function, function, MapIf, NestMapOf, shape_list, To
 from doufo.tensor import Tensor
 from typing import Union, NamedTuple
 
