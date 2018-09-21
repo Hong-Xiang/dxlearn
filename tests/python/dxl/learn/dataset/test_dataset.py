@@ -1,4 +1,5 @@
-from dxl.learn.dataset import DatasetFromColumns, RangeColumns, Train80Partitioner, DataColumnsPartition, DatasetFromColumnsV2
+# from dxl.learn.dataset import DatasetFromColumns, RangeColumns, Train80Partitioner, DataColumnsPartition, DatasetFromColumnsV2
+from dxl.learn.dataset import RangeColumns, Train80Partitioner, DataColumnsPartition
 from dxl.learn.test import TestCase
 import pytest
 import numpy as np

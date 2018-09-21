@@ -1,7 +1,8 @@
 import tensorflow as tf
-from dxl.learn.core import Graph, Tensor, ThisSession
-
-from dxl.learn.tensor._global_step import GlobalStep
+# from dxl.learn.core import Graph, Tensor, ThisSession
+from dxl.learn.core import Tensor, ThisSession
+from dxl.learn.graph import Graph
+# from dxl.learn.tensor._global_step import GlobalStep
 
 
 class SummaryItem(Tensor):
