@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='dxl-learn',
-    version='0.2.0',
+    version='0.2.1',
     description='Machine learn library.',
     url='https://github.com/tech-pi/dxlearn',
     author='Hong Xiang',
@@ -10,10 +10,21 @@ setup(
     namespace_packages=['dxl'],
     packages=find_packages('src/python'),
     package_dir={'': 'src/python'},
-    install_requires=['jfs', 'click', 'dxl-shape>=0.1.1',
-                      'dxl-core>=0.1.6',
-                      'doufo>=0.0.3'
-                      'arrow', 'tqdm'],
+    install_requires=[
+        'tables',
+        'scipy',
+        'typing',
+        'arrow',
+        'h5py',
+        'click',
+        'tensorflow',
+        'fs',
+        'pathlib',
+        'numpy',
+        'tqdm',
+        'doufo==0.0.4',
+        'dxl-core==0.1.7'
+    ],
     entry_points="""
         [console_scripts]
         learn=dxl.learn.cli.main:dxlearn
