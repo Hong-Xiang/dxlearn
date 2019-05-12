@@ -6,8 +6,8 @@ from ..distribute import (DistributeGraphInfo, Host, Master, ThisHost,
 from functools import wraps
 
 
-class AbstractMasterWorkerGraph(Graph):
-    pass
+#class AbstractMasterWorkerGraph(Graph):
+#    pass
 
 
 class MasterWorkerTaskBase(Graph):
@@ -46,13 +46,19 @@ class MasterWorkerTaskBase(Graph):
         KC = self.KEYS.CONFIG
         if info is None:
             info = 'master_worker_task'
-        config = self._parse_input_config(config, {
+        super().__init__(info)
+        self._parse_input_config(config, {
             KC.JOB: job,
             KC.TASK_INDEX: task_index
         })
-
         self._cluster = cluster
-        super().__init__(info, config, tensors, graphs)
+        self.config.update(KC.CLUSTER,self._cluster)
+
+    def _parse_input_config(self,config,new_config1):
+        all_ = dict(config,**new_config1)
+        for i,v in all_.items():
+            self.config.update(i,v)
+
 
     @classmethod
     def _default_config(cls):
@@ -72,15 +78,18 @@ class MasterWorkerTaskBase(Graph):
 
     @property
     def job(self) -> str:
-        return self.this_host().job
+        return self.config.get(self.KEYS.CONFIG.JOB)
 
     @property
     def task_index(self) -> int:
-        return self.this_host().task_index
+        return self.config.get(self.KEYS.CONFIG.TASK_INDEX)
 
     @property
     def nb_workers(self) -> int:
         return self._cluster.nb_workers
+
+    def kernel(self):
+        pass
 
     def master(self) -> Host:
         return self._cluster.master()
@@ -89,9 +98,9 @@ class MasterWorkerTaskBase(Graph):
         return self._cluster.worker(task_index)
 
     def this_host(self) -> Host:
-        return self._cluster.host(
-            self.config(self.KEYS.CONFIG.JOB),
-            self.config(self.KEYS.CONFIG.TASK_INDEX))
+        return Host(
+            self.config.get(self.KEYS.CONFIG.JOB),
+            self.config.get(self.KEYS.CONFIG.TASK_INDEX))
 
     def _cluster_init(self):
         """
@@ -99,9 +108,9 @@ class MasterWorkerTaskBase(Graph):
         - self.nb_workers()
         """
         self._cluster = make_master_worker_cluster(
-            self.config(self.KEYS.CONFIG.CLUSTER),
-            self.config(self.KEYS.CONFIG.JOB),
-            self.config(self.KEYS.CONFIG.TASK_INDEX))
+            self.config.get(self.KEYS.CONFIG.CLUSTER),
+            self.config.get(self.KEYS.CONFIG.JOB),
+            self.config.get(self.KEYS.CONFIG.TASK_INDEX))
 
     def master_info(self, name, scope=None):
         return DistributeGraphInfo(name, self.master(), scope)

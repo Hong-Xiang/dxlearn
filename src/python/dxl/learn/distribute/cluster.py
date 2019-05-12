@@ -56,7 +56,10 @@ class ClusterSpec(UserDict):
         """
         Convert to tensorflow ClusterSpec
         """
-        return tf.train.ClusterSpec(self.data)
+        if target_backend == None:
+            return tf.train.ClusterSpec(self.data)
+        else:
+            return tf.train.ClusterSpec({target_backend:self.data[target_backend]})
 
 
 class MasterWorkerClusterSpec(ClusterSpec):
@@ -136,7 +139,7 @@ class Cluster:
         else:
             job = job_or_host
         for h in self.all_hosts():
-            if h == Host(job, task_index):
+             if (h.job == job) & (h.task_index == task_index):
                 return h
 
     def all_hosts(self):
@@ -193,7 +196,7 @@ class Server:
     _server = None
 
     @classmethod
-    def set(cls, cluster):
+    def set(cls):
         """
         Construct server for this process. Requires Cluster, ThisHost ready.
         """
@@ -206,11 +209,12 @@ class Server:
             raise TypeError("No ThisHost specification")
         job = ThisHost.host().job
         task_index = ThisHost.host().task_index
+        cluster = DefaultCluster.cluster().spec.unbox()
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         cls._server = tf.train.Server(
-            cluster.spec.unbox(),
+            cluster,
             job_name=job,
             task_index=task_index,
             config=config)
@@ -246,8 +250,8 @@ def make_master_worker_cluster(config, job, task_index=0):
     DefaultCluster.set(MasterWorkerCluster(spec))
     from .host import ThisHost, Master
     ThisHost.set(DefaultCluster.cluster().host(job, task_index))
+    Server.set()
     Master.set(DefaultCluster.cluster().master())
-    Server.set(DefaultCluster.cluster())
     return DefaultCluster.cluster()
 
 

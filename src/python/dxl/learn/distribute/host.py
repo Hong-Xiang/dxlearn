@@ -75,7 +75,10 @@ class Master(GlobalContext):
             raise TypeError("Master already set to {}.".format(cls.host()))
         if job_or_host is None:
             job_or_host = JobName.MASTER
-        host = Host(job_or_host, task_index, ip, port)
+        if not isinstance(job_or_host,Host):
+            host = Host(job_or_host, task_index, ip, port)
+        else:
+            host = job_or_host
         return super().set(host)
 
     @classmethod

@@ -1,4 +1,5 @@
 from ..core import SessionBase
+import tensorflow as tf
 __all__ = ['DistributeSession', 'MonitoredSession', 'make_distribute_session']
 
 
@@ -21,8 +22,8 @@ class MonitoredSession(DistributeSession):
         self.checkpoint_dir = checkpoint_dir
 
     def _create_session(self):
-        from .distribute import ThisHost, Master
-        master = Master.master_host().job_name
+        from .host import ThisHost, Master
+        master = Master.host().job
         if ThisHost.is_master():
             creator = tf.train.ChiefSessionCreator(
                 master=self.target,
@@ -36,11 +37,12 @@ class MonitoredSession(DistributeSession):
     def _post_session_created(self):
         pass
 
-
+from dxl.learn.distribute import Server
+from dxl.learn.core import ThisSession
 def make_distribute_session(session_name='depsession', target=None):
     if target is None:
         target = Server.server().target
-    ThisSession.set_session(SessionMonitored(session_name, target))
+    ThisSession.set_session(MonitoredSession(session_name, target))
     return ThisSession.session()
 
 from .api import distribute

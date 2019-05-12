@@ -81,7 +81,7 @@ class Graph(abc.ABC):
         class CONFIG:
             pass
 
-    def __init__(self, name):
+    def __init__(self, name,config=None, tensors=None, graphs=None):
         self.config = config_with_name(name)
         self.name = name
         self.tasks = {}
