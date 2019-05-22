@@ -97,7 +97,7 @@ def variable(shape, dtype, name=None):
 @variable.register(TensorFlowBackend)
 @variable.register(tf)
 def _(shape, dtype, name):
-    return tf.get_variable(name, shape, dtype)
+    return tf.compat.v1.get_variable(name, shape, dtype)
 
 
 @tagfunc(nargs=2, nouts=1, ndefs=1)

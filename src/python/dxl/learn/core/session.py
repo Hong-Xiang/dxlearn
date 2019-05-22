@@ -84,7 +84,7 @@ class SessionBase(ConfigurableWithName):
         self._raw_session = backend_session
 
     def get_session_config(self):
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         if self.config(self.KEYS.CONFIG.IS_ALLOW_GROWTH) or self.config(
                 self.KEYS.CONFIG.IS_ALLOW_GROWTH) is None:
             config.gpu_options.allow_growth = True

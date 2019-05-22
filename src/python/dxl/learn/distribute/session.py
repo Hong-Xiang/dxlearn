@@ -25,14 +25,14 @@ class MonitoredSession(DistributeSession):
         from .host import ThisHost, Master
         master = Master.host().job
         if ThisHost.is_master():
-            creator = tf.train.ChiefSessionCreator(
+            creator = tf.compat.v1.train.ChiefSessionCreator(
                 master=self.target,
                 config=self.get_session_config(),
                 checkpoint_dir=self.checkpoint_dir)
         else:
-            creator = tf.train.WorkerSessionCreator(
+            creator = tf.compat.v1.train.WorkerSessionCreator(
                 master=self.target, config=self.get_session_config())
-        return tf.train.MonitoredSession(session_creator=creator, )
+        return tf.compat.v1.train.MonitoredSession(session_creator=creator, )
 
     def _post_session_created(self):
         pass

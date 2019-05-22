@@ -211,9 +211,9 @@ class Server:
         task_index = ThisHost.host().task_index
         cluster = DefaultCluster.cluster().spec.unbox()
 
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         config.gpu_options.allow_growth = True
-        cls._server = tf.train.Server(
+        cls._server = tf.distribute.Server(
             cluster,
             job_name=job,
             task_index=task_index,
